@@ -1,12 +1,160 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import {
+  Wrench, Search, ShoppingBag, Gift, GraduationCap, HeartHandshake,
+  Building2, Store, Baby, CalendarDays, MessageCircle, HandCoins,
+  ArrowRight, Users, MapPin, Shield
+} from "lucide-react";
+import Navbar from "@/components/Navbar";
+import CategoryCard from "@/components/CategoryCard";
+import Footer from "@/components/Footer";
+import heroBg from "@/assets/hero-bg.jpg";
+
+const categories = [
+  { icon: Wrench, title: "Offro Servizio", description: "Elettricista, idraulico, ripetizioni e molto altro", color: "#1a9068" },
+  { icon: Search, title: "Cerco", description: "Cerca servizi, persone o oggetti nel quartiere", color: "#3b82f6" },
+  { icon: ShoppingBag, title: "In Vendita", description: "Bacheca per vendere qualsiasi cosa", color: "#8b5cf6" },
+  { icon: Gift, title: "Regalo", description: "Tutto quello che vuoi regalare ai vicini", color: "#ec4899" },
+  { icon: GraduationCap, title: "Studenti e Insegnanti", description: "Ripetizioni, supporto scolastico e scambio libri", color: "#f59e0b" },
+  { icon: HeartHandshake, title: "Aiuto Anziani", description: "Spesa, medicine, accompagnamento visite", color: "#ef4444" },
+  { icon: Building2, title: "Immobili", description: "Vendita e locazione nel tuo quartiere", color: "#06b6d4" },
+  { icon: Store, title: "Negozi di Quartiere", description: "I negozianti promuovono la loro attività", color: "#84cc16" },
+  { icon: Baby, title: "Bambini", description: "Scambio figurine, feste, attività per i piccoli", color: "#f97316" },
+  { icon: CalendarDays, title: "Eventi", description: "Eventi in programma nel quartiere e in città", color: "#6366f1" },
+  { icon: MessageCircle, title: "Chat", description: "Chatta con i vicini e crea gruppi di quartiere", color: "#14b8a6" },
+  { icon: HandCoins, title: "Donazioni", description: "Supporta il progetto con una donazione", color: "#e11d48" },
+];
+
+const steps = [
+  { icon: Users, title: "Registrati", description: "Crea il tuo profilo in pochi minuti" },
+  { icon: MapPin, title: "Trova il quartiere", description: "Localizza la tua zona di Milano" },
+  { icon: Shield, title: "Inizia subito", description: "Pubblica annunci e connettiti con i vicini" },
+];
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      {/* Hero */}
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-16">
+        <div className="absolute inset-0">
+          <img src={heroBg} alt="Milano community" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-foreground/60" />
+        </div>
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+          >
+            <h1 className="font-heading font-extrabold text-4xl md:text-6xl lg:text-7xl text-background mb-6 leading-tight">
+              La tua community<br />
+              <span className="text-secondary">di quartiere</span>
+            </h1>
+            <p className="text-lg md:text-xl text-background/80 max-w-2xl mx-auto mb-10">
+              Connetti, aiuta e cresci insieme ai tuoi vicini a Milano. Offri servizi, cerca aiuto, vendi e regala — tutto nel tuo quartiere.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/registrati">
+                <Button variant="hero" size="lg" className="text-base px-8 py-6">
+                  Unisciti alla community <ArrowRight className="w-5 h-5 ml-1" />
+                </Button>
+              </Link>
+              <a href="#categorie">
+                <Button variant="outline" size="lg" className="text-base px-8 py-6 bg-background/10 border-background/30 text-background hover:bg-background/20">
+                  Scopri le sezioni
+                </Button>
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Categories */}
+      <section id="categorie" className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-foreground mb-4">
+              Esplora le <span className="text-gradient-primary">Sezioni</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Tutto quello di cui hai bisogno nel tuo quartiere, a portata di mano.
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {categories.map((cat, i) => (
+              <CategoryCard key={cat.title} {...cat} delay={i * 0.05} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section id="come-funziona" className="py-20 bg-muted/50">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-foreground mb-4">
+              Come <span className="text-gradient-warm">Funziona</span>
+            </h2>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">
+                  <step.icon className="w-8 h-8 text-primary-foreground" />
+                </div>
+                <div className="font-heading font-bold text-sm text-primary mb-2">Passo {i + 1}</div>
+                <h3 className="font-heading font-bold text-xl text-foreground mb-2">{step.title}</h3>
+                <p className="text-muted-foreground text-sm">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 bg-gradient-primary">
+        <div className="container mx-auto px-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-primary-foreground mb-4">
+              Entra nel tuo quartiere
+            </h2>
+            <p className="text-primary-foreground/80 mb-8 max-w-lg mx-auto">
+              Unisciti a migliaia di milanesi che si aiutano ogni giorno.
+            </p>
+            <Link to="/registrati">
+              <Button variant="warm" size="lg" className="text-base px-10 py-6">
+                Registrati Gratis <ArrowRight className="w-5 h-5 ml-1" />
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };
