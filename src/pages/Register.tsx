@@ -51,17 +51,51 @@ const Register = () => {
   });
 
   const [geoLoading, setGeoLoading] = useState(false);
+  const [reverseLoading, setReverseLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
   const [quartiereQuery, setQuartiereQuery] = useState(form.quartiere);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [step3Attempted, setStep3Attempted] = useState(false);
-  const [mapCoords, setMapCoords] = useState<[number, number]>([45.4642, 9.1900]); // Default: Duomo
+  const [mapCoords, setMapCoords] = useState<[number, number]>([45.4642, 9.1900]);
   const quartiereRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Leaflet map
+  // Reverse geocoding helper
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    setReverseLoading(true);
+    setGeoError("");
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`,
+        { headers: { "Accept-Language": "it" } }
+      );
+      const data = await res.json();
+      const addr = data.address || {};
+      const quartiere = addr.quarter || addr.neighbourhood || addr.borough || addr.city_district || "";
+      if (quartiere) {
+        setQuartiereQuery(quartiere);
+        updateForm("quartiere", quartiere);
+      } else {
+        setQuartiereQuery("");
+        updateForm("quartiere", "");
+        setGeoError("Quartiere non rilevato, inserisci manualmente.");
+      }
+      updateForm("indirizzo", addr.road || "");
+      updateForm("civico", addr.house_number || "");
+      updateForm("cap", addr.postcode || "");
+      if (!addr.road && !addr.postcode) {
+        setGeoError("Indirizzo non trovato per questa posizione.");
+      }
+    } catch {
+      setGeoError("Errore nel recupero dell'indirizzo.");
+    }
+    setReverseLoading(false);
+  }, []);
+
+  // Leaflet map with draggable marker
   useEffect(() => {
     if (step !== 3 || !mapRef.current) return;
     if (leafletMap.current) {
@@ -70,11 +104,20 @@ const Register = () => {
     }
     const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(mapCoords, 14);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-    const icon = L.divIcon({ className: "", html: '<div style="width:24px;height:24px;background:#e11d48;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
-    markerRef.current = L.marker(mapCoords, { icon }).addTo(map);
+    const icon = L.divIcon({ className: "", html: '<div style="width:24px;height:24px;background:#e11d48;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:grab"></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
+    const marker = L.marker(mapCoords, { icon, draggable: true }).addTo(map);
+    marker.on("dragend", () => {
+      const pos = marker.getLatLng();
+      setMapCoords([pos.lat, pos.lng]);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        reverseGeocode(pos.lat, pos.lng);
+      }, 400);
+    });
+    markerRef.current = marker;
     leafletMap.current = map;
     return () => { map.remove(); leafletMap.current = null; };
-  }, [step, mapCoords]);
+  }, [step, mapCoords, reverseGeocode]);
 
   const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -107,28 +150,8 @@ const Register = () => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
-            { headers: { "Accept-Language": "it" } }
-          );
-          const data = await res.json();
-          const addr = data.address || {};
-          // Priority: quarter > neighbourhood > suburb > city_district > borough
-          const quartiere = addr.quarter || addr.neighbourhood || addr.borough || addr.city_district || "";
-          if (quartiere && quartiere !== addr.suburb) {
-            setQuartiereQuery(quartiere);
-            updateForm("quartiere", quartiere);
-          } else if (!quartiere) {
-            setGeoError("Quartiere non rilevato, inserisci manualmente.");
-          }
-          setMapCoords([latitude, longitude]);
-          if (addr.road) updateForm("indirizzo", addr.road);
-          if (addr.house_number) updateForm("civico", addr.house_number);
-          if (addr.postcode) updateForm("cap", addr.postcode);
-        } catch {
-          setGeoError("Errore nel recupero dell'indirizzo. Inserisci i dati manualmente.");
-        }
+        setMapCoords([latitude, longitude]);
+        await reverseGeocode(latitude, longitude);
         setGeoLoading(false);
       },
       (err) => {
@@ -141,7 +164,7 @@ const Register = () => {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, []);
+  }, [reverseGeocode]);
 
   const next = () => {
     if (step === 3) {
@@ -301,16 +324,19 @@ const Register = () => {
 
               {step === 3 && (
                 <div className="space-y-4">
-                  <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="border rounded-lg p-4 bg-muted/30">
                     <div className="flex gap-4 items-start">
-                      <div ref={mapRef} className="w-[180px] h-[180px] rounded-lg overflow-hidden border shrink-0" />
-                      <div className="flex-1 text-center flex flex-col items-center justify-center min-h-[180px]">
+                      <div className="shrink-0 flex flex-col items-center">
+                        <div ref={mapRef} className="w-[250px] h-[200px] rounded-lg overflow-hidden border" />
+                        <p className="text-[11px] text-muted-foreground mt-1.5">Trascina il marker per regolare la posizione</p>
+                      </div>
+                      <div className="flex-1 text-center flex flex-col items-center justify-center min-h-[200px]">
                         <MapPin className="w-8 h-8 text-primary mb-2" />
                         <p className="text-sm text-muted-foreground mb-3">Usa la geolocalizzazione per trovare il tuo quartiere</p>
-                    <Button variant="outline" size="sm" className="gap-2" onClick={handleGeolocate} disabled={geoLoading}>
-                      {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                      {geoLoading ? "Rilevamento..." : "Rileva posizione"}
-                    </Button>
+                        <Button variant="outline" size="sm" className="gap-2" onClick={handleGeolocate} disabled={geoLoading}>
+                          {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                          {geoLoading ? "Rilevamento..." : "Rileva posizione"}
+                        </Button>
                         {geoError && (
                           <p className="text-xs text-destructive mt-2 flex items-center justify-center gap-1">
                             <AlertCircle className="w-3 h-3" /> {geoError}
@@ -353,7 +379,7 @@ const Register = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="indirizzo">Indirizzo *</Label>
+                    <Label htmlFor="indirizzo">Indirizzo * {reverseLoading && <Loader2 className="inline w-3 h-3 animate-spin ml-1" />}</Label>
                     <Input id="indirizzo" placeholder="Via/Piazza..." value={form.indirizzo} onChange={e => updateForm("indirizzo", e.target.value)} />
                     {step3Attempted && !form.indirizzo.trim() && (
                       <p className="text-xs text-destructive mt-1">L'indirizzo è obbligatorio</p>
