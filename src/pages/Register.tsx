@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,29 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+
+// Mock quartieri di Milano
+const QUARTIERI_MILANO = [
+  { nome: "Navigli", municipio: 6 }, { nome: "Brera", municipio: 1 }, { nome: "Isola", municipio: 9 },
+  { nome: "Porta Romana", municipio: 4 }, { nome: "Città Studi", municipio: 3 }, { nome: "Lambrate", municipio: 3 },
+  { nome: "Porta Venezia", municipio: 1 }, { nome: "Porta Garibaldi", municipio: 9 }, { nome: "Porta Genova", municipio: 6 },
+  { nome: "Porta Ticinese", municipio: 6 }, { nome: "San Siro", municipio: 7 }, { nome: "Quarto Oggiaro", municipio: 8 },
+  { nome: "Bovisa", municipio: 9 }, { nome: "Bicocca", municipio: 9 }, { nome: "Niguarda", municipio: 9 },
+  { nome: "Affori", municipio: 9 }, { nome: "Greco", municipio: 2 }, { nome: "Precotto", municipio: 2 },
+  { nome: "Turro", municipio: 2 }, { nome: "Gorla", municipio: 2 }, { nome: "Crescenzago", municipio: 2 },
+  { nome: "Loreto", municipio: 3 }, { nome: "Piola", municipio: 3 }, { nome: "Corsica", municipio: 4 },
+  { nome: "Corvetto", municipio: 4 }, { nome: "Rogoredo", municipio: 4 }, { nome: "Gratosoglio", municipio: 5 },
+  { nome: "Chiesa Rossa", municipio: 5 }, { nome: "Barona", municipio: 6 }, { nome: "Lorenteggio", municipio: 6 },
+  { nome: "Baggio", municipio: 7 }, { nome: "De Angeli", municipio: 7 }, { nome: "Wagner", municipio: 7 },
+  { nome: "Sempione", municipio: 8 }, { nome: "QT8", municipio: 8 }, { nome: "Gallaratese", municipio: 8 },
+  { nome: "Certosa", municipio: 8 }, { nome: "Villapizzone", municipio: 8 }, { nome: "Dergano", municipio: 9 },
+  { nome: "Maciachini", municipio: 9 }, { nome: "Centrale", municipio: 2 }, { nome: "Repubblica", municipio: 1 },
+  { nome: "Duomo", municipio: 1 }, { nome: "Cadorna", municipio: 1 }, { nome: "Moscova", municipio: 1 },
+  { nome: "Garibaldi", municipio: 9 }, { nome: "Sarpi", municipio: 1 }, { nome: "Chinatown", municipio: 1 },
+];
 
 const TOTAL_STEPS = 5;
 
@@ -28,9 +48,83 @@ const Register = () => {
     profiloPubblico: true, mostraEmail: false, mostraTelefono: false,
   });
 
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState("");
+  const [quartiereQuery, setQuartiereQuery] = useState(form.quartiere);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [step3Attempted, setStep3Attempted] = useState(false);
+  const quartiereRef = useRef<HTMLDivElement>(null);
+
   const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const next = () => step < TOTAL_STEPS && setStep(step + 1);
+  const capValid = /^201\d{2}$/.test(form.cap);
+  const step3Valid = form.quartiere.trim() !== "" && form.indirizzo.trim() !== "" && form.civico.trim() !== "" && capValid;
+
+  const filteredQuartieri = quartiereQuery.trim().length > 0
+    ? QUARTIERI_MILANO.filter(q => q.nome.toLowerCase().includes(quartiereQuery.toLowerCase())).slice(0, 6)
+    : [];
+
+  const handleQuartiereChange = (value: string) => {
+    setQuartiereQuery(value);
+    updateForm("quartiere", value);
+    setShowSuggestions(true);
+  };
+
+  const selectQuartiere = (nome: string) => {
+    setQuartiereQuery(nome);
+    updateForm("quartiere", nome);
+    setShowSuggestions(false);
+  };
+
+  const handleGeolocate = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGeoError("La geolocalizzazione non è supportata dal tuo browser.");
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError("");
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
+            { headers: { "Accept-Language": "it" } }
+          );
+          const data = await res.json();
+          const addr = data.address || {};
+          const suburb = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || "";
+          if (suburb) {
+            setQuartiereQuery(suburb);
+            updateForm("quartiere", suburb);
+          }
+          if (addr.road) updateForm("indirizzo", addr.road);
+          if (addr.house_number) updateForm("civico", addr.house_number);
+          if (addr.postcode) updateForm("cap", addr.postcode);
+        } catch {
+          setGeoError("Errore nel recupero dell'indirizzo. Inserisci i dati manualmente.");
+        }
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setGeoError("Permesso negato. Puoi inserire i dati manualmente.");
+        } else {
+          setGeoError("Impossibile rilevare la posizione. Inserisci i dati manualmente.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  const next = () => {
+    if (step === 3) {
+      setStep3Attempted(true);
+      if (!step3Valid) return;
+    }
+    if (step < TOTAL_STEPS) setStep(step + 1);
+  };
   const prev = () => step > 1 && setStep(step - 1);
 
   const passwordValid = form.password.length >= 8
@@ -185,26 +279,73 @@ const Register = () => {
                   <div className="border rounded-lg p-4 bg-muted/30 text-center">
                     <MapPin className="w-8 h-8 mx-auto text-primary mb-2" />
                     <p className="text-sm text-muted-foreground mb-3">Usa la geolocalizzazione per trovare il tuo quartiere</p>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <MapPin className="w-4 h-4" /> Rileva posizione
+                    <Button variant="outline" size="sm" className="gap-2" onClick={handleGeolocate} disabled={geoLoading}>
+                      {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                      {geoLoading ? "Rilevamento..." : "Rileva posizione"}
                     </Button>
+                    {geoError && (
+                      <p className="text-xs text-destructive mt-2 flex items-center justify-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {geoError}
+                      </p>
+                    )}
                   </div>
-                  <div>
+
+                  {/* Quartiere with autocomplete */}
+                  <div className="relative" ref={quartiereRef}>
                     <Label htmlFor="quartiere">Quartiere *</Label>
-                    <Input id="quartiere" placeholder="Es. Navigli, Brera, Isola..." value={form.quartiere} onChange={e => updateForm("quartiere", e.target.value)} />
+                    <Input
+                      id="quartiere"
+                      placeholder="Es. Navigli, Brera, Isola..."
+                      value={quartiereQuery}
+                      onChange={e => handleQuartiereChange(e.target.value)}
+                      onFocus={() => quartiereQuery.trim() && setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      autoComplete="off"
+                    />
+                    {showSuggestions && filteredQuartieri.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {filteredQuartieri.map(q => (
+                          <button
+                            key={q.nome}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex justify-between items-center"
+                            onMouseDown={() => selectQuartiere(q.nome)}
+                          >
+                            <span className="text-foreground">{q.nome}</span>
+                            <span className="text-xs text-muted-foreground">Municipio {q.municipio}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {step3Attempted && !form.quartiere.trim() && (
+                      <p className="text-xs text-destructive mt-1">Il quartiere è obbligatorio</p>
+                    )}
                   </div>
+
                   <div>
                     <Label htmlFor="indirizzo">Indirizzo *</Label>
                     <Input id="indirizzo" placeholder="Via/Piazza..." value={form.indirizzo} onChange={e => updateForm("indirizzo", e.target.value)} />
+                    {step3Attempted && !form.indirizzo.trim() && (
+                      <p className="text-xs text-destructive mt-1">L'indirizzo è obbligatorio</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="civico">Civico *</Label>
                       <Input id="civico" placeholder="N°" value={form.civico} onChange={e => updateForm("civico", e.target.value)} />
+                      {step3Attempted && !form.civico.trim() && (
+                        <p className="text-xs text-destructive mt-1">Il civico è obbligatorio</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="cap">CAP *</Label>
-                      <Input id="cap" placeholder="20100" value={form.cap} onChange={e => updateForm("cap", e.target.value)} />
+                      <Input id="cap" placeholder="201xx" maxLength={5} value={form.cap} onChange={e => updateForm("cap", e.target.value.replace(/\D/g, "").slice(0, 5))} />
+                      {step3Attempted && form.cap && !capValid && (
+                        <p className="text-xs text-destructive mt-1">CAP non valido (formato: 201xx)</p>
+                      )}
+                      {step3Attempted && !form.cap && (
+                        <p className="text-xs text-destructive mt-1">Il CAP è obbligatorio</p>
+                      )}
                     </div>
                   </div>
                 </div>
