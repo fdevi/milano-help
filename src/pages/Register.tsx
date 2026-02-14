@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // Mock quartieri di Milano
 const QUARTIERI_MILANO = [
@@ -53,7 +55,26 @@ const Register = () => {
   const [quartiereQuery, setQuartiereQuery] = useState(form.quartiere);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [step3Attempted, setStep3Attempted] = useState(false);
+  const [mapCoords, setMapCoords] = useState<[number, number]>([45.4642, 9.1900]); // Default: Duomo
   const quartiereRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMap = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+
+  // Leaflet map
+  useEffect(() => {
+    if (step !== 3 || !mapRef.current) return;
+    if (leafletMap.current) {
+      leafletMap.current.remove();
+      leafletMap.current = null;
+    }
+    const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView(mapCoords, 14);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    const icon = L.divIcon({ className: "", html: '<div style="width:24px;height:24px;background:#e11d48;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
+    markerRef.current = L.marker(mapCoords, { icon }).addTo(map);
+    leafletMap.current = map;
+    return () => { map.remove(); leafletMap.current = null; };
+  }, [step, mapCoords]);
 
   const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -61,7 +82,7 @@ const Register = () => {
   const step3Valid = form.quartiere.trim() !== "" && form.indirizzo.trim() !== "" && form.civico.trim() !== "" && capValid;
 
   const filteredQuartieri = quartiereQuery.trim().length > 0
-    ? QUARTIERI_MILANO.filter(q => q.nome.toLowerCase().includes(quartiereQuery.toLowerCase())).slice(0, 6)
+    ? QUARTIERI_MILANO.filter(q => q.nome.toLowerCase().includes(quartiereQuery.toLowerCase()) || `${q.nome} (Municipio ${q.municipio})`.toLowerCase().includes(quartiereQuery.toLowerCase())).slice(0, 6)
     : [];
 
   const handleQuartiereChange = (value: string) => {
@@ -93,11 +114,15 @@ const Register = () => {
           );
           const data = await res.json();
           const addr = data.address || {};
-          const suburb = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || "";
-          if (suburb) {
-            setQuartiereQuery(suburb);
-            updateForm("quartiere", suburb);
+          // Priority: quarter > neighbourhood > suburb > city_district > borough
+          const quartiere = addr.quarter || addr.neighbourhood || addr.borough || addr.city_district || "";
+          if (quartiere && quartiere !== addr.suburb) {
+            setQuartiereQuery(quartiere);
+            updateForm("quartiere", quartiere);
+          } else if (!quartiere) {
+            setGeoError("Quartiere non rilevato, inserisci manualmente.");
           }
+          setMapCoords([latitude, longitude]);
           if (addr.road) updateForm("indirizzo", addr.road);
           if (addr.house_number) updateForm("civico", addr.house_number);
           if (addr.postcode) updateForm("cap", addr.postcode);
@@ -276,18 +301,23 @@ const Register = () => {
 
               {step === 3 && (
                 <div className="space-y-4">
-                  <div className="border rounded-lg p-4 bg-muted/30 text-center">
-                    <MapPin className="w-8 h-8 mx-auto text-primary mb-2" />
-                    <p className="text-sm text-muted-foreground mb-3">Usa la geolocalizzazione per trovare il tuo quartiere</p>
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <div className="flex gap-4 items-start">
+                      <div ref={mapRef} className="w-[180px] h-[180px] rounded-lg overflow-hidden border shrink-0" />
+                      <div className="flex-1 text-center flex flex-col items-center justify-center min-h-[180px]">
+                        <MapPin className="w-8 h-8 text-primary mb-2" />
+                        <p className="text-sm text-muted-foreground mb-3">Usa la geolocalizzazione per trovare il tuo quartiere</p>
                     <Button variant="outline" size="sm" className="gap-2" onClick={handleGeolocate} disabled={geoLoading}>
                       {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
                       {geoLoading ? "Rilevamento..." : "Rileva posizione"}
                     </Button>
-                    {geoError && (
-                      <p className="text-xs text-destructive mt-2 flex items-center justify-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {geoError}
-                      </p>
-                    )}
+                        {geoError && (
+                          <p className="text-xs text-destructive mt-2 flex items-center justify-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> {geoError}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Quartiere with autocomplete */}
