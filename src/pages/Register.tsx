@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check, Loader2, AlertCircle, X, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check, Loader2, AlertCircle, X, ImagePlus, RotateCcw, GripVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import L from "leaflet";
@@ -119,6 +119,21 @@ const Register = () => {
   const addressSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoProfiloPreviewUrl, setFotoProfiloPreviewUrl] = useState<string | null>(null);
+  const [fotoProfiloOffset, setFotoProfiloOffset] = useState({ offsetX: 0, offsetY: 0 });
+  const [fotoProfiloPanLimits, setFotoProfiloPanLimits] = useState<{
+    maxOffsetX: number;
+    maxOffsetY: number;
+    coverWidth: number;
+    coverHeight: number;
+    containerWidth: number;
+    containerHeight: number;
+  } | null>(null);
+  const [isDraggingFoto, setIsDraggingFoto] = useState(false);
+  const [showDragHint, setShowDragHint] = useState(true);
+  const fotoPanStartRef = useRef({ clientX: 0, clientY: 0, offsetX: 0, offsetY: 0 });
+  const fotoPanOffsetRef = useRef(fotoProfiloOffset);
+  fotoPanOffsetRef.current = fotoProfiloOffset;
+  const PREVIEW_SIZE = 150;
 
   // Revoke object URL when preview changes or on unmount
   useEffect(() => {
@@ -133,6 +148,9 @@ const Register = () => {
     if (fotoProfiloPreviewUrl) URL.revokeObjectURL(fotoProfiloPreviewUrl);
     updateForm("fotoProfilo", file);
     setFotoProfiloPreviewUrl(URL.createObjectURL(file));
+    setFotoProfiloOffset({ offsetX: 0, offsetY: 0 });
+    setFotoProfiloPanLimits(null);
+    setShowDragHint(true);
     e.target.value = "";
   }, [fotoProfiloPreviewUrl]);
 
@@ -140,8 +158,107 @@ const Register = () => {
     if (fotoProfiloPreviewUrl) URL.revokeObjectURL(fotoProfiloPreviewUrl);
     updateForm("fotoProfilo", null);
     setFotoProfiloPreviewUrl(null);
+    setFotoProfiloOffset({ offsetX: 0, offsetY: 0 });
+    setFotoProfiloPanLimits(null);
+    setShowDragHint(true);
     fileInputRef.current?.value && (fileInputRef.current.value = "");
   }, [fotoProfiloPreviewUrl]);
+
+  const resetFotoPan = useCallback(() => {
+    setFotoProfiloOffset({ offsetX: 0, offsetY: 0 });
+  }, []);
+
+  const onFotoImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const container = img.parentElement;
+    if (!container) return;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const imgWidth = img.naturalWidth;
+    const imgHeight = img.naturalHeight;
+    if (!imgWidth || !imgHeight || !containerWidth || !containerHeight) return;
+    const scale = Math.max(containerWidth / imgWidth, containerHeight / imgHeight);
+    const coverWidth = imgWidth * scale;
+    const coverHeight = imgHeight * scale;
+    const maxOffsetX = Math.max(0, (coverWidth - containerWidth) / 2);
+    const maxOffsetY = Math.max(0, (coverHeight - containerHeight) / 2);
+    setFotoProfiloPanLimits({
+      maxOffsetX,
+      maxOffsetY,
+      coverWidth,
+      coverHeight,
+      containerWidth,
+      containerHeight,
+    });
+  }, []);
+
+  const onFotoPanStart = useCallback((clientX: number, clientY: number) => {
+    setIsDraggingFoto(true);
+    setShowDragHint(false);
+    const { offsetX, offsetY } = fotoPanOffsetRef.current;
+    fotoPanStartRef.current = {
+      clientX,
+      clientY,
+      offsetX,
+      offsetY,
+    };
+  }, []);
+
+  const onFotoPanMove = useCallback(
+    (clientX: number, clientY: number) => {
+      const limits = fotoProfiloPanLimits;
+      if (!limits) return;
+      const { clientX: startX, clientY: startY, offsetX: startOffsetX, offsetY: startOffsetY } = fotoPanStartRef.current;
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
+      const newX = startOffsetX + deltaX;
+      const newY = startOffsetY + deltaY;
+      const maxX = limits.maxOffsetX;
+      const maxY = limits.maxOffsetY;
+      const offsetX = Math.min(maxX, Math.max(-maxX, newX));
+      const offsetY = Math.min(maxY, Math.max(-maxY, newY));
+      setFotoProfiloOffset({ offsetX, offsetY });
+    },
+    [fotoProfiloPanLimits]
+  );
+
+  const onFotoPanEnd = useCallback(() => {
+    setIsDraggingFoto(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isDraggingFoto) return;
+    const handleMove = (e: MouseEvent) => onFotoPanMove(e.clientX, e.clientY);
+    const handleUp = () => {
+      onFotoPanEnd();
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
+    };
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
+    };
+  }, [isDraggingFoto, onFotoPanMove, onFotoPanEnd]);
+
+  useEffect(() => {
+    if (!isDraggingFoto) return;
+    const handleMove = (e: TouchEvent) => {
+      if (e.changedTouches?.length) onFotoPanMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    };
+    const handleEnd = () => {
+      onFotoPanEnd();
+      document.removeEventListener("touchmove", handleMove);
+      document.removeEventListener("touchend", handleEnd);
+    };
+    document.addEventListener("touchmove", handleMove, { passive: true });
+    document.addEventListener("touchend", handleEnd);
+    return () => {
+      document.removeEventListener("touchmove", handleMove);
+      document.removeEventListener("touchend", handleEnd);
+    };
+  }, [isDraggingFoto, onFotoPanMove, onFotoPanEnd]);
 
   // Reverse geocoding helper
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -629,15 +746,61 @@ const Register = () => {
                     <div className="mt-1 flex flex-col sm:flex-row items-center gap-4">
                       {form.fotoProfilo && fotoProfiloPreviewUrl ? (
                         <>
-                          <div className="w-[150px] h-[150px] rounded-full overflow-hidden border-2 border-border bg-muted/30 shadow-sm shrink-0 flex items-center justify-center">
-                            <img
-                              src={fotoProfiloPreviewUrl}
-                              alt="Anteprima foto profilo"
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="shrink-0 flex flex-col items-center gap-1.5">
+                            <div
+                              className="w-[150px] h-[150px] rounded-full overflow-hidden border-2 border-border bg-muted/30 shadow-sm relative select-none cursor-grab active:cursor-grabbing touch-none"
+                              style={{ cursor: isDraggingFoto ? "grabbing" : "grab" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                onFotoPanStart(e.clientX, e.clientY);
+                              }}
+                              onTouchStart={(e) => {
+                                if (e.touches.length === 1) onFotoPanStart(e.touches[0].clientX, e.touches[0].clientY);
+                              }}
+                              role="img"
+                              aria-label="Trascina per centrare la foto"
+                            >
+                              <img
+                                src={fotoProfiloPreviewUrl}
+                                alt="Anteprima foto profilo"
+                                className="pointer-events-none absolute left-1/2 top-1/2 object-cover"
+                                style={
+                                  fotoProfiloPanLimits
+                                    ? {
+                                        width: fotoProfiloPanLimits.coverWidth,
+                                        height: fotoProfiloPanLimits.coverHeight,
+                                        transform: `translate(calc(-50% + ${fotoProfiloOffset.offsetX}px), calc(-50% + ${fotoProfiloOffset.offsetY}px))`,
+                                      }
+                                    : {
+                                        width: PREVIEW_SIZE,
+                                        height: PREVIEW_SIZE,
+                                        transform: "translate(-50%, -50%)",
+                                      }
+                                }
+                                draggable={false}
+                                onLoad={onFotoImageLoad}
+                              />
+                            </div>
+                            {showDragHint && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <GripVertical className="w-3.5 h-3.5" />
+                                Trascina per centrare
+                              </p>
+                            )}
                           </div>
                           <div className="flex flex-col gap-2">
                             <p className="text-sm text-muted-foreground truncate max-w-[200px]">{form.fotoProfilo.name}</p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={resetFotoPan}
+                              aria-label="Ripristina posizione"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              Ripristina
+                            </Button>
                             <Button
                               type="button"
                               variant="outline"
