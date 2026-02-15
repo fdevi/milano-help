@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -7,6 +8,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const categories = [
   { icon: Wrench, title: "Offro Servizio", color: "#1a9068", count: 24 },
@@ -23,7 +27,27 @@ const categories = [
   { icon: HandCoins, title: "Donazioni", color: "#e11d48", count: 0 },
 ];
 
+interface Profile {
+  nome: string | null;
+  quartiere: string | null;
+}
+
 const Dashboard = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("nome, quartiere").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data) setProfile(data); });
+  }, [user]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
@@ -45,11 +69,9 @@ const Dashboard = () => {
             <button className="p-2 rounded-lg hover:bg-muted transition-colors">
               <User className="w-5 h-5 text-muted-foreground" />
             </button>
-            <Link to="/">
-              <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                <LogOut className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </Link>
+            <button onClick={handleSignOut} className="p-2 rounded-lg hover:bg-muted transition-colors">
+              <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
           </div>
         </div>
       </nav>
@@ -63,9 +85,14 @@ const Dashboard = () => {
             className="mb-8"
           >
             <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-foreground mb-2">
-              Ciao, benvenuto! 👋
+              Ciao{profile?.nome ? `, ${profile.nome}` : ""}! 👋
             </h1>
-            <p className="text-muted-foreground">Quartiere: <span className="font-semibold text-foreground">Navigli</span></p>
+            <p className="text-muted-foreground">
+              {profile?.quartiere
+                ? <>Quartiere: <span className="font-semibold text-foreground">{profile.quartiere}</span></>
+                : <span className="text-sm">Completa il tuo profilo per vedere il quartiere</span>
+              }
+            </p>
           </motion.div>
 
           {/* Quick action */}
