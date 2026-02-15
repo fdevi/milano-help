@@ -14,7 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      conversazioni: {
+        Row: {
+          id: string
+          servizio_id: string | null
+          ultimo_aggiornamento: string
+          ultimo_messaggio: string | null
+          utente1_id: string
+          utente2_id: string
+        }
+        Insert: {
+          id?: string
+          servizio_id?: string | null
+          ultimo_aggiornamento?: string
+          ultimo_messaggio?: string | null
+          utente1_id: string
+          utente2_id: string
+        }
+        Update: {
+          id?: string
+          servizio_id?: string | null
+          ultimo_aggiornamento?: string
+          ultimo_messaggio?: string | null
+          utente1_id?: string
+          utente2_id?: string
+        }
+        Relationships: []
+      }
+      messaggi: {
+        Row: {
+          allegato_url: string | null
+          conversazione_id: string
+          created_at: string
+          id: string
+          letto: boolean
+          mittente_id: string
+          testo: string
+        }
+        Insert: {
+          allegato_url?: string | null
+          conversazione_id: string
+          created_at?: string
+          id?: string
+          letto?: boolean
+          mittente_id: string
+          testo: string
+        }
+        Update: {
+          allegato_url?: string | null
+          conversazione_id?: string
+          created_at?: string
+          id?: string
+          letto?: boolean
+          mittente_id?: string
+          testo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaggi_conversazione_id_fkey"
+            columns: ["conversazione_id"]
+            isOneToOne: false
+            referencedRelation: "conversazioni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart } from "lucide-react";
+import { Menu, X, Heart, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,6 +33,10 @@ const Navbar = () => {
               </a>
             </>
           )}
+          <Link to="/chat" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <MessageCircle className="w-5 h-5" />
+            <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+          </Link>
           <Link to="/registrati">
             <Button variant="hero" size="sm">Registrati</Button>
           </Link>
@@ -66,6 +70,11 @@ const Navbar = () => {
                   <a href="#come-funziona" onClick={() => setIsOpen(false)} className="text-sm font-medium text-muted-foreground">Come Funziona</a>
                 </>
               )}
+              <Link to="/chat" onClick={() => setIsOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <MessageCircle className="w-4 h-4" /> Chat
+                </Button>
+              </Link>
               <Link to="/registrati" onClick={() => setIsOpen(false)}>
                 <Button variant="hero" className="w-full">Registrati</Button>
               </Link>
