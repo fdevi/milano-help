@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, Eye, EyeOff, MapPin, User, Shield, Check, Loader2, AlertCircle, X, ImagePlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import L from "leaflet";
@@ -77,7 +77,16 @@ const Register = () => {
   const { toast } = useToast();
 
   // Form state
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    email: string; username: string; password: string; confirmPassword: string;
+    nome: string; cognome: string; dataNascita: string; sesso: string; telefono: string;
+    quartiere: string; citta: string; indirizzo: string; civico: string; cap: string;
+    tipoAccount: string;
+    termini: boolean; privacy: boolean;
+    notificheEmail: boolean; notifichePush: boolean; newsletter: boolean;
+    profiloPubblico: boolean; mostraEmail: boolean; mostraTelefono: boolean;
+    fotoProfilo: File | null;
+  }>({
     email: "", username: "", password: "", confirmPassword: "",
     nome: "", cognome: "", dataNascita: "", sesso: "", telefono: "",
     quartiere: "", citta: "", indirizzo: "", civico: "", cap: "",
@@ -85,6 +94,7 @@ const Register = () => {
     termini: false, privacy: false,
     notificheEmail: true, notifichePush: true, newsletter: false,
     profiloPubblico: true, mostraEmail: false, mostraTelefono: false,
+    fotoProfilo: null,
   });
 
   const [geoLoading, setGeoLoading] = useState(false);
@@ -107,6 +117,31 @@ const Register = () => {
   const markerRef = useRef<L.Marker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const addressSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fotoProfiloPreviewUrl, setFotoProfiloPreviewUrl] = useState<string | null>(null);
+
+  // Revoke object URL when preview changes or on unmount
+  useEffect(() => {
+    return () => {
+      if (fotoProfiloPreviewUrl) URL.revokeObjectURL(fotoProfiloPreviewUrl);
+    };
+  }, [fotoProfiloPreviewUrl]);
+
+  const handleFotoProfiloChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (fotoProfiloPreviewUrl) URL.revokeObjectURL(fotoProfiloPreviewUrl);
+    updateForm("fotoProfilo", file);
+    setFotoProfiloPreviewUrl(URL.createObjectURL(file));
+    e.target.value = "";
+  }, [fotoProfiloPreviewUrl]);
+
+  const removeFotoProfilo = useCallback(() => {
+    if (fotoProfiloPreviewUrl) URL.revokeObjectURL(fotoProfiloPreviewUrl);
+    updateForm("fotoProfilo", null);
+    setFotoProfiloPreviewUrl(null);
+    fileInputRef.current?.value && (fileInputRef.current.value = "");
+  }, [fotoProfiloPreviewUrl]);
 
   // Reverse geocoding helper
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -582,10 +617,46 @@ const Register = () => {
                   </div>
                   <div>
                     <Label>Foto profilo (opzionale)</Label>
-                    <div className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors">
-                      <User className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">Clicca o trascina per caricare</p>
-                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      id="foto-profilo"
+                      aria-label="Carica foto profilo"
+                      onChange={handleFotoProfiloChange}
+                    />
+                    {form.fotoProfilo && fotoProfiloPreviewUrl ? (
+                      <div className="mt-1 relative rounded-xl overflow-hidden border-2 border-border bg-muted/30">
+                        <img
+                          src={fotoProfiloPreviewUrl}
+                          alt="Anteprima foto profilo"
+                          className="w-full h-48 sm:h-56 object-cover object-center"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-md hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={removeFotoProfilo}
+                          aria-label="Rimuovi foto"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <p className="absolute bottom-2 left-2 right-2 text-xs text-white bg-black/60 rounded px-2 py-1 truncate">
+                          {form.fotoProfilo.name}
+                        </p>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="foto-profilo"
+                        className="mt-1 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-xl p-6 min-h-[140px] cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2"
+                      >
+                        <ImagePlus className="w-10 h-10 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground text-center">Clicca o trascina per caricare</span>
+                        <span className="text-xs text-muted-foreground">JPG, PNG, WebP</span>
+                      </label>
+                    )}
                   </div>
                 </div>
               )}
