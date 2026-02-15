@@ -79,6 +79,90 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          cap: string | null
+          citta: string | null
+          civico: string | null
+          cognome: string | null
+          created_at: string
+          data_nascita: string | null
+          email: string | null
+          email_verificata: boolean | null
+          id: string
+          indirizzo: string | null
+          mostra_email: boolean | null
+          mostra_telefono: boolean | null
+          newsletter: boolean | null
+          nome: string | null
+          notifiche_email: boolean | null
+          notifiche_push: boolean | null
+          profilo_pubblico: boolean | null
+          quartiere: string | null
+          sesso: string | null
+          telefono: string | null
+          tipo_account: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          cap?: string | null
+          citta?: string | null
+          civico?: string | null
+          cognome?: string | null
+          created_at?: string
+          data_nascita?: string | null
+          email?: string | null
+          email_verificata?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          mostra_email?: boolean | null
+          mostra_telefono?: boolean | null
+          newsletter?: boolean | null
+          nome?: string | null
+          notifiche_email?: boolean | null
+          notifiche_push?: boolean | null
+          profilo_pubblico?: boolean | null
+          quartiere?: string | null
+          sesso?: string | null
+          telefono?: string | null
+          tipo_account?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          cap?: string | null
+          citta?: string | null
+          civico?: string | null
+          cognome?: string | null
+          created_at?: string
+          data_nascita?: string | null
+          email?: string | null
+          email_verificata?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          mostra_email?: boolean | null
+          mostra_telefono?: boolean | null
+          newsletter?: boolean | null
+          nome?: string | null
+          notifiche_email?: boolean | null
+          notifiche_push?: boolean | null
+          profilo_pubblico?: boolean | null
+          quartiere?: string | null
+          sesso?: string | null
+          telefono?: string | null
+          tipo_account?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
