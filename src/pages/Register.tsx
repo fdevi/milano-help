@@ -325,15 +325,15 @@ const Register = () => {
               {step === 3 && (
                 <div className="space-y-4">
                 <div className="border rounded-lg p-4 bg-muted/30">
-                    <div className="flex gap-4 items-start">
-                      <div className="shrink-0 flex flex-col items-center">
-                        <div ref={mapRef} className="w-[250px] h-[200px] rounded-lg overflow-hidden border" />
+                    <div className="flex flex-col gap-4 items-center md:flex-row md:items-start md:gap-4">
+                      <div className="w-full md:w-[250px] md:shrink-0 flex flex-col items-center relative overflow-hidden rounded-lg">
+                        <div ref={mapRef} className="w-full md:w-[250px] h-[200px] rounded-lg overflow-hidden border relative z-10 isolate" />
                         <p className="text-[11px] text-muted-foreground mt-1.5">Trascina il marker per regolare la posizione</p>
                       </div>
-                      <div className="flex-1 text-center flex flex-col items-center justify-center min-h-[200px]">
+                      <div className="w-full md:flex-1 text-center flex flex-col items-center justify-center min-h-[200px]">
                         <MapPin className="w-8 h-8 text-primary mb-2" />
                         <p className="text-sm text-muted-foreground mb-3">Usa la geolocalizzazione per trovare il tuo quartiere</p>
-                        <Button variant="outline" size="sm" className="gap-2" onClick={handleGeolocate} disabled={geoLoading}>
+                        <Button variant="outline" size="sm" className="gap-2 w-full max-w-[200px] md:max-w-none md:w-auto" onClick={handleGeolocate} disabled={geoLoading}>
                           {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
                           {geoLoading ? "Rilevamento..." : "Rileva posizione"}
                         </Button>
