@@ -11,6 +11,8 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock quartieri di Milano
 const QUARTIERI_MILANO = [
@@ -38,6 +40,9 @@ const Register = () => {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const { toast } = useToast();
 
   // Form state
   const [form, setForm] = useState({
@@ -181,6 +186,69 @@ const Register = () => {
     && /[A-Z]/.test(form.password)
     && /[!?%$&@#]/.test(form.password);
 
+  const handleRegister = async () => {
+    if (!form.termini || !form.privacy) return;
+    if (!passwordValid || form.password !== form.confirmPassword) {
+      toast({ title: "Controlla la password", description: "La password deve rispettare i requisiti e le due password devono corrispondere.", variant: "destructive" });
+      return;
+    }
+    if (!form.email || !form.username || !form.nome || !form.cognome) {
+      toast({ title: "Campi mancanti", description: "Compila tutti i campi obbligatori.", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+
+    // 1. Sign up with Supabase Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (signUpError) {
+      setLoading(false);
+      const msg = signUpError.message.includes("already registered")
+        ? "Questa email è già registrata. Prova ad accedere."
+        : signUpError.message;
+      toast({ title: "Errore nella registrazione", description: msg, variant: "destructive" });
+      return;
+    }
+
+    // 2. Update profile with all form data
+    if (signUpData.user) {
+      const { error: profileError } = await supabase.from("profiles").update({
+        username: form.username,
+        nome: form.nome,
+        cognome: form.cognome,
+        data_nascita: form.dataNascita || null,
+        sesso: form.sesso || null,
+        telefono: form.telefono,
+        quartiere: form.quartiere,
+        citta: form.citta,
+        indirizzo: form.indirizzo,
+        civico: form.civico,
+        cap: form.cap,
+        tipo_account: form.tipoAccount || "privato",
+        profilo_pubblico: form.profiloPubblico,
+        mostra_email: form.mostraEmail,
+        mostra_telefono: form.mostraTelefono,
+        notifiche_email: form.notificheEmail,
+        notifiche_push: form.notifichePush,
+        newsletter: form.newsletter,
+      }).eq("user_id", signUpData.user.id);
+
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+      }
+    }
+
+    setLoading(false);
+    setRegistrationComplete(true);
+  };
+
   const stepTitles = [
     "Credenziali di accesso",
     "Informazioni personali",
@@ -188,6 +256,34 @@ const Register = () => {
     "Tipo di account",
     "Termini e preferenze",
   ];
+
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12 px-4 flex items-center justify-center min-h-screen">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md text-center"
+          >
+            <div className="bg-card rounded-xl p-8 shadow-card border">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="font-heading font-extrabold text-xl text-foreground mb-2">Registrazione completata!</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Ti abbiamo inviato un'email di conferma. Clicca sul link nell'email per attivare il tuo account e poter accedere.
+              </p>
+              <Link to="/login">
+                <Button variant="hero" className="w-full">Vai al Login</Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -522,10 +618,11 @@ const Register = () => {
               <Button
                 variant="hero"
                 className="gap-2"
-                disabled={!form.termini || !form.privacy}
-                onClick={() => alert("Registrazione completata! (Backend necessario per funzionalità completa)")}
+                disabled={!form.termini || !form.privacy || loading}
+                onClick={handleRegister}
               >
-                Completa Registrazione <Check className="w-4 h-4" />
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {loading ? "Registrazione..." : "Completa Registrazione"} {!loading && <Check className="w-4 h-4" />}
               </Button>
             )}
           </div>

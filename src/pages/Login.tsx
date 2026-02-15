@@ -4,18 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Eye, EyeOff } from "lucide-react";
+import { Heart, Eye, EyeOff, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder - navigate to dashboard
+    if (!email || !password) {
+      toast({ title: "Compila tutti i campi", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+
+    if (error) {
+      const msg = error.message === "Invalid login credentials"
+        ? "Email o password non corretti"
+        : error.message === "Email not confirmed"
+        ? "Devi confermare la tua email prima di accedere. Controlla la tua casella di posta."
+        : error.message;
+      toast({ title: "Errore di accesso", description: msg, variant: "destructive" });
+      return;
+    }
     navigate("/dashboard");
   };
 
@@ -59,7 +79,10 @@ const Login = () => {
             <div className="text-right">
               <a href="#" className="text-sm text-primary hover:underline">Password dimenticata?</a>
             </div>
-            <Button variant="hero" type="submit" className="w-full">Accedi</Button>
+            <Button variant="hero" type="submit" className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading ? "Accesso in corso..." : "Accedi"}
+            </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
