@@ -626,37 +626,44 @@ const Register = () => {
                       aria-label="Carica foto profilo"
                       onChange={handleFotoProfiloChange}
                     />
-                    {form.fotoProfilo && fotoProfiloPreviewUrl ? (
-                      <div className="mt-1 relative rounded-xl overflow-hidden border-2 border-border bg-muted/30">
-                        <img
-                          src={fotoProfiloPreviewUrl}
-                          alt="Anteprima foto profilo"
-                          className="w-full h-48 sm:h-56 object-cover object-center"
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-md hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={removeFotoProfilo}
-                          aria-label="Rimuovi foto"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                        <p className="absolute bottom-2 left-2 right-2 text-xs text-white bg-black/60 rounded px-2 py-1 truncate">
-                          {form.fotoProfilo.name}
-                        </p>
-                      </div>
-                    ) : (
-                      <label
-                        htmlFor="foto-profilo"
-                        className="mt-1 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-xl p-6 min-h-[140px] cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2"
-                      >
-                        <ImagePlus className="w-10 h-10 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground text-center">Clicca o trascina per caricare</span>
-                        <span className="text-xs text-muted-foreground">JPG, PNG, WebP</span>
-                      </label>
-                    )}
+                    <div className="mt-1 flex flex-col sm:flex-row items-center gap-4">
+                      {form.fotoProfilo && fotoProfiloPreviewUrl ? (
+                        <>
+                          <div className="w-[150px] h-[150px] rounded-full overflow-hidden border-2 border-border bg-muted/30 shadow-sm shrink-0 flex items-center justify-center">
+                            <img
+                              src={fotoProfiloPreviewUrl}
+                              alt="Anteprima foto profilo"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <p className="text-sm text-muted-foreground truncate max-w-[200px]">{form.fotoProfilo.name}</p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={removeFotoProfilo}
+                              aria-label="Rimuovi foto"
+                            >
+                              <X className="w-4 h-4" />
+                              Rimuovi
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <label
+                            htmlFor="foto-profilo"
+                            className="w-[150px] h-[150px] rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted/50 shadow-sm flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-primary/50 hover:bg-muted transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 shrink-0"
+                          >
+                            <User className="w-10 h-10 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground text-center px-2">Nessuna foto</span>
+                          </label>
+                          <span className="text-sm text-muted-foreground">Clicca per caricare · JPG, PNG, WebP</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
