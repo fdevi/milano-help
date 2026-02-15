@@ -10,7 +10,7 @@ const Navbar = () => {
   const isHome = location.pathname === "/";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b">
+    <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur-lg border-b">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center">
