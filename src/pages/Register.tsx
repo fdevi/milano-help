@@ -14,6 +14,38 @@ import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Photon (primary) search result for address autocomplete
+interface PhotonFeature {
+  type: "Feature";
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    name?: string;
+    street?: string;
+    housenumber?: string;
+    city?: string;
+    postcode?: string;
+    district?: string;
+    country?: string;
+  };
+}
+
+// Nominatim (fallback) search result
+interface NominatimSearchResult {
+  place_id: number;
+  display_name: string;
+  address?: {
+    road?: string;
+    house_number?: string;
+    quarter?: string;
+    neighbourhood?: string;
+    suburb?: string;
+    city?: string;
+    postcode?: string;
+  };
+}
+
+type AddressSuggestion = { type: "photon"; data: PhotonFeature } | { type: "nominatim"; data: NominatimSearchResult };
+
 // Mock quartieri di Milano
 const QUARTIERI_MILANO = [
   { nome: "Navigli", municipio: 6 }, { nome: "Brera", municipio: 1 }, { nome: "Isola", municipio: 9 },
@@ -65,11 +97,16 @@ const Register = () => {
   const [step3Attempted, setStep3Attempted] = useState(false);
   const [step4Attempted, setStep4Attempted] = useState(false);
   const [mapCoords, setMapCoords] = useState<[number, number]>([45.4642, 9.1900]);
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [addressSearchLoading, setAddressSearchLoading] = useState(false);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
   const quartiereRef = useRef<HTMLDivElement>(null);
+  const indirizzoRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addressSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reverse geocoding helper
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
@@ -155,6 +192,98 @@ const Register = () => {
     updateForm("quartiere", nome);
     setShowSuggestions(false);
   };
+
+  // Address autocomplete: Photon (primary) con fallback Nominatim — debounce 200ms, ricerca da 2 caratteri
+  useEffect(() => {
+    const query = form.indirizzo.trim();
+    if (addressSearchTimeoutRef.current) {
+      clearTimeout(addressSearchTimeoutRef.current);
+      addressSearchTimeoutRef.current = null;
+    }
+    if (query.length < 2) {
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+      return;
+    }
+    addressSearchTimeoutRef.current = setTimeout(() => {
+      setAddressSearchLoading(true);
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&osm_tag=place:house,street&lat=45.4642&lon=9.1900&zoom=12&lang=it`;
+      fetch(photonUrl)
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Photon error"))))
+        .then((data: { features?: PhotonFeature[] }) => {
+          const features = data?.features ?? [];
+          if (features.length > 0) {
+            setAddressSuggestions(features.slice(0, 5).map((f) => ({ type: "photon" as const, data: f })));
+            return;
+          }
+          throw new Error("No Photon results");
+        })
+        .catch(() => {
+          const params = new URLSearchParams({
+            format: "json",
+            addressdetails: "1",
+            limit: "5",
+            q: `${query}, Milano, Italia`,
+          });
+          return fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+            headers: { "Accept-Language": "it", "User-Agent": "MilanoHelp-Register/1.0" },
+          })
+            .then((res) => res.json())
+            .then((data: NominatimSearchResult[]) => {
+              const filtered = data.filter(
+                (item) => item.address?.city === "Milano" || item.display_name.toLowerCase().includes("milano")
+              );
+              setAddressSuggestions(filtered.slice(0, 5).map((item) => ({ type: "nominatim" as const, data: item })));
+            });
+        })
+        .finally(() => setAddressSearchLoading(false));
+    }, 200);
+    return () => {
+      if (addressSearchTimeoutRef.current) clearTimeout(addressSearchTimeoutRef.current);
+    };
+  }, [form.indirizzo]);
+
+  // Click outside to close address dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showAddressSuggestions && indirizzoRef.current && !indirizzoRef.current.contains(e.target as Node)) {
+        setShowAddressSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAddressSuggestions]);
+
+  const selectAddress = useCallback((item: AddressSuggestion) => {
+    if (item.type === "photon") {
+      const p = item.data.properties;
+      const indirizzoDisplay = (p.name ?? [p.street, p.housenumber].filter(Boolean).join(" ")) || "";
+      updateForm("indirizzo", indirizzoDisplay);
+      if (p.housenumber) updateForm("civico", p.housenumber);
+      if (p.postcode) updateForm("cap", p.postcode);
+      if (p.district) {
+        setQuartiereQuery(p.district);
+        updateForm("quartiere", p.district);
+      }
+      if (p.city) updateForm("citta", p.city);
+    } else {
+      const n = item.data;
+      updateForm("indirizzo", n.display_name);
+      const addr = n.address;
+      if (addr) {
+        if (addr.house_number) updateForm("civico", addr.house_number);
+        if (addr.postcode) updateForm("cap", addr.postcode);
+        const quartiere = addr.quarter || addr.neighbourhood || addr.suburb || "";
+        if (quartiere) {
+          setQuartiereQuery(quartiere);
+          updateForm("quartiere", quartiere);
+        }
+        if (addr.city) updateForm("citta", addr.city);
+      }
+    }
+    setShowAddressSuggestions(false);
+    setAddressSuggestions([]);
+  }, []);
 
   const handleGeolocate = useCallback(() => {
     if (!navigator.geolocation) {
@@ -531,11 +660,51 @@ const Register = () => {
                     )}
                   </div>
 
-                  <div className="w-full">
-                    <Label htmlFor="indirizzo">Indirizzo * {reverseLoading && <Loader2 className="inline w-3 h-3 animate-spin ml-1" />}</Label>
-                    <Input id="indirizzo" placeholder="Via/Piazza..." value={form.indirizzo} onChange={e => updateForm("indirizzo", e.target.value)} />
+                  <div className="w-full relative" ref={indirizzoRef}>
+                    <Label htmlFor="indirizzo">
+                      Indirizzo *{" "}
+                      {reverseLoading && <Loader2 className="inline w-3 h-3 animate-spin ml-1" />}
+                      {addressSearchLoading && <Loader2 className="inline w-3 h-3 animate-spin ml-1" />}
+                    </Label>
+                    <Input
+                      id="indirizzo"
+                      placeholder="Via/Piazza... (cerca indirizzi a Milano)"
+                      value={form.indirizzo}
+                      onChange={(e) => {
+                        updateForm("indirizzo", e.target.value);
+                        setShowAddressSuggestions(true);
+                      }}
+                      onFocus={() => form.indirizzo.trim().length >= 2 && addressSuggestions.length > 0 && setShowAddressSuggestions(true)}
+                      autoComplete="off"
+                    />
+                    {showAddressSuggestions && addressSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {addressSuggestions.map((item, idx) => {
+                          const displayName = item.type === "photon"
+                            ? ((item.data.properties.name ?? [item.data.properties.street, item.data.properties.housenumber].filter(Boolean).join(" ")) || "")
+                            : item.data.display_name;
+                          const sub = item.type === "photon"
+                            ? item.data.properties.district
+                            : item.data.address?.quarter || item.data.address?.neighbourhood || item.data.address?.suburb;
+                          return (
+                            <button
+                              key={item.type === "photon" ? `photon-${idx}-${item.data.properties.name ?? ""}` : `nominatim-${item.data.place_id}`}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors border-b border-border last:border-b-0"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                selectAddress(item);
+                              }}
+                            >
+                              <span className="text-foreground block">{displayName}</span>
+                              {sub ? <span className="text-xs text-muted-foreground">{sub}</span> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     {step3Attempted && !form.indirizzo.trim() && (
-                      <p className="text-xs text-destructive mt-1">L'indirizzo è obbligatorio</p>
+                      <p className="text-xs text-destructive mt-1">L&apos;indirizzo è obbligatorio</p>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
