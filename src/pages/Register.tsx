@@ -43,7 +43,7 @@ const Register = () => {
   const [form, setForm] = useState({
     email: "", username: "", password: "", confirmPassword: "",
     nome: "", cognome: "", dataNascita: "", sesso: "", telefono: "",
-    quartiere: "", indirizzo: "", civico: "", cap: "",
+    quartiere: "", citta: "", indirizzo: "", civico: "", cap: "",
     tipoAccount: "",
     termini: false, privacy: false,
     notificheEmail: true, notifichePush: true, newsletter: false,
@@ -83,6 +83,8 @@ const Register = () => {
         updateForm("quartiere", "");
         setGeoError("Quartiere non rilevato, inserisci manualmente.");
       }
+      const citta = addr.city || addr.town || addr.village || addr.municipality || "";
+      updateForm("citta", citta);
       updateForm("indirizzo", addr.road || "");
       updateForm("civico", addr.house_number || "");
       updateForm("cap", addr.postcode || "");
@@ -378,22 +380,33 @@ const Register = () => {
                     )}
                   </div>
 
-                  <div>
+                  <div className="w-full">
+                    <Label htmlFor="citta">Città</Label>
+                    <Input
+                      id="citta"
+                      placeholder="Es. Milano"
+                      value={form.citta}
+                      onChange={e => updateForm("citta", e.target.value)}
+                      autoComplete="address-level2"
+                    />
+                  </div>
+
+                  <div className="w-full">
                     <Label htmlFor="indirizzo">Indirizzo * {reverseLoading && <Loader2 className="inline w-3 h-3 animate-spin ml-1" />}</Label>
                     <Input id="indirizzo" placeholder="Via/Piazza..." value={form.indirizzo} onChange={e => updateForm("indirizzo", e.target.value)} />
                     {step3Attempted && !form.indirizzo.trim() && (
                       <p className="text-xs text-destructive mt-1">L'indirizzo è obbligatorio</p>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="w-full">
                       <Label htmlFor="civico">Civico *</Label>
                       <Input id="civico" placeholder="N°" value={form.civico} onChange={e => updateForm("civico", e.target.value)} />
                       {step3Attempted && !form.civico.trim() && (
                         <p className="text-xs text-destructive mt-1">Il civico è obbligatorio</p>
                       )}
                     </div>
-                    <div>
+                    <div className="w-full">
                       <Label htmlFor="cap">CAP *</Label>
                       <Input id="cap" placeholder="201xx" maxLength={5} value={form.cap} onChange={e => updateForm("cap", e.target.value.replace(/\D/g, "").slice(0, 5))} />
                       {step3Attempted && form.cap && !capValid && (
