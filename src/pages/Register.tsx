@@ -60,7 +60,10 @@ const Register = () => {
   const [geoError, setGeoError] = useState("");
   const [quartiereQuery, setQuartiereQuery] = useState(form.quartiere);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [step1Attempted, setStep1Attempted] = useState(false);
+  const [step2Attempted, setStep2Attempted] = useState(false);
   const [step3Attempted, setStep3Attempted] = useState(false);
+  const [step4Attempted, setStep4Attempted] = useState(false);
   const [mapCoords, setMapCoords] = useState<[number, number]>([45.4642, 9.1900]);
   const quartiereRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -128,8 +131,14 @@ const Register = () => {
 
   const updateForm = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
+  const passwordValid = form.password.length >= 8
+    && /[A-Z]/.test(form.password)
+    && /[!?%$&@#]/.test(form.password);
+  const step1Valid = form.email.trim() !== "" && form.username.trim() !== "" && passwordValid && form.confirmPassword === form.password && form.confirmPassword.trim() !== "";
+  const step2Valid = form.nome.trim() !== "" && form.cognome.trim() !== "" && form.sesso !== "" && form.telefono.trim() !== "";
   const capValid = /^201\d{2}$/.test(form.cap);
-  const step3Valid = form.quartiere.trim() !== "" && form.indirizzo.trim() !== "" && form.civico.trim() !== "" && capValid;
+  const step3Valid = form.quartiere.trim() !== "" && form.citta.trim() !== "" && form.indirizzo.trim() !== "" && form.civico.trim() !== "" && capValid;
+  const step4Valid = ["privato", "professionista", "negoziante"].includes(form.tipoAccount);
 
   const filteredQuartieri = quartiereQuery.trim().length > 0
     ? QUARTIERI_MILANO.filter(q => q.nome.toLowerCase().includes(quartiereQuery.toLowerCase()) || `${q.nome} (Municipio ${q.municipio})`.toLowerCase().includes(quartiereQuery.toLowerCase())).slice(0, 6)
@@ -174,17 +183,25 @@ const Register = () => {
   }, [reverseGeocode]);
 
   const next = () => {
+    if (step === 1) {
+      setStep1Attempted(true);
+      if (!step1Valid) return;
+    }
+    if (step === 2) {
+      setStep2Attempted(true);
+      if (!step2Valid) return;
+    }
     if (step === 3) {
       setStep3Attempted(true);
       if (!step3Valid) return;
     }
+    if (step === 4) {
+      setStep4Attempted(true);
+      if (!step4Valid) return;
+    }
     if (step < TOTAL_STEPS) setStep(step + 1);
   };
   const prev = () => step > 1 && setStep(step - 1);
-
-  const passwordValid = form.password.length >= 8
-    && /[A-Z]/.test(form.password)
-    && /[!?%$&@#]/.test(form.password);
 
   const handleRegister = async () => {
     if (!form.termini || !form.privacy) return;
@@ -324,10 +341,16 @@ const Register = () => {
                   <div>
                     <Label htmlFor="email">Email *</Label>
                     <Input id="email" type="email" placeholder="la-tua@email.com" value={form.email} onChange={e => updateForm("email", e.target.value)} />
+                    {step1Attempted && !form.email.trim() && (
+                      <p className="text-xs text-destructive mt-1">L&apos;email è obbligatoria</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="username">Username *</Label>
                     <Input id="username" placeholder="Scegli un username" value={form.username} onChange={e => updateForm("username", e.target.value)} />
+                    {step1Attempted && !form.username.trim() && (
+                      <p className="text-xs text-destructive mt-1">Lo username è obbligatorio</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="password">Password *</Label>
@@ -374,20 +397,32 @@ const Register = () => {
                     {form.confirmPassword && form.confirmPassword !== form.password && (
                       <p className="text-xs text-destructive mt-1">Le password non corrispondono</p>
                     )}
+                    {step1Attempted && form.confirmPassword.trim() === "" && (
+                      <p className="text-xs text-destructive mt-1">Conferma la password</p>
+                    )}
+                    {step1Attempted && form.password.trim() !== "" && !passwordValid && (
+                      <p className="text-xs text-destructive mt-1">La password non rispetta i requisiti</p>
+                    )}
                   </div>
                 </div>
               )}
 
               {step === 2 && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="nome">Nome *</Label>
                       <Input id="nome" placeholder="Il tuo nome" value={form.nome} onChange={e => updateForm("nome", e.target.value)} />
+                      {step2Attempted && !form.nome.trim() && (
+                        <p className="text-xs text-destructive mt-1">Il nome è obbligatorio</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="cognome">Cognome *</Label>
                       <Input id="cognome" placeholder="Il tuo cognome" value={form.cognome} onChange={e => updateForm("cognome", e.target.value)} />
+                      {step2Attempted && !form.cognome.trim() && (
+                        <p className="text-xs text-destructive mt-1">Il cognome è obbligatorio</p>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -405,10 +440,16 @@ const Register = () => {
                         <SelectItem value="non-specificato">Preferisco non specificare</SelectItem>
                       </SelectContent>
                     </Select>
+                    {step2Attempted && !form.sesso && (
+                      <p className="text-xs text-destructive mt-1">Il sesso è obbligatorio</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="telefono">Telefono *</Label>
                     <Input id="telefono" type="tel" placeholder="+39 123 456 7890" value={form.telefono} onChange={e => updateForm("telefono", e.target.value)} />
+                    {step2Attempted && !form.telefono.trim() && (
+                      <p className="text-xs text-destructive mt-1">Il telefono è obbligatorio</p>
+                    )}
                   </div>
                   <div>
                     <Label>Foto profilo (opzionale)</Label>
@@ -477,7 +518,7 @@ const Register = () => {
                   </div>
 
                   <div className="w-full">
-                    <Label htmlFor="citta">Città</Label>
+                    <Label htmlFor="citta">Città *</Label>
                     <Input
                       id="citta"
                       placeholder="Es. Milano"
@@ -485,6 +526,9 @@ const Register = () => {
                       onChange={e => updateForm("citta", e.target.value)}
                       autoComplete="address-level2"
                     />
+                    {step3Attempted && !form.citta.trim() && (
+                      <p className="text-xs text-destructive mt-1">La città è obbligatoria</p>
+                    )}
                   </div>
 
                   <div className="w-full">
@@ -518,7 +562,10 @@ const Register = () => {
 
               {step === 4 && (
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground mb-2">Seleziona il tipo di account:</p>
+                  <p className="text-sm text-muted-foreground mb-2">Seleziona il tipo di account: *</p>
+                  {step4Attempted && !form.tipoAccount && (
+                    <p className="text-xs text-destructive">Seleziona un tipo di account per continuare.</p>
+                  )}
                   {[
                     { value: "privato", label: "Privato", desc: "Utente privato del quartiere", icon: User },
                     { value: "professionista", label: "Professionista", desc: "Offri servizi professionali", icon: Shield },
