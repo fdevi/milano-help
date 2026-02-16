@@ -7,10 +7,12 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
+  console.log("Navbar montata");
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { user } = useAuth();
+  console.log("Utente:", user);
   const { isAdmin, loading: adminLoading } = useAdminCheck();
 
   return (

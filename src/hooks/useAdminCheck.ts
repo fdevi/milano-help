@@ -20,6 +20,7 @@ export const useAdminCheck = () => {
         _user_id: user.id,
         _role: "admin",
       });
+      console.log("Ruolo:", data, "Errore:", error);
       setIsAdmin(!!data && !error);
       setLoading(false);
     };
