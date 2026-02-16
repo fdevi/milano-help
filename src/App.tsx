@@ -5,12 +5,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoute from "@/components/AdminRoute";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUtenti from "./pages/admin/AdminUtenti";
+import AdminCategorie from "./pages/admin/AdminCategorie";
+import AdminServizi from "./pages/admin/AdminServizi";
+import AdminPrenotazioni from "./pages/admin/AdminPrenotazioni";
+import AdminLog from "./pages/admin/AdminLog";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +35,12 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/utenti" element={<AdminRoute><AdminUtenti /></AdminRoute>} />
+            <Route path="/admin/categorie" element={<AdminRoute><AdminCategorie /></AdminRoute>} />
+            <Route path="/admin/servizi" element={<AdminRoute><AdminServizi /></AdminRoute>} />
+            <Route path="/admin/prenotazioni" element={<AdminRoute><AdminPrenotazioni /></AdminRoute>} />
+            <Route path="/admin/log" element={<AdminRoute><AdminLog /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
