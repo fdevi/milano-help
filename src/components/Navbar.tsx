@@ -10,7 +10,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
 
   return (
@@ -46,12 +46,23 @@ const Navbar = () => {
               <Lock className="w-5 h-5" />
             </Link>
           )}
-          <Link to="/registrati">
-            <Button variant="hero" size="sm">Registrati</Button>
-          </Link>
-          <Link to="/login">
-            <Button variant="outline" size="sm">Accedi</Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/dashboard">
+                <Button variant="hero" size="sm">Dashboard</Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={signOut}>Esci</Button>
+            </>
+          ) : (
+            <>
+              <Link to="/registrati">
+                <Button variant="hero" size="sm">Registrati</Button>
+              </Link>
+              <Link to="/login">
+                <Button variant="outline" size="sm">Accedi</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -91,12 +102,23 @@ const Navbar = () => {
                   </Button>
                 </Link>
               )}
-              <Link to="/registrati" onClick={() => setIsOpen(false)}>
-                <Button variant="hero" className="w-full">Registrati</Button>
-              </Link>
-              <Link to="/login" onClick={() => setIsOpen(false)}>
-                <Button variant="outline" className="w-full">Accedi</Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button variant="hero" className="w-full">Dashboard</Button>
+                  </Link>
+                  <Button variant="outline" className="w-full" onClick={() => { signOut(); setIsOpen(false); }}>Esci</Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/registrati" onClick={() => setIsOpen(false)}>
+                    <Button variant="hero" className="w-full">Registrati</Button>
+                  </Link>
+                  <Link to="/login" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full">Accedi</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
