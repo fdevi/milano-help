@@ -3,51 +3,45 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useAdminCheck = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("🔍 useAdminCheck - eseguito con authLoading:", authLoading, "user:", user);
-    
-    if (authLoading) {
-      console.log("⏳ useAdminCheck - authLoading in corso...");
-      return;
-    }
-    
-    if (!user) {
-      console.log("❌ useAdminCheck - nessun utente loggato");
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
-
-    console.log("✅ useAdminCheck - utente loggato, ID:", user.id);
-
-    const check = async () => {
-      console.log("🔄 useAdminCheck - chiamo RPC has_role per user:", user.id);
+    const checkAdmin = async () => {
+      console.log("🔍 useAdminCheck - checkAdmin avviato");
       
-      try {
-        const { data, error } = await supabase.rpc("has_role", {
-          _user_id: user.id,
-          _role: "admin",
-        });
-        
-        console.log("📊 useAdminCheck - Risultato RPC:", { data, error });
-        
-        setIsAdmin(!!data && !error);
-      } catch (err) {
-        console.error("💥 useAdminCheck - Errore nella chiamata RPC:", err);
+      if (!user) {
+        console.log("❌ useAdminCheck - nessun utente");
         setIsAdmin(false);
-      } finally {
         setLoading(false);
+        return;
       }
+
+      console.log("✅ useAdminCheck - utente ID:", user.id);
+
+      // Query diretta alla tabella user_roles (più affidabile della RPC)
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      console.log("📊 useAdminCheck - risultato query:", { data, error });
+
+      if (error) {
+        console.error("❌ useAdminCheck - errore:", error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(data?.role === 'admin');
+      }
+      
+      setLoading(false);
     };
-    
-    check();
-  }, [user, authLoading]);
 
-  console.log("🏁 useAdminCheck - return con isAdmin:", isAdmin, "loading:", loading);
+    checkAdmin();
+  }, [user]);
 
-  return { isAdmin, loading: loading || authLoading };
+  console.log("🏁 useAdminCheck - return:", { isAdmin, loading });
+  return { isAdmin, loading };
 };
