@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
-  console.log("🔄 Navbar - file caricato, versione con protezione e logout fix");
+  console.log("🔄 Navbar - file caricato, versione con banner fisso");
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -31,7 +31,6 @@ const Navbar = () => {
     authContext = useAuth();
   } catch (error) {
     console.log("⚠️ Navbar - AuthContext non ancora disponibile, attendo...");
-    // Renderizza una navbar minimale senza funzionalità
     return (
       <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -75,10 +74,22 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
           Milano Help
         </Link>
         
+        {/* Link principali - sempre visibili */}
+        <div className="hidden md:flex items-center gap-6">
+          <Link to="/categories" className="text-sm hover:text-primary transition-colors">
+            Categorie
+          </Link>
+          <Link to="/how-it-works" className="text-sm hover:text-primary transition-colors">
+            Come Funziona
+          </Link>
+        </div>
+        
+        {/* Azioni destra */}
         <div className="flex items-center gap-2">
           {/* Link admin - visibile solo a admin */}
           {!loading && isAdmin && (
@@ -98,7 +109,7 @@ const Navbar = () => {
             <MessageCircle className="h-5 w-5" />
           </Button>
 
-          {/* Stato utente */}
+          {/* Stato utente - visibile solo se loggato */}
           {user ? (
             <div className="flex items-center gap-2">
               <span className="text-sm hidden md:inline text-muted-foreground">
@@ -113,14 +124,14 @@ const Navbar = () => {
               </Button>
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
               <Link to="/login">
                 <Button variant="ghost" size="sm">Accedi</Button>
               </Link>
               <Link to="/register">
                 <Button size="sm">Registrati</Button>
               </Link>
-            </>
+            </div>
           )}
 
           {/* Menu mobile */}
@@ -140,14 +151,30 @@ const Navbar = () => {
             className="absolute top-16 left-0 right-0 bg-card border-b md:hidden"
           >
             <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
+              <Link to="/categories" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>
+                Categorie
+              </Link>
+              <Link to="/how-it-works" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>
+                Come Funziona
+              </Link>
               {!loading && isAdmin && (
                 <Link to="/admin" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>
                   Pannello Admin
                 </Link>
               )}
-              <Link to="/" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Home</Link>
-              <Link to="/about" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Chi siamo</Link>
-              {!user && (
+              {user ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => {
+                    setIsOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  Esci
+                </Button>
+              ) : (
                 <>
                   <Link to="/login" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Accedi</Link>
                   <Link to="/register" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Registrati</Link>
