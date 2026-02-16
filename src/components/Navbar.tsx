@@ -5,12 +5,25 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
-  console.log("🔄 Navbar - file caricato, versione con protezione");
+  console.log("🔄 Navbar - file caricato, versione con protezione e logout fix");
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  
+  // Gestione logout
+  const handleLogout = async () => {
+    try {
+      console.log("🔄 Tentativo di logout...");
+      await supabase.auth.signOut();
+      console.log("✅ Logout effettuato, redirect a home");
+      window.location.href = '/';
+    } catch (error) {
+      console.error('❌ Errore logout:', error);
+    }
+  };
   
   // Proteggiamo l'accesso al contesto
   let authContext;
@@ -91,7 +104,13 @@ const Navbar = () => {
               <span className="text-sm hidden md:inline text-muted-foreground">
                 Ciao, {user.email?.split('@')[0] || 'utente'}
               </span>
-              <Button variant="outline" size="sm">Esci</Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleLogout}
+              >
+                Esci
+              </Button>
             </div>
           ) : (
             <>
