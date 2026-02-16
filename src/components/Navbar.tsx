@@ -1,3 +1,6 @@
+console.log('🔄 Navbar - file caricato, versione con query diretta');
+const { isAdmin, loading } = useAdminCheck();
+console.log('🔄 Navbar - useAdminCheck restituito:', { isAdmin, loading });
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Heart, MessageCircle, Lock } from "lucide-react";
