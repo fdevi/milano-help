@@ -92,7 +92,7 @@ const Navbar = () => {
             {!user && (
               <>
                 <Link to="/login">Accedi</Link>
-                <Link to="/register">Registrati</Link>
+                <Link to="/registrati">Registrati</Link>
               </>
             )}
           </div>
