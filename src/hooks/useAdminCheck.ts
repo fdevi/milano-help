@@ -8,11 +8,13 @@ export const useAdminCheck = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("🔍 useAdminCheck - useEffect eseguito, user:", user);
+    
     const checkAdmin = async () => {
       console.log("🔍 useAdminCheck - checkAdmin avviato");
       
       if (!user) {
-        console.log("❌ useAdminCheck - nessun utente");
+        console.log("❌ useAdminCheck - nessun utente (ancora in caricamento?)");
         setIsAdmin(false);
         setLoading(false);
         return;
@@ -20,26 +22,36 @@ export const useAdminCheck = () => {
 
       console.log("✅ useAdminCheck - utente ID:", user.id);
 
-      // Query diretta alla tabella user_roles (più affidabile della RPC)
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      console.log("📊 useAdminCheck - risultato query:", { data, error });
+        console.log("📊 useAdminCheck - risultato query:", { data, error });
 
-      if (error) {
-        console.error("❌ useAdminCheck - errore:", error);
+        if (error) {
+          console.error("❌ useAdminCheck - errore:", error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data?.role === 'admin');
+        }
+      } catch (err) {
+        console.error("❌ useAdminCheck - eccezione:", err);
         setIsAdmin(false);
-      } else {
-        setIsAdmin(data?.role === 'admin');
       }
       
       setLoading(false);
     };
 
-    checkAdmin();
+    if (user) {
+      checkAdmin();
+    } else {
+      // Se non c'è user, aspettiamo che il contesto si carichi
+      console.log("⏳ useAdminCheck - in attesa di user...");
+      setLoading(true);
+    }
   }, [user]);
 
   console.log("🏁 useAdminCheck - return:", { isAdmin, loading });
