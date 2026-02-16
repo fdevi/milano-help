@@ -58,7 +58,7 @@ const Navbar = () => {
               <Link to="/login">
                 <Button variant="ghost" size="sm">Accedi</Button>
               </Link>
-              <Link to="/register">
+              <Link to="/registrati">
                 <Button size="sm">Registrati</Button>
               </Link>
             </>
