@@ -12,11 +12,7 @@ const Navbar = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { user } = useAuth();
-  const { isAdmin, loading } = useAdminCheck();
-
-  // Log per debug
-  console.log("Utente:", user);
-  console.log("isAdmin:", isAdmin, "loading:", loading);
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-filter">
