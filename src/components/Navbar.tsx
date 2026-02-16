@@ -12,16 +12,20 @@ const Navbar = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { user } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
+  const { isAdmin, loading } = useAdminCheck();
+
+  // Log per debug
+  console.log("Utente:", user);
+  console.log("isAdmin:", isAdmin, "loading:", loading);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-filter">
+    <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
           Milano Help
         </Link>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {/* Link admin - visibile solo a admin */}
           {!loading && isAdmin && (
             <Link to="/admin">
@@ -32,16 +36,22 @@ const Navbar = () => {
             </Link>
           )}
           
+          {/* Icone social/chat sempre visibili */}
+          <Button variant="ghost" size="icon">
+            <Heart className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon">
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+
           {/* Stato utente */}
           {user ? (
-            <>
-              <span className="text-sm hidden md:inline">
-                Ciao, {user.email}
+            <div className="flex items-center gap-2">
+              <span className="text-sm hidden md:inline text-muted-foreground">
+                Ciao, {user.email?.split('@')[0] || 'utente'}
               </span>
-              <Button variant="outline" size="sm">
-                Esci
-              </Button>
-            </>
+              <Button variant="outline" size="sm">Esci</Button>
+            </div>
           ) : (
             <>
               <Link to="/login">
@@ -52,8 +62,41 @@ const Navbar = () => {
               </Link>
             </>
           )}
+
+          {/* Menu mobile */}
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
+
+      {/* Menu mobile dropdown */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-16 left-0 right-0 bg-card border-b md:hidden"
+          >
+            <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
+              {!loading && isAdmin && (
+                <Link to="/admin" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>
+                  Pannello Admin
+                </Link>
+              )}
+              <Link to="/" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Home</Link>
+              <Link to="/about" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Chi siamo</Link>
+              {!user && (
+                <>
+                  <Link to="/login" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Accedi</Link>
+                  <Link to="/register" className="py-2 px-4 hover:bg-muted rounded-md" onClick={() => setIsOpen(false)}>Registrati</Link>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
