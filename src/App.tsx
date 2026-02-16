@@ -18,6 +18,8 @@ import AdminCategorie from "./pages/admin/AdminCategorie";
 import AdminServizi from "./pages/admin/AdminServizi";
 import AdminPrenotazioni from "./pages/admin/AdminPrenotazioni";
 import AdminLog from "./pages/admin/AdminLog";
+import Categories from "./pages/Categories";
+import HowItWorks from "./pages/HowItWorks";
 
 const queryClient = new QueryClient();
 
@@ -30,8 +32,10 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/registrati" element={<Register />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
