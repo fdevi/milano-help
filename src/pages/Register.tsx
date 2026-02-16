@@ -498,8 +498,9 @@ const Register = () => {
     setLoading(true);
 
     // 1. Sign up with Supabase Auth
+    const trimmedEmail = form.email.trim().toLowerCase();
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
+      email: trimmedEmail,
       password: form.password,
       options: {
         emailRedirectTo: window.location.origin,
