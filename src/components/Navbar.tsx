@@ -1,13 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart, MessageCircle } from "lucide-react";
+import { Menu, X, Heart, MessageCircle, Lock } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur-lg border-b">
@@ -37,6 +41,11 @@ const Navbar = () => {
             <MessageCircle className="w-5 h-5" />
             <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
           </Link>
+          {user && isAdmin && !adminLoading && (
+            <Link to="/admin" className="relative p-2 text-muted-foreground hover:text-foreground transition-colors" title="Admin Panel">
+              <Lock className="w-5 h-5" />
+            </Link>
+          )}
           <Link to="/registrati">
             <Button variant="hero" size="sm">Registrati</Button>
           </Link>
@@ -75,6 +84,13 @@ const Navbar = () => {
                   <MessageCircle className="w-4 h-4" /> Chat
                 </Button>
               </Link>
+              {user && isAdmin && !adminLoading && (
+                <Link to="/admin" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Lock className="w-4 h-4" /> Admin Panel
+                  </Button>
+                </Link>
+              )}
               <Link to="/registrati" onClick={() => setIsOpen(false)}>
                 <Button variant="hero" className="w-full">Registrati</Button>
               </Link>
