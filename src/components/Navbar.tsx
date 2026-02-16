@@ -1,6 +1,3 @@
-console.log('🔄 Navbar - file caricato, versione con query diretta');
-const { isAdmin, loading } = useAdminCheck();
-console.log('🔄 Navbar - useAdminCheck restituito:', { isAdmin, loading });
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Heart, MessageCircle, Lock } from "lucide-react";
@@ -10,16 +7,57 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-  console.log("Navbar montata");
+  console.log("🔄 Navbar - file caricato, versione con protezione");
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
-  const { user } = useAuth();
-  const { isAdmin, loading } = useAdminCheck();
+  
+  // Proteggiamo l'accesso al contesto
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.log("⚠️ Navbar - AuthContext non ancora disponibile, attendo...");
+    // Renderizza una navbar minimale senza funzionalità
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
+            Milano Help
+          </Link>
+          <div className="text-sm text-muted-foreground">Caricamento...</div>
+        </div>
+      </nav>
+    );
+  }
+  
+  const { user } = authContext;
+  
+  let adminCheck = { isAdmin: false, loading: true };
+  try {
+    adminCheck = useAdminCheck();
+  } catch (error) {
+    console.log("⚠️ Navbar - useAdminCheck non ancora disponibile");
+  }
+  
+  const { isAdmin, loading } = adminCheck;
 
-  // Log per debug
-  console.log("Utente:", user);
-  console.log("isAdmin:", isAdmin, "loading:", loading);
+  console.log("🔄 Navbar - user:", user?.email);
+  console.log("🔄 Navbar - isAdmin:", isAdmin, "loading:", loading);
+
+  // Se ancora in caricamento, mostra una navbar minimale
+  if (loading) {
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
+            Milano Help
+          </Link>
+          <div className="text-sm text-muted-foreground">Caricamento...</div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
