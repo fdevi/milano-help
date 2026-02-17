@@ -38,20 +38,23 @@ const AdminCategorie = () => {
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: "Inserisci un nome", variant: "destructive" }); return; }
     if (editing) {
-      await supabase.from("categorie").update({ nome: form.nome, icona: form.icona, ordine: form.ordine }).eq("id", editing.id);
+      const { error } = await supabase.from("categorie").update({ nome: form.nome, icona: form.icona, ordine: form.ordine }).eq("id", editing.id);
+      if (error) { toast({ title: "Errore aggiornamento", description: error.message, variant: "destructive" }); return; }
       toast({ title: "Categoria aggiornata" });
     } else {
-      await supabase.from("categorie").insert({ nome: form.nome, icona: form.icona, ordine: form.ordine });
+      const { error } = await supabase.from("categorie").insert({ nome: form.nome, icona: form.icona, ordine: form.ordine });
+      if (error) { toast({ title: "Errore creazione", description: error.message, variant: "destructive" }); return; }
       toast({ title: "Categoria creata" });
     }
     setOpen(false);
-    fetch();
+    await fetch();
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("categorie").delete().eq("id", id);
+    const { error } = await supabase.from("categorie").delete().eq("id", id);
+    if (error) { toast({ title: "Errore eliminazione", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Categoria eliminata" });
-    fetch();
+    await fetch();
   };
 
   return (
