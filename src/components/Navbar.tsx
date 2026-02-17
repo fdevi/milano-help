@@ -51,6 +51,9 @@ const Navbar = () => {
               <Link to="/dashboard">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
+              <Link to="/miei-annunci">
+                <Button variant="ghost" size="sm">I miei annunci</Button>
+              </Link>
               {isAdmin && (
                 <Link to="/admin">
                   <Button variant="outline" size="sm" className="text-primary border-primary">
@@ -104,6 +107,7 @@ const Navbar = () => {
             {user && (
               <>
                 <Link to="/dashboard">Dashboard</Link>
+                <Link to="/miei-annunci">I miei annunci</Link>
                 {isAdmin && <Link to="/admin" style={{ color: '#10b981', fontWeight: 'bold' }}>Admin Panel</Link>}
               </>
             )}
