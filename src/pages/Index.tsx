@@ -7,9 +7,9 @@ import CategoryCard, { CATEGORY_COLORS } from "@/components/CategoryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import Footer from "@/components/Footer";
 import heroBg from "@/assets/hero-bg.jpg";
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 const steps = [
   { icon: Users, title: "Registrati", description: "Crea il tuo profilo in pochi minuti" },
@@ -19,19 +19,20 @@ const steps = [
 
 const Index = () => {
   const { toast } = useToast();
-  const [categorie, setCategorie] = useState<{ id: string; icona: string; label: string; nome: string }[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase
-      .from("categorie_annunci")
-      .select("id, icona, label, nome, ordine")
-      .order("ordine")
-      .then(({ data }) => {
-        setCategorie(data || []);
-        setLoading(false);
-      });
-  }, []);
+  const { data: categorie = [], isLoading: loading } = useQuery({
+    queryKey: ["categorie_annunci_home"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categorie_annunci")
+        .select("id, icona, label, nome, ordine")
+        .order("ordine");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
 
   const handleCategoryClick = (cat: { nome: string; label: string }) => {
     toast({ title: "Prossimamente", description: `La sezione "${cat.label}" sarà disponibile a breve!` });
