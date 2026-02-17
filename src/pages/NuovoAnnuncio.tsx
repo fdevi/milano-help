@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 
 const MAX_IMAGES = 5;
@@ -35,6 +36,8 @@ const NuovoAnnuncio = () => {
   const [descrizione, setDescrizione] = useState("");
   const [prezzo, setPrezzo] = useState("");
   const [quartiere, setQuartiere] = useState("");
+  const [mostraEmail, setMostraEmail] = useState(false);
+  const [mostraTelefono, setMostraTelefono] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +113,8 @@ const NuovoAnnuncio = () => {
         quartiere: quartiere || null,
         stato: "in_moderazione",
         prezzo: richiedePrezzo && prezzo ? parseFloat(prezzo) : null,
+        mostra_email: mostraEmail,
+        mostra_telefono: mostraTelefono,
       };
 
       const { data: annuncio, error } = await supabase
@@ -230,6 +235,19 @@ const NuovoAnnuncio = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Contatti */}
+              <div className="space-y-3">
+                <Label>Contatti visibili nell'annuncio</Label>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="mostra_email" checked={mostraEmail} onCheckedChange={(v) => setMostraEmail(!!v)} />
+                  <Label htmlFor="mostra_email" className="font-normal cursor-pointer">Mostra la mia email</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="mostra_telefono" checked={mostraTelefono} onCheckedChange={(v) => setMostraTelefono(!!v)} />
+                  <Label htmlFor="mostra_telefono" className="font-normal cursor-pointer">Mostra il mio telefono</Label>
+                </div>
               </div>
 
               {/* Upload foto */}
