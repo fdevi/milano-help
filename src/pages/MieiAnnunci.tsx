@@ -50,9 +50,11 @@ const MieiAnnunci = () => {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-heading font-extrabold text-2xl">I miei annunci</h1>
-          <Button className="gap-2" disabled>
-            <Plus className="w-4 h-4" /> Nuovo annuncio
-          </Button>
+          <Link to="/nuovo-annuncio">
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" /> Nuovo annuncio
+            </Button>
+          </Link>
         </div>
 
         {annunci.length === 0 ? (
