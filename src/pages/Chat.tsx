@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import ChatList from "@/components/chat/ChatList";
 import ChatDetail from "@/components/chat/ChatDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-// Mock data
-const MOCK_USER_ID = "me-123";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { MessageCircle, Users } from "lucide-react";
 
 export interface MockConversation {
   id: string;
@@ -24,77 +29,174 @@ export interface MockMessage {
   letto: boolean;
 }
 
-const MOCK_CONVERSATIONS: MockConversation[] = [
-  {
-    id: "conv-1",
-    otherUser: { id: "user-1", nome: "Marco", cognome: "Rossi", quartiere: "Navigli" },
-    ultimoMessaggio: "Ciao, sei disponibile per domani pomeriggio?",
-    ultimoAggiornamento: new Date(Date.now() - 5 * 60000).toISOString(),
-    nonLetti: 2,
-  },
-  {
-    id: "conv-2",
-    otherUser: { id: "user-2", nome: "Giulia", cognome: "Bianchi", quartiere: "Isola" },
-    ultimoMessaggio: "Grazie mille per l'aiuto!",
-    ultimoAggiornamento: new Date(Date.now() - 3600000).toISOString(),
-    nonLetti: 0,
-  },
-  {
-    id: "conv-3",
-    otherUser: { id: "user-3", nome: "Luca", cognome: "Verdi", quartiere: "Brera" },
-    ultimoMessaggio: "A che ora ci vediamo?",
-    ultimoAggiornamento: new Date(Date.now() - 86400000).toISOString(),
-    nonLetti: 1,
-  },
-];
-
-const MOCK_MESSAGES: Record<string, MockMessage[]> = {
-  "conv-1": [
-    { id: "m1", mittenteId: "user-1", testo: "Ciao! Ho visto il tuo annuncio per le ripetizioni di matematica", createdAt: new Date(Date.now() - 3600000).toISOString(), letto: true },
-    { id: "m2", mittenteId: MOCK_USER_ID, testo: "Ciao Marco! Sì, sono disponibile. Che argomenti ti servono?", createdAt: new Date(Date.now() - 3500000).toISOString(), letto: true },
-    { id: "m3", mittenteId: "user-1", testo: "Analisi 1, integrali e derivate. Sono al primo anno di ingegneria", createdAt: new Date(Date.now() - 3000000).toISOString(), letto: true },
-    { id: "m4", mittenteId: MOCK_USER_ID, testo: "Perfetto, posso aiutarti. Di solito faccio lezioni da 1.5h", createdAt: new Date(Date.now() - 600000).toISOString(), letto: true },
-    { id: "m5", mittenteId: "user-1", testo: "Ottimo! Quanto costa una lezione?", createdAt: new Date(Date.now() - 360000).toISOString(), letto: false },
-    { id: "m6", mittenteId: "user-1", testo: "Ciao, sei disponibile per domani pomeriggio?", createdAt: new Date(Date.now() - 300000).toISOString(), letto: false },
-  ],
-  "conv-2": [
-    { id: "m7", mittenteId: MOCK_USER_ID, testo: "Ciao Giulia, come è andato il trasloco?", createdAt: new Date(Date.now() - 7200000).toISOString(), letto: true },
-    { id: "m8", mittenteId: "user-2", testo: "Tutto bene, grazie! I mobili sono arrivati intatti", createdAt: new Date(Date.now() - 5400000).toISOString(), letto: true },
-    { id: "m9", mittenteId: "user-2", testo: "Grazie mille per l'aiuto!", createdAt: new Date(Date.now() - 3600000).toISOString(), letto: true },
-  ],
-  "conv-3": [
-    { id: "m10", mittenteId: "user-3", testo: "Ciao, possiamo organizzare per la spesa condivisa?", createdAt: new Date(Date.now() - 172800000).toISOString(), letto: true },
-    { id: "m11", mittenteId: MOCK_USER_ID, testo: "Certo! Facciamo sabato mattina al mercato di Brera?", createdAt: new Date(Date.now() - 100000000).toISOString(), letto: true },
-    { id: "m12", mittenteId: "user-3", testo: "A che ora ci vediamo?", createdAt: new Date(Date.now() - 86400000).toISOString(), letto: false },
-  ],
-};
-
-export { MOCK_USER_ID, MOCK_CONVERSATIONS, MOCK_MESSAGES };
-
 const Chat = () => {
   const { id: conversationId } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState<string>("private");
 
-  const activeConversation = conversationId
-    ? MOCK_CONVERSATIONS.find((c) => c.id === conversationId)
-    : null;
+  // Fetch real conversations
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversazioni", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("conversazioni")
+        .select("*")
+        .or(`utente1_id.eq.${user.id},utente2_id.eq.${user.id}`)
+        .order("ultimo_aggiornamento", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
-  const handleSend = (text: string) => {
-    if (!conversationId) return;
-    const newMsg: MockMessage = {
-      id: `m-${Date.now()}`,
-      mittenteId: MOCK_USER_ID,
-      testo: text,
-      createdAt: new Date().toISOString(),
-      letto: false,
+  // Fetch profiles for other users in conversations
+  const otherUserIds = conversations.map((c: any) =>
+    c.utente1_id === user?.id ? c.utente2_id : c.utente1_id
+  );
+  const { data: otherProfiles = [] } = useQuery({
+    queryKey: ["chat_profiles", otherUserIds.join(",")],
+    queryFn: async () => {
+      if (otherUserIds.length === 0) return [];
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome, quartiere")
+        .in("user_id", otherUserIds);
+      return data || [];
+    },
+    enabled: otherUserIds.length > 0,
+  });
+  const profileMap = Object.fromEntries((otherProfiles as any[]).map((p) => [p.user_id, p]));
+
+  // Fetch unread counts per conversation
+  const { data: unreadCounts = {} } = useQuery({
+    queryKey: ["unread_per_conv", user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      const { data } = await supabase
+        .from("messaggi")
+        .select("conversazione_id")
+        .eq("letto", false)
+        .neq("mittente_id", user.id);
+      const counts: Record<string, number> = {};
+      (data || []).forEach((m: any) => { counts[m.conversazione_id] = (counts[m.conversazione_id] || 0) + 1; });
+      return counts;
+    },
+    enabled: !!user,
+  });
+
+  // Build conversation list for ChatList component
+  const chatConversations: MockConversation[] = conversations.map((c: any) => {
+    const otherId = c.utente1_id === user?.id ? c.utente2_id : c.utente1_id;
+    const profile = profileMap[otherId];
+    return {
+      id: c.id,
+      otherUser: {
+        id: otherId,
+        nome: profile?.nome || "Utente",
+        cognome: profile?.cognome || "",
+        quartiere: profile?.quartiere || "",
+      },
+      ultimoMessaggio: c.ultimo_messaggio || "",
+      ultimoAggiornamento: c.ultimo_aggiornamento,
+      nonLetti: (unreadCounts as any)[c.id] || 0,
     };
-    setMessages((prev) => ({
-      ...prev,
-      [conversationId]: [...(prev[conversationId] || []), newMsg],
-    }));
+  });
+
+  // Fetch messages for active conversation
+  const { data: messages = [] } = useQuery({
+    queryKey: ["messaggi", conversationId],
+    queryFn: async () => {
+      if (!conversationId) return [];
+      const { data, error } = await supabase
+        .from("messaggi")
+        .select("*")
+        .eq("conversazione_id", conversationId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!conversationId,
+  });
+
+  // Mark messages as read
+  useEffect(() => {
+    if (!conversationId || !user) return;
+    const markRead = async () => {
+      await supabase
+        .from("messaggi")
+        .update({ letto: true })
+        .eq("conversazione_id", conversationId)
+        .neq("mittente_id", user.id)
+        .eq("letto", false);
+      queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
+    };
+    markRead();
+  }, [conversationId, user, messages]);
+
+  // Realtime for messages
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("chat-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
+        queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
+        queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, conversationId]);
+
+  const mockMessages: MockMessage[] = (messages as any[]).map((m) => ({
+    id: m.id,
+    mittenteId: m.mittente_id,
+    testo: m.testo,
+    createdAt: m.created_at,
+    letto: m.letto,
+  }));
+
+  const activeConversation = conversationId ? chatConversations.find((c) => c.id === conversationId) : null;
+
+  const handleSend = async (text: string) => {
+    if (!conversationId || !user) return;
+    await supabase.from("messaggi").insert({
+      conversazione_id: conversationId,
+      mittente_id: user.id,
+      testo: text,
+    });
+    await supabase.from("conversazioni").update({
+      ultimo_messaggio: text,
+      ultimo_aggiornamento: new Date().toISOString(),
+    }).eq("id", conversationId);
+    queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
+    queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
   };
+
+  // Fetch user's groups for the groups tab
+  const { data: myGroups = [] } = useQuery({
+    queryKey: ["my_groups", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data: memberships } = await supabase
+        .from("gruppi_membri")
+        .select("gruppo_id")
+        .eq("user_id", user.id)
+        .eq("stato", "approvato");
+      if (!memberships || memberships.length === 0) return [];
+      const groupIds = memberships.map((m: any) => m.gruppo_id);
+      const { data: groups } = await supabase
+        .from("gruppi")
+        .select("*")
+        .in("id", groupIds)
+        .order("created_at", { ascending: false });
+      return groups || [];
+    },
+    enabled: !!user,
+  });
 
   const showList = !isMobile || !conversationId;
   const showDetail = !isMobile || !!conversationId;
@@ -103,14 +205,57 @@ const Chat = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="flex-1 pt-16 flex">
-        {/* Conversation list */}
+        {/* Sidebar */}
         {showList && (
           <div className={`${isMobile ? "w-full" : "w-80 lg:w-96"} border-r bg-card flex flex-col`}>
-            <ChatList
-              conversations={MOCK_CONVERSATIONS}
-              activeId={conversationId}
-              onSelect={(id) => navigate(`/chat/${id}`)}
-            />
+            <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1">
+              <TabsList className="mx-4 mt-3 w-full">
+                <TabsTrigger value="private" className="flex-1 gap-1">
+                  <MessageCircle className="w-4 h-4" /> Chat private
+                </TabsTrigger>
+                <TabsTrigger value="gruppi" className="flex-1 gap-1">
+                  <Users className="w-4 h-4" /> Gruppi
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="private" className="flex-1 flex flex-col mt-0">
+                <ChatList
+                  conversations={chatConversations}
+                  activeId={conversationId}
+                  onSelect={(id) => navigate(`/chat/${id}`)}
+                />
+              </TabsContent>
+
+              <TabsContent value="gruppi" className="flex-1 mt-0">
+                <ScrollArea className="flex-1">
+                  {(myGroups as any[]).length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                      <p className="text-sm">Nessun gruppo</p>
+                      <p className="text-xs mt-1">Esplora i gruppi disponibili</p>
+                    </div>
+                  ) : (
+                    (myGroups as any[]).map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => navigate(`/gruppo/${g.id}`)}
+                        className="w-full text-left px-4 py-3 flex items-center gap-3 border-b transition-colors hover:bg-muted/50"
+                      >
+                        <Avatar className="h-11 w-11 shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                            {g.nome.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-sm truncate block">{g.nome}</span>
+                          <p className="text-xs text-muted-foreground truncate">{g.quartiere || g.categoria || "Gruppo"}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
@@ -120,8 +265,8 @@ const Chat = () => {
             {activeConversation ? (
               <ChatDetail
                 conversation={activeConversation}
-                messages={messages[conversationId!] || []}
-                currentUserId={MOCK_USER_ID}
+                messages={mockMessages}
+                currentUserId={user?.id || ""}
                 onSend={handleSend}
                 onBack={isMobile ? () => navigate("/chat") : undefined}
               />

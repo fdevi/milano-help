@@ -1,4 +1,4 @@
-// Force rebuild - 2026-02-16
+// Force rebuild - 2026-02-17
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +29,8 @@ import MieiAnnunci from "./pages/MieiAnnunci";
 import CategoriaPage from "./pages/CategoriaPage";
 import AnnuncioPage from "./pages/AnnuncioPage";
 import NuovoAnnuncio from "./pages/NuovoAnnuncio";
+import Gruppi from "./pages/Gruppi";
+import GruppoDetail from "./pages/GruppoDetail";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,8 @@ const App = () => (
             <Route path="/categoria/:nome" element={<CategoriaPage />} />
             <Route path="/annuncio/:id" element={<AnnuncioPage />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/gruppi" element={<Gruppi />} />
+            <Route path="/gruppo/:id" element={<ProtectedRoute><GruppoDetail /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
