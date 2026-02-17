@@ -45,8 +45,11 @@ export type Database = {
           descrizione: string | null
           id: string
           immagini: string[] | null
+          mi_piace: number
           moderato_da: string | null
           moderato_il: string | null
+          mostra_email: boolean
+          mostra_telefono: boolean
           motivo_rifiuto: string | null
           prezzo: number | null
           quartiere: string | null
@@ -62,8 +65,11 @@ export type Database = {
           descrizione?: string | null
           id?: string
           immagini?: string[] | null
+          mi_piace?: number
           moderato_da?: string | null
           moderato_il?: string | null
+          mostra_email?: boolean
+          mostra_telefono?: boolean
           motivo_rifiuto?: string | null
           prezzo?: number | null
           quartiere?: string | null
@@ -79,8 +85,11 @@ export type Database = {
           descrizione?: string | null
           id?: string
           immagini?: string[] | null
+          mi_piace?: number
           moderato_da?: string | null
           moderato_il?: string | null
+          mostra_email?: boolean
+          mostra_telefono?: boolean
           motivo_rifiuto?: string | null
           prezzo?: number | null
           quartiere?: string | null
@@ -96,6 +105,32 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorie_annunci"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      annunci_mi_piace: {
+        Row: {
+          annuncio_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          annuncio_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          annuncio_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annunci_mi_piace_annuncio_id_fkey"
+            columns: ["annuncio_id"]
+            isOneToOne: false
+            referencedRelation: "annunci"
             referencedColumns: ["id"]
           },
         ]

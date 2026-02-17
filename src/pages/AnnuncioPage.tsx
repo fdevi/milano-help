@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User } from "lucide-react";
+import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ const AnnuncioPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [currentImage, setCurrentImage] = useState(0);
   const [showSegnala, setShowSegnala] = useState(false);
   const [segnalaMotivo, setSegnalaMotivo] = useState("");
@@ -44,13 +45,13 @@ const AnnuncioPage = () => {
     enabled: !!id,
   });
 
-  // Fetch author profile
+  // Fetch author profile (including contact info)
   const { data: autore } = useQuery({
     queryKey: ["profilo_autore", annuncio?.user_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, nome, cognome, avatar_url, quartiere, created_at")
+        .select("user_id, nome, cognome, avatar_url, quartiere, created_at, email, telefono")
         .eq("user_id", annuncio!.user_id)
         .single();
       if (error) throw error;
@@ -58,6 +59,35 @@ const AnnuncioPage = () => {
     },
     enabled: !!annuncio?.user_id,
   });
+
+  // Check if user liked
+  const { data: userLiked } = useQuery({
+    queryKey: ["annuncio_like", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("annunci_mi_piace")
+        .select("annuncio_id")
+        .eq("annuncio_id", id!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!id && !!user,
+  });
+
+  const toggleLike = async () => {
+    if (!user) { navigate("/login"); return; }
+    if (!annuncio) return;
+    if (userLiked) {
+      await supabase.from("annunci_mi_piace").delete().eq("annuncio_id", annuncio.id).eq("user_id", user.id);
+      await supabase.from("annunci").update({ mi_piace: Math.max(0, (annuncio.mi_piace ?? 1) - 1) } as any).eq("id", annuncio.id);
+    } else {
+      await supabase.from("annunci_mi_piace").insert({ annuncio_id: annuncio.id, user_id: user.id } as any);
+      await supabase.from("annunci").update({ mi_piace: (annuncio.mi_piace ?? 0) + 1 } as any).eq("id", annuncio.id);
+    }
+    queryClient.invalidateQueries({ queryKey: ["annuncio_like", id] });
+    queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
+  };
 
   // Fetch other ads by author
   const { data: altriAnnunci = [] } = useQuery({
@@ -278,12 +308,35 @@ const AnnuncioPage = () => {
             <div className="space-y-6">
               {/* Actions */}
               <div className="bg-card border rounded-xl p-5 space-y-3">
+                {/* Like button */}
+                <Button
+                  variant={userLiked ? "default" : "outline"}
+                  className="w-full"
+                  onClick={toggleLike}
+                >
+                  <Heart className={`w-4 h-4 mr-2 ${userLiked ? "fill-current" : ""}`} />
+                  Mi piace {(annuncio as any).mi_piace > 0 ? `(${(annuncio as any).mi_piace})` : ""}
+                </Button>
+
                 {annuncio.user_id !== user?.id && (
                   <Button className="w-full" size="lg" onClick={handleContatta}>
                     <MessageCircle className="w-4 h-4 mr-2" />
                     {user ? "Contatta" : "Accedi per contattare"}
                   </Button>
                 )}
+
+                {/* Contact info */}
+                {((annuncio as any).mostra_email && autore?.email) && (
+                  <a href={`mailto:${autore.email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <Mail className="w-4 h-4" /> {autore.email}
+                  </a>
+                )}
+                {((annuncio as any).mostra_telefono && autore?.telefono) && (
+                  <a href={`tel:${autore.telefono}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <Phone className="w-4 h-4" /> {autore.telefono}
+                  </a>
+                )}
+
                 {user && annuncio.user_id !== user?.id && (
                   <Button variant="outline" className="w-full" onClick={() => setShowSegnala(true)}>
                     <Flag className="w-4 h-4 mr-2" /> Segnala
