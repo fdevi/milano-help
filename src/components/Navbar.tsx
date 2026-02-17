@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -46,6 +48,16 @@ const Navbar = () => {
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {user ? (
             <>
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm">Dashboard</Button>
+              </Link>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="outline" size="sm" className="text-primary border-primary">
+                    Admin
+                  </Button>
+                </Link>
+              )}
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                 Ciao, {user.email?.split('@')[0]}
               </span>
@@ -89,6 +101,12 @@ const Navbar = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <Link to="/categories">Categorie</Link>
             <Link to="/how-it-works">Come Funziona</Link>
+            {user && (
+              <>
+                <Link to="/dashboard">Dashboard</Link>
+                {isAdmin && <Link to="/admin" style={{ color: '#10b981', fontWeight: 'bold' }}>Admin Panel</Link>}
+              </>
+            )}
             {!user && (
               <>
                 <Link to="/login">Accedi</Link>
