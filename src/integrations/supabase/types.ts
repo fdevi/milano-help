@@ -109,6 +109,64 @@ export type Database = {
           },
         ]
       }
+      annunci_commenti: {
+        Row: {
+          annuncio_id: string
+          created_at: string
+          id: string
+          testo: string
+          user_id: string
+        }
+        Insert: {
+          annuncio_id: string
+          created_at?: string
+          id?: string
+          testo: string
+          user_id: string
+        }
+        Update: {
+          annuncio_id?: string
+          created_at?: string
+          id?: string
+          testo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annunci_commenti_annuncio_id_fkey"
+            columns: ["annuncio_id"]
+            isOneToOne: false
+            referencedRelation: "annunci"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      annunci_commenti_piace: {
+        Row: {
+          commento_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          commento_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          commento_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annunci_commenti_piace_commento_id_fkey"
+            columns: ["commento_id"]
+            isOneToOne: false
+            referencedRelation: "annunci_commenti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       annunci_mi_piace: {
         Row: {
           annuncio_id: string
@@ -222,6 +280,109 @@ export type Database = {
         }
         Relationships: []
       }
+      gruppi: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          creatore_id: string
+          descrizione: string | null
+          id: string
+          immagine: string | null
+          nome: string
+          quartiere: string | null
+          tipo: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          creatore_id: string
+          descrizione?: string | null
+          id?: string
+          immagine?: string | null
+          nome: string
+          quartiere?: string | null
+          tipo?: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          creatore_id?: string
+          descrizione?: string | null
+          id?: string
+          immagine?: string | null
+          nome?: string
+          quartiere?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      gruppi_membri: {
+        Row: {
+          created_at: string
+          gruppo_id: string
+          id: string
+          ruolo: string
+          stato: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gruppo_id: string
+          id?: string
+          ruolo?: string
+          stato?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gruppo_id?: string
+          id?: string
+          ruolo?: string
+          stato?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gruppi_membri_gruppo_id_fkey"
+            columns: ["gruppo_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gruppi_messaggi: {
+        Row: {
+          created_at: string
+          gruppo_id: string
+          id: string
+          mittente_id: string
+          testo: string
+        }
+        Insert: {
+          created_at?: string
+          gruppo_id: string
+          id?: string
+          mittente_id: string
+          testo: string
+        }
+        Update: {
+          created_at?: string
+          gruppo_id?: string
+          id?: string
+          mittente_id?: string
+          testo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gruppi_messaggi_gruppo_id_fkey"
+            columns: ["gruppo_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messaggi: {
         Row: {
           allegato_url: string | null
@@ -259,6 +420,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifiche: {
+        Row: {
+          created_at: string
+          id: string
+          letta: boolean
+          link: string | null
+          messaggio: string | null
+          tipo: string
+          titolo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          letta?: boolean
+          link?: string | null
+          messaggio?: string | null
+          tipo: string
+          titolo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          letta?: boolean
+          link?: string | null
+          messaggio?: string | null
+          tipo?: string
+          titolo?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       prenotazioni: {
         Row: {
