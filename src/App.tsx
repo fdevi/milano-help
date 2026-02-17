@@ -27,6 +27,7 @@ import Categories from "./pages/Categories";
 import HowItWorks from "./pages/HowItWorks";
 import MieiAnnunci from "./pages/MieiAnnunci";
 import CategoriaPage from "./pages/CategoriaPage";
+import AnnuncioPage from "./pages/AnnuncioPage";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/categoria/:nome" element={<CategoriaPage />} />
+            <Route path="/annuncio/:id" element={<AnnuncioPage />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
