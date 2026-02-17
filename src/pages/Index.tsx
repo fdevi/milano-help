@@ -68,11 +68,11 @@ const Index = () => {
                   Unisciti alla community <ArrowRight className="w-5 h-5 ml-1" />
                 </Button>
               </Link>
-              <a href="#categorie">
+              <Link to="/nuovo-annuncio">
                 <Button variant="outline" size="lg" className="text-base px-8 py-6 bg-background/10 border-background/30 text-background hover:bg-background/20">
-                  Scopri le sezioni
+                  Pubblica annuncio <ArrowRight className="w-5 h-5 ml-1" />
                 </Button>
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>
