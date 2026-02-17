@@ -142,7 +142,8 @@ const Chat = () => {
     if (!user) return;
     const channel = supabase
       .channel("chat-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi" }, (payload) => {
+        console.log("📩 Realtime messaggi:", payload);
         queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
         queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
         queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
