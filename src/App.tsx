@@ -28,6 +28,7 @@ import HowItWorks from "./pages/HowItWorks";
 import MieiAnnunci from "./pages/MieiAnnunci";
 import CategoriaPage from "./pages/CategoriaPage";
 import AnnuncioPage from "./pages/AnnuncioPage";
+import NuovoAnnuncio from "./pages/NuovoAnnuncio";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/admin/moderazione/segnalazioni" element={<AdminRoute><AdminSegnalazioni /></AdminRoute>} />
             <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
+            <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
