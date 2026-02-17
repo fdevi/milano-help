@@ -1,30 +1,15 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import {
-  Wrench, Search, ShoppingBag, Gift, GraduationCap, HeartHandshake,
-  Building2, Store, Baby, CalendarDays, MessageCircle, HandCoins,
-  ArrowRight, Users, MapPin, Shield
-} from "lucide-react";
+import { ArrowRight, Users, MapPin, Shield } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import CategoryCard from "@/components/CategoryCard";
+import CategoryCard, { CATEGORY_COLORS } from "@/components/CategoryCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import Footer from "@/components/Footer";
 import heroBg from "@/assets/hero-bg.jpg";
-
-const categories = [
-  { icon: Wrench, title: "Offro Servizio", description: "Elettricista, idraulico, ripetizioni e molto altro", color: "#1a9068" },
-  { icon: Search, title: "Cerco", description: "Cerca servizi, persone o oggetti nel quartiere", color: "#3b82f6" },
-  { icon: ShoppingBag, title: "In Vendita", description: "Bacheca per vendere qualsiasi cosa", color: "#8b5cf6" },
-  { icon: Gift, title: "Regalo", description: "Tutto quello che vuoi regalare ai vicini", color: "#ec4899" },
-  { icon: GraduationCap, title: "Studenti e Insegnanti", description: "Ripetizioni, supporto scolastico e scambio libri", color: "#f59e0b" },
-  { icon: HeartHandshake, title: "Aiuto Anziani", description: "Spesa, medicine, accompagnamento visite", color: "#ef4444" },
-  { icon: Building2, title: "Immobili", description: "Vendita e locazione nel tuo quartiere", color: "#06b6d4" },
-  { icon: Store, title: "Negozi di Quartiere", description: "I negozianti promuovono la loro attività", color: "#84cc16" },
-  { icon: Baby, title: "Bambini", description: "Scambio figurine, feste, attività per i piccoli", color: "#f97316" },
-  { icon: CalendarDays, title: "Eventi", description: "Eventi in programma nel quartiere e in città", color: "#6366f1" },
-  { icon: MessageCircle, title: "Chat", description: "Chatta con i vicini e crea gruppi di quartiere", color: "#14b8a6" },
-  { icon: HandCoins, title: "Donazioni", description: "Supporta il progetto con una donazione", color: "#e11d48" },
-];
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const steps = [
   { icon: Users, title: "Registrati", description: "Crea il tuo profilo in pochi minuti" },
@@ -33,6 +18,25 @@ const steps = [
 ];
 
 const Index = () => {
+  const { toast } = useToast();
+  const [categorie, setCategorie] = useState<{ id: string; icona: string; label: string; nome: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("categorie_annunci")
+      .select("id, icona, label, nome, ordine")
+      .order("ordine")
+      .then(({ data }) => {
+        setCategorie(data || []);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleCategoryClick = (cat: { nome: string; label: string }) => {
+    toast({ title: "Prossimamente", description: `La sezione "${cat.label}" sarà disponibile a breve!` });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -89,9 +93,26 @@ const Index = () => {
             </p>
           </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {categories.map((cat, i) => (
-              <CategoryCard key={cat.title} {...cat} delay={i * 0.05} />
-            ))}
+            {loading
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="bg-card rounded-xl p-6 border">
+                    <Skeleton className="w-12 h-12 rounded-lg mb-4" />
+                    <Skeleton className="h-5 w-2/3 mb-2" />
+                  </div>
+                ))
+              : categorie.length === 0
+              ? <p className="col-span-full text-center text-muted-foreground">Nessuna categoria disponibile.</p>
+              : categorie.map((cat, i) => (
+                  <CategoryCard
+                    key={cat.id}
+                    iconName={cat.icona}
+                    title={cat.label}
+                    color={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
+                    delay={i * 0.05}
+                    onClick={() => handleCategoryClick(cat)}
+                  />
+                ))
+            }
           </div>
         </div>
       </section>
