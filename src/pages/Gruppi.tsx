@@ -97,7 +97,10 @@ const Gruppi = () => {
       toast({ title: "Gruppo creato!" });
       navigate(`/gruppo/${data.id}`);
     },
-    onError: () => toast({ title: "Errore", description: "Impossibile creare il gruppo.", variant: "destructive" }),
+    onError: (err: any) => {
+      console.error("Errore creazione gruppo:", err);
+      toast({ title: "Errore", description: err?.message || "Impossibile creare il gruppo.", variant: "destructive" });
+    },
   });
 
   const filtered = gruppi.filter((g: any) => {
