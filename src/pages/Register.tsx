@@ -1029,7 +1029,7 @@ useEffect(() => {
                     ].map(n => (
                       <div key={n.key} className="flex items-center justify-between">
                         <span className="text-sm text-foreground">{n.label}</span>
-                        <Switch checked={(form as any)[n.key]} onCheckedChange={v => updateForm(n.key, v)} />
+                        <Switch checked={(form as any)[n.key]} onCheckedChange={v => updateForm(n.key as keyof FormData, v)} />
                       </div>
                     ))}
                   </div>
@@ -1044,7 +1044,7 @@ useEffect(() => {
                     ].map(n => (
                       <div key={n.key} className="flex items-center justify-between">
                         <span className="text-sm text-foreground">{n.label}</span>
-                        <Switch checked={(form as any)[n.key]} onCheckedChange={v => updateForm(n.key, v)} />
+                        <Switch checked={(form as any)[n.key]} onCheckedChange={v => updateForm(n.key as keyof FormData, v)} />
                       </div>
                     ))}
                   </div>
