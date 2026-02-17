@@ -19,8 +19,13 @@ import AdminCategorie from "./pages/admin/AdminCategorie";
 import AdminServizi from "./pages/admin/AdminServizi";
 import AdminPrenotazioni from "./pages/admin/AdminPrenotazioni";
 import AdminLog from "./pages/admin/AdminLog";
+import AdminModerazione from "./pages/admin/AdminModerazione";
+import AdminModAnnunci from "./pages/admin/AdminModAnnunci";
+import AdminSegnalazioni from "./pages/admin/AdminSegnalazioni";
+import AdminModStorico from "./pages/admin/AdminModStorico";
 import Categories from "./pages/Categories";
 import HowItWorks from "./pages/HowItWorks";
+import MieiAnnunci from "./pages/MieiAnnunci";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +51,11 @@ const App = () => (
             <Route path="/admin/servizi" element={<AdminRoute><AdminServizi /></AdminRoute>} />
             <Route path="/admin/prenotazioni" element={<AdminRoute><AdminPrenotazioni /></AdminRoute>} />
             <Route path="/admin/log" element={<AdminRoute><AdminLog /></AdminRoute>} />
+            <Route path="/admin/moderazione" element={<AdminRoute><AdminModerazione /></AdminRoute>} />
+            <Route path="/admin/moderazione/annunci" element={<AdminRoute><AdminModAnnunci /></AdminRoute>} />
+            <Route path="/admin/moderazione/segnalazioni" element={<AdminRoute><AdminSegnalazioni /></AdminRoute>} />
+            <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
+            <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
