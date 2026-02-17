@@ -26,6 +26,7 @@ import AdminModStorico from "./pages/admin/AdminModStorico";
 import Categories from "./pages/Categories";
 import HowItWorks from "./pages/HowItWorks";
 import MieiAnnunci from "./pages/MieiAnnunci";
+import CategoriaPage from "./pages/CategoriaPage";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/registrati" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/categoria/:nome" element={<CategoriaPage />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />

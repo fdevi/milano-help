@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Users, MapPin, Shield } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import CategoryCard, { CATEGORY_COLORS } from "@/components/CategoryCard";
@@ -18,6 +18,7 @@ const steps = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const { data: categorie = [], isLoading: loading } = useQuery({
@@ -34,8 +35,8 @@ const Index = () => {
     refetchOnWindowFocus: true,
   });
 
-  const handleCategoryClick = (cat: { nome: string; label: string }) => {
-    toast({ title: "Prossimamente", description: `La sezione "${cat.label}" sarà disponibile a breve!` });
+  const handleCategoryClick = (_cat: { nome: string; label: string }) => {
+    // Navigation handled by Link wrapper
   };
 
   return (
@@ -110,7 +111,7 @@ const Index = () => {
                     title={cat.label}
                     color={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
                     delay={i * 0.05}
-                    onClick={() => handleCategoryClick(cat)}
+                    onClick={() => navigate(`/categoria/${cat.nome}`)}
                   />
                 ))
             }
