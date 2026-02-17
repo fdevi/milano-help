@@ -86,14 +86,27 @@ const GruppoDetail = () => {
 
   // Pending members (for admin)
   const pendingMembers = (membri as any[]).filter((m) => m.stato === "in_attesa");
+  const pendingUserIds = pendingMembers.map((m) => m.user_id);
+  const { data: pendingProfiles = [] } = useQuery({
+    queryKey: ["pending_profiles", pendingUserIds.join(",")],
+    queryFn: async () => {
+      if (pendingUserIds.length === 0) return [];
+      const { data } = await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", pendingUserIds);
+      return data || [];
+    },
+    enabled: pendingUserIds.length > 0,
+  });
+  const pendingProfileMap = Object.fromEntries((pendingProfiles as any[]).map((p) => [p.user_id, p]));
 
   // Real-time messages
   useEffect(() => {
     if (!id || !isMember) return;
     const channel = supabase
       .channel(`gruppo-${id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, (payload) => {
+        console.log("📩 Realtime gruppo messaggio:", payload);
         queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
+        queryClient.invalidateQueries({ queryKey: ["msg_profiles"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -219,10 +232,19 @@ const GruppoDetail = () => {
                     (messaggi as any[]).map((msg) => {
                       const isMine = msg.mittente_id === user?.id;
                       const p = profileMap[msg.mittente_id];
+                      const initials = p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U";
+                      const displayName = p ? `${p.nome || ""}${p.cognome ? ` ${p.cognome[0]}.` : ""}`.trim() || "Utente" : "Utente";
                       return (
-                        <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                        <div key={msg.id} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                          {!isMine && (
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
                           <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
-                            {!isMine && <p className="text-xs font-medium mb-1 opacity-70">{p?.nome || "Utente"}</p>}
+                            {!isMine && <p className="text-xs font-medium mb-1 opacity-70">{displayName}</p>}
                             <p>{msg.testo}</p>
                             <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                               {new Date(msg.created_at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
@@ -274,18 +296,23 @@ const GruppoDetail = () => {
           {isAdmin && (
             <TabsContent value="richieste" className="px-4 py-4">
               <div className="space-y-2">
-                {pendingMembers.map((m: any) => (
-                  <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                    <Avatar className="h-9 w-9"><AvatarFallback className="bg-primary/10 text-primary text-xs">U</AvatarFallback></Avatar>
-                    <p className="flex-1 text-sm font-medium">Utente</p>
-                    <Button size="icon" variant="ghost" onClick={() => handleMemberAction.mutate({ memberId: m.id, action: "approvato" })}>
-                      <Check className="w-4 h-4 text-green-600" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => handleMemberAction.mutate({ memberId: m.id, action: "rifiutato" })}>
-                      <X className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
+                {pendingMembers.map((m: any) => {
+                  const pp = pendingProfileMap[m.user_id];
+                  const pInitials = pp ? `${(pp.nome || "U")[0]}${(pp.cognome || "")[0]}`.toUpperCase() : "U";
+                  const pName = pp ? `${pp.nome || "Utente"} ${pp.cognome || ""}`.trim() : "Utente";
+                  return (
+                    <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                      <Avatar className="h-9 w-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{pInitials}</AvatarFallback></Avatar>
+                      <p className="flex-1 text-sm font-medium">{pName}</p>
+                      <Button size="icon" variant="ghost" onClick={() => handleMemberAction.mutate({ memberId: m.id, action: "approvato" })}>
+                        <Check className="w-4 h-4 text-green-600" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleMemberAction.mutate({ memberId: m.id, action: "rifiutato" })}>
+                        <X className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </TabsContent>
           )}
