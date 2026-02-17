@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import CommentiAnnuncio from "@/components/chat/CommentiAnnuncio";
 
 const AnnuncioPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -434,6 +435,13 @@ const AnnuncioPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Commenti */}
+      {annuncio && (
+        <div className="container mx-auto px-4 pb-12">
+          <CommentiAnnuncio annuncioId={annuncio.id} annuncioAutoreId={annuncio.user_id} />
+        </div>
+      )}
 
       <Footer />
     </div>
