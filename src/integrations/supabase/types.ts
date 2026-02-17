@@ -38,6 +38,68 @@ export type Database = {
         }
         Relationships: []
       }
+      annunci: {
+        Row: {
+          categoria_id: string | null
+          created_at: string
+          descrizione: string | null
+          id: string
+          immagini: string[] | null
+          moderato_da: string | null
+          moderato_il: string | null
+          motivo_rifiuto: string | null
+          prezzo: number | null
+          quartiere: string | null
+          stato: string
+          titolo: string
+          updated_at: string
+          user_id: string
+          visualizzazioni: number
+        }
+        Insert: {
+          categoria_id?: string | null
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          immagini?: string[] | null
+          moderato_da?: string | null
+          moderato_il?: string | null
+          motivo_rifiuto?: string | null
+          prezzo?: number | null
+          quartiere?: string | null
+          stato?: string
+          titolo: string
+          updated_at?: string
+          user_id: string
+          visualizzazioni?: number
+        }
+        Update: {
+          categoria_id?: string | null
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          immagini?: string[] | null
+          moderato_da?: string | null
+          moderato_il?: string | null
+          motivo_rifiuto?: string | null
+          prezzo?: number | null
+          quartiere?: string | null
+          stato?: string
+          titolo?: string
+          updated_at?: string
+          user_id?: string
+          visualizzazioni?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annunci_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorie_annunci"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categorie: {
         Row: {
           attiva: boolean
@@ -65,6 +127,36 @@ export type Database = {
           nome?: string
           ordine?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      categorie_annunci: {
+        Row: {
+          created_at: string
+          icona: string
+          id: string
+          label: string
+          nome: string
+          ordine: number
+          richiede_prezzo: boolean
+        }
+        Insert: {
+          created_at?: string
+          icona?: string
+          id?: string
+          label: string
+          nome: string
+          ordine?: number
+          richiede_prezzo?: boolean
+        }
+        Update: {
+          created_at?: string
+          icona?: string
+          id?: string
+          label?: string
+          nome?: string
+          ordine?: number
+          richiede_prezzo?: boolean
         }
         Relationships: []
       }
@@ -260,6 +352,47 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      segnalazioni: {
+        Row: {
+          annuncio_id: string
+          created_at: string
+          gestita_da: string | null
+          id: string
+          motivo: string
+          note: string | null
+          stato: string
+          utente_id: string
+        }
+        Insert: {
+          annuncio_id: string
+          created_at?: string
+          gestita_da?: string | null
+          id?: string
+          motivo: string
+          note?: string | null
+          stato?: string
+          utente_id: string
+        }
+        Update: {
+          annuncio_id?: string
+          created_at?: string
+          gestita_da?: string | null
+          id?: string
+          motivo?: string
+          note?: string | null
+          stato?: string
+          utente_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "segnalazioni_annuncio_id_fkey"
+            columns: ["annuncio_id"]
+            isOneToOne: false
+            referencedRelation: "annunci"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servizi: {
         Row: {

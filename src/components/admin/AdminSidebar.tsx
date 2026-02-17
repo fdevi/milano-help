@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft
+  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/admin/categorie", icon: Grid3X3, label: "Categorie" },
   { to: "/admin/servizi", icon: Briefcase, label: "Servizi" },
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
+  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione" },
   { to: "/admin/log", icon: ScrollText, label: "Log Attività" },
 ];
 
