@@ -221,9 +221,11 @@ const Eventi = () => {
             >
               <Ticket className="w-4 h-4" /> I tuoi eventi
             </Button>
-            <Button size="sm" className="gap-1.5">
+            <Link to="/nuovo-evento">
+             <Button size="sm" className="gap-1.5">
               <Plus className="w-4 h-4" /> Crea evento
-            </Button>
+             </Button>
+            </Link>
           </div>
         </div>
 
