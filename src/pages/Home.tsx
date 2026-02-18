@@ -318,7 +318,7 @@ const Home = () => {
 
   return (
     <AuthLayout>
-      {/* Composer placeholder */}
+      <div className="max-w-3xl mx-auto">
       <Card className="p-4 mb-6 shadow-card">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10">
@@ -376,6 +376,7 @@ const Home = () => {
         {!hasNextPage && allPosts.length > 0 && (
           <p className="text-xs text-muted-foreground">Hai visto tutti gli annunci</p>
         )}
+      </div>
       </div>
     </AuthLayout>
   );
