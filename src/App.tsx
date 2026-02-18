@@ -34,6 +34,7 @@ import Gruppi from "./pages/Gruppi";
 import GruppoDetail from "./pages/GruppoDetail";
 import Sezioni from "./pages/Sezioni";
 import Profilo from "./pages/Profilo";
+import Eventi from "./pages/Eventi";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
+            <Route path="/eventi" element={<ProtectedRoute><Eventi /></ProtectedRoute>} />
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
