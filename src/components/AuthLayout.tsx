@@ -11,7 +11,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
       <TopNavbar />
       <AppSidebar />
       <main className="pt-16 pl-16 lg:pl-56 min-h-screen">
-        <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="mx-auto px-4 py-6">
           {children}
         </div>
       </main>
