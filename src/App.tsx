@@ -32,6 +32,7 @@ import AnnuncioPage from "./pages/AnnuncioPage";
 import NuovoAnnuncio from "./pages/NuovoAnnuncio";
 import Gruppi from "./pages/Gruppi";
 import GruppoDetail from "./pages/GruppoDetail";
+import Sezioni from "./pages/Sezioni";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/gruppi" element={<Gruppi />} />
             <Route path="/gruppo/:id" element={<ProtectedRoute><GruppoDetail /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/sezioni" element={<ProtectedRoute><Sezioni /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
