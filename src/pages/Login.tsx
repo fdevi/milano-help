@@ -49,7 +49,7 @@ const Login = () => {
       toast({ title: "Errore di accesso", description: msg, variant: "destructive" });
       return;
     }
-    navigate("/dashboard");
+    navigate("/home");
   };
 
   return (
