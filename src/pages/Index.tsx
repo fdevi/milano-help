@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Wrench, Search, ShoppingBag, Gift, GraduationCap, Heart, 
   Home, Store, Baby, Calendar, MessageCircle, DollarSign,
-  Loader2
+  Loader2, ArrowRight, MapPin, Users, Shield, Award, Building2, Sprout, Briefcase
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 // Mappa delle icone per ogni categoria
 const iconMap: Record<string, any> = {
@@ -45,6 +45,58 @@ const categoryDescriptions: Record<string, string> = {
   donazioni: "Sostieni cause e raccolte fondi locali",
 };
 
+// Statistiche per la sezione "Come funziona"
+const stats = [
+  { number: "50.000+", label: "Utenti attivi", icon: Users },
+  { number: "12", label: "Categorie", icon: Search },
+  { number: "200+", label: "Quartieri", icon: MapPin },
+  { number: "98%", label: "Recensioni positive", icon: Heart },
+];
+
+// Aree coperte
+const areas = [
+  {
+    name: "Milano città",
+    description: "Tutti i quartieri di Milano, dal centro alla periferia",
+    icon: Building2,
+    zones: [
+      "Duomo, Brera, Navigli, Isola, Porta Venezia",
+      "Bicocca, Niguarda, Bovisa, QT8, San Siro",
+      "Loreto, Città Studi, NoLo, Precotto, Gorla"
+    ]
+  },
+  {
+    name: "Hinterland milanese",
+    description: "Comuni della cintura urbana di Milano",
+    icon: Sprout,
+    zones: [
+      "Sesto San Giovanni, Cinisello Balsamo, Cologno Monzese",
+      "Rho, Pero, Novate Milanese, Cormano",
+      "Rozzano, Corsico, Assago, Buccinasco"
+    ]
+  },
+  {
+    name: "Monza e Brianza",
+    description: "La provincia di Monza e della Brianza",
+    icon: Award,
+    zones: [
+      "Monza, Lissone, Seregno, Desio",
+      "Brugherio, Vimercate, Arcore, Villasanta",
+      "Cesano Maderno, Limbiate, Meda"
+    ]
+  },
+  {
+    name: "Altri comuni",
+    description: "Tutta la provincia di Milano",
+    icon: Briefcase,
+    zones: [
+      "Legnano, Busto Garolfo, Magenta, Abbiategrasso",
+      "Garbagnate Milanese, Bollate, Paderno Dugnano",
+      "Pieve Emanuele, San Donato, San Giuliano"
+    ]
+  }
+];
+
 const Index = () => {
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,13 +121,11 @@ const Index = () => {
       
       for (const cat of categorie) {
         if (cat.nome === 'evento') {
-          // Per la categoria evento, conta gli eventi veri
-          const { count } = await (supabase as any)
+          const { count } = await supabase
             .from("eventi")
             .select("*", { count: "exact", head: true });
           counts[cat.nome] = count || 0;
         } else {
-          // Per le altre categorie, conta gli annunci attivi
           const { count } = await supabase
             .from("annunci")
             .select("*", { count: "exact", head: true })
@@ -112,7 +162,7 @@ const Index = () => {
               <span className="text-primary block">di quartiere</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Connetti, aiuta e cresci insieme ai tuoi vicini a Milano. 
+              Connetti, aiuta e cresci insieme ai tuoi vicini a Milano, provincia e Monza Brianza. 
               Offri servizi, cerca aiuto, vendi e regala — tutto nel tuo quartiere.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -121,13 +171,35 @@ const Index = () => {
                   Unisciti alla community
                 </Button>
               </Link>
-              <Link to="/come-funziona">
+              <Link to="/sezioni">
                 <Button size="lg" variant="outline">
-                  Scopri le sezioni
+                  Esplora le sezioni
                 </Button>
               </Link>
             </div>
           </motion.div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="flex justify-center mb-2">
+                    <Icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-2xl font-bold text-foreground">{stat.number}</div>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -161,7 +233,6 @@ const Index = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    {/* Link condizionale: evento → /eventi, altre categorie → /categoria/nome */}
                     {cat.nome === 'evento' ? (
                       <Link to="/eventi">
                         <Card className="p-5 hover:shadow-lg transition-all group hover:-translate-y-1 cursor-pointer">
@@ -216,6 +287,88 @@ const Index = () => {
           )}
         </div>
       </section>
+
+      {/* Aree coperte */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-heading font-bold text-foreground mb-3">
+              Milano, provincia e Monza Brianza
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              La community è attiva in oltre 200 quartieri e comuni del territorio
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {areas.map((area, index) => {
+              const Icon = area.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <Card className="p-6 h-full shadow-card hover:shadow-card-hover transition-shadow">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-heading font-bold text-lg mb-1">{area.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">{area.description}</p>
+                        <ul className="space-y-1">
+                          {area.zones.map((zone, i) => (
+                            <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              <span>{zone}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA finale */}
+      <section className="py-16 px-4 bg-gradient-to-r from-primary to-secondary text-white">
+        <div className="container mx-auto max-w-4xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
+              Unisciti alla community del tuo quartiere
+            </h2>
+            <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
+              Migliaia di persone si sono già connesse con i loro vicini. 
+              Inizia anche tu a scoprire cosa succede nel tuo quartiere.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/registrati">
+                <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 gap-2">
+                  Registrati gratis <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link to="/sezioni">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20">
+                  Esplora le sezioni
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };
