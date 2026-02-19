@@ -30,7 +30,9 @@ import {
   MapPin,
   Users,
   Search,
-  ExternalLink
+  CheckCircle,
+  XCircle,
+  Clock
 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -73,8 +75,58 @@ const AdminEventi = () => {
     },
   });
 
-  // Elimina evento
-  const deleteEvento = useMutation({
+  // Approva evento
+  const approvaEvento = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('eventi')
+        .update({ stato: 'attivo' })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-eventi'] });
+      toast({
+        title: "Evento approvato",
+        description: "L'evento è ora visibile al pubblico.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile approvare l'evento.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Rifiuta evento
+  const rifiutaEvento = useMutation({
+    mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => {
+      const { error } = await supabase
+        .from('eventi')
+        .update({ stato: 'rifiutato', motivo_rifiuto: motivo })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-eventi'] });
+      toast({
+        title: "Evento rifiutato",
+        description: "L'evento non sarà visibile al pubblico.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile rifiutare l'evento.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Elimina evento (permanente)
+  const eliminaEvento = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('eventi')
@@ -86,7 +138,7 @@ const AdminEventi = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-eventi'] });
       toast({
         title: "Evento eliminato",
-        description: "L'evento è stato rimosso con successo.",
+        description: "L'evento è stato rimosso definitivamente.",
       });
     },
     onError: (error: any) => {
@@ -98,6 +150,19 @@ const AdminEventi = () => {
     },
   });
 
+  const getStatoBadge = (stato: string) => {
+    switch(stato) {
+      case 'attivo':
+        return <Badge className="bg-green-500">Attivo</Badge>;
+      case 'in_moderazione':
+        return <Badge variant="secondary">In moderazione</Badge>;
+      case 'rifiutato':
+        return <Badge variant="destructive">Rifiutato</Badge>;
+      default:
+        return <Badge variant="outline">{stato}</Badge>;
+    }
+  };
+
   const filteredEventi = eventi.filter((e: any) => 
     e.titolo.toLowerCase().includes(search.toLowerCase()) ||
     e.organizzatore?.nome?.toLowerCase().includes(search.toLowerCase()) ||
@@ -106,10 +171,9 @@ const AdminEventi = () => {
 
   const stats = {
     totale: eventi.length,
-    oggi: eventi.filter((e: any) => 
-      new Date(e.data).toDateString() === new Date().toDateString()
-    ).length,
-    prossimi: eventi.filter((e: any) => new Date(e.data) > new Date()).length,
+    inModerazione: eventi.filter((e: any) => e.stato === 'in_moderazione').length,
+    attivi: eventi.filter((e: any) => e.stato === 'attivo').length,
+    rifiutati: eventi.filter((e: any) => e.stato === 'rifiutato').length,
   };
 
   return (
@@ -126,7 +190,7 @@ const AdminEventi = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -140,23 +204,34 @@ const AdminEventi = () => {
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary/10 rounded-lg">
-                <Users className="w-5 h-5 text-secondary" />
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Eventi oggi</p>
-                <p className="text-2xl font-bold">{stats.oggi}</p>
+                <p className="text-sm text-muted-foreground">In moderazione</p>
+                <p className="text-2xl font-bold">{stats.inModerazione}</p>
               </div>
             </div>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-lg">
-                <MapPin className="w-5 h-5 text-accent" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Prossimi eventi</p>
-                <p className="text-2xl font-bold">{stats.prossimi}</p>
+                <p className="text-sm text-muted-foreground">Eventi attivi</p>
+                <p className="text-2xl font-bold">{stats.attivi}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Rifiutati</p>
+                <p className="text-2xl font-bold">{stats.rifiutati}</p>
               </div>
             </div>
           </Card>
@@ -204,8 +279,6 @@ const AdminEventi = () => {
                 ) : (
                   filteredEventi.map((evento: any) => {
                     const dataEvento = new Date(evento.data);
-                    const oggi = new Date();
-                    const isPassato = dataEvento < oggi;
                     
                     return (
                       <TableRow key={evento.id}>
@@ -223,11 +296,7 @@ const AdminEventi = () => {
                         </TableCell>
                         <TableCell>{evento.luogo}</TableCell>
                         <TableCell>{evento.partecipanti || 0}</TableCell>
-                        <TableCell>
-                          <Badge variant={isPassato ? "secondary" : "default"}>
-                            {isPassato ? "Passato" : "In arrivo"}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{getStatoBadge(evento.stato)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -241,15 +310,37 @@ const AdminEventi = () => {
                               >
                                 <Eye className="w-4 h-4 mr-2" /> Vai alla pagina
                               </DropdownMenuItem>
+                              
+                              {evento.stato === 'in_moderazione' && (
+                                <>
+                                  <DropdownMenuItem 
+                                    onClick={() => approvaEvento.mutate(evento.id)}
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" /> Approva
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      const motivo = prompt("Inserisci il motivo del rifiuto:");
+                                      if (motivo) {
+                                        rifiutaEvento.mutate({ id: evento.id, motivo });
+                                      }
+                                    }}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2 text-red-600" /> Rifiuta
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              
                               <DropdownMenuItem 
                                 onClick={() => navigate(`/modifica-evento/${evento.id}`)}
                               >
                                 <Edit className="w-4 h-4 mr-2" /> Modifica
                               </DropdownMenuItem>
+                              
                               <DropdownMenuItem 
                                 onClick={() => {
-                                  if (confirm("Sei sicuro di voler eliminare questo evento?")) {
-                                    deleteEvento.mutate(evento.id);
+                                  if (confirm("Sei sicuro di voler eliminare definitivamente questo evento?")) {
+                                    eliminaEvento.mutate(evento.id);
                                   }
                                 }}
                                 className="text-destructive focus:text-destructive"
