@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Wrench, Search, ShoppingBag, Gift, GraduationCap, Heart, 
   Home, Store, Baby, Calendar, MessageCircle, DollarSign,
-  Loader2, ArrowRight, MapPin, Users, Shield, Award, Building2, Sprout, Briefcase
+  Loader2, ArrowRight, MapPin, Users, Clock, Award, Building2, Sprout, Briefcase
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -97,6 +99,50 @@ const areas = [
   }
 ];
 
+// ── Helpers ──
+function formatEventDate(iso: string) {
+  const d = new Date(iso);
+  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const monthNames = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}, ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+
+const EventCard = ({ event }: { event: any }) => {
+  const orgInitials = event.organizzatore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?";
+  return (
+    <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer">
+      <div className="flex items-start gap-3">
+        <div className="bg-primary/10 rounded-lg p-3 shrink-0">
+          <Calendar className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <Link to="/eventi" className="hover:underline">
+            <h4 className="font-medium text-foreground truncate">{event.titolo}</h4>
+          </Link>
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+            <Clock className="w-3 h-3" />
+            <span>{formatEventDate(event.data)}</span>
+          </p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            <span className="truncate">{event.luogo}</span>
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Avatar className="w-5 h-5">
+              <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">{event.organizzatore_nome || "Utente"}</span>
+            <Badge variant="secondary" className="text-[10px] px-1.5">
+              {event.gratuito ? "Gratuito" : event.prezzo ? `€${event.prezzo}` : "Gratuito"}
+            </Badge>
+          </div>
+        </div>
+        <Badge variant="outline" className="shrink-0 text-xs">{event.partecipanti || 0} part.</Badge>
+      </div>
+    </Card>
+  );
+};
+
 const Index = () => {
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +167,7 @@ const Index = () => {
       
       for (const cat of categorie) {
         if (cat.nome === 'evento') {
-          const { count } = await supabase
+          const { count } = await (supabase as any)
             .from("eventi")
             .select("*", { count: "exact", head: true });
           counts[cat.nome] = count || 0;
@@ -142,6 +188,35 @@ const Index = () => {
       fetchCounts();
     }
   }, [categorie]);
+
+  // Carica eventi con React Query (identico a Home.tsx)
+  const { data: eventiInEvidenza = [], isLoading: loadingEventi } = useQuery({
+    queryKey: ['index-eventi'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('eventi')
+        .select('*')
+        .order('data', { ascending: true })
+        .limit(6);
+      if (error) throw error;
+      const eventiConOrganizzatore = await Promise.all(
+        (data as any[]).map(async (evento: any) => {
+          const { data: profilo } = await supabase
+            .from('profiles')
+            .select('nome, cognome')
+            .eq('user_id', evento.organizzatore_id)
+            .single();
+          return {
+            ...evento,
+            organizzatore_nome: profilo
+              ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente'
+              : 'Utente',
+          };
+        })
+      );
+      return eventiConOrganizzatore;
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -283,6 +358,66 @@ const Index = () => {
                   </motion.div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Prossimi eventi */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="text-3xl font-heading font-bold text-foreground mb-2">
+                Prossimi eventi
+              </h2>
+              <p className="text-muted-foreground">
+                Scopri cosa succede nel tuo quartiere
+              </p>
+            </div>
+            <Link to="/eventi">
+              <Button variant="outline" className="gap-2">
+                Tutti gli eventi <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+
+          {loadingEventi ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="p-4 animate-pulse">
+                  <div className="flex gap-3">
+                    <div className="w-11 h-11 rounded-lg bg-muted shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4" />
+                      <div className="h-3 bg-muted rounded w-1/2" />
+                      <div className="h-3 bg-muted rounded w-2/3" />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : eventiInEvidenza.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Calendar className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">Nessun evento in programma</p>
+              <p className="text-sm text-muted-foreground mt-1">Sii il primo a creare un evento nel quartiere!</p>
+              <Link to="/nuovo-evento">
+                <Button className="mt-4">Crea evento</Button>
+              </Link>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {eventiInEvidenza.map((event: any, index: number) => (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.07 }}
+                >
+                  <EventCard event={event} />
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
