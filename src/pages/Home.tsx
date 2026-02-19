@@ -57,7 +57,7 @@ const EventCard = ({ event }: { event: any }) => {
           <Calendar className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <Link to="/eventi" className="hover:underline">
+          <Link to={`/eventi`} className="hover:underline">
             <h4 className="font-medium text-foreground truncate">{event.titolo}</h4>
           </Link>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -212,21 +212,59 @@ const Home = () => {
     enabled: !!user,
   });
 
-  // Eventi prossimi
+  // Eventi prossimi (dalla tabella eventi)
   const { data: eventiInEvidenza = [], isLoading: loadingEventi } = useQuery({
     queryKey: ['home-eventi'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('eventi').select('*').order('data', { ascending: true }).limit(10);
-      if (error) throw error;
+      console.log("🔍 Home: inizio caricamento eventi...");
+      
+      const { data, error } = await (supabase as any)
+        .from('eventi')
+        .select('*')
+        .order('data', { ascending: true })
+        .limit(10);
+      
+      if (error) {
+        console.error("❌ Home: errore caricamento eventi:", error);
+        throw error;
+      }
+      
+      console.log("📊 Home: eventi dal DB (tabella eventi):", data);
+      console.log("📊 Home: numero eventi:", data?.length || 0);
+
+      if (!data || data.length === 0) {
+        console.log("⚠️ Home: nessun evento trovato nel DB");
+        return [];
+      }
+
       const eventiConOrganizzatore = await Promise.all(
         (data as any[]).map(async (evento: any) => {
-          const { data: profilo } = await supabase.from('profiles').select('nome, cognome').eq('user_id', evento.organizzatore_id).single();
-          return { ...evento, organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente' };
+          console.log("👤 Home: carico profilo per organizzatore:", evento.organizzatore_id);
+          const { data: profilo } = await supabase
+            .from('profiles')
+            .select('nome, cognome')
+            .eq('user_id', evento.organizzatore_id)
+            .single();
+          
+          return { 
+            ...evento, 
+            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente' 
+          };
         })
       );
+      
+      console.log("✅ Home: eventi con organizzatore:", eventiConOrganizzatore);
       return eventiConOrganizzatore;
     },
+    // Nessun enabled: !!user, così gli eventi si caricano anche per utenti non loggati
   });
+
+  console.log("📊 Home: eventiInEvidenza dopo query:", eventiInEvidenza);
+
+  // Lista eventi da mostrare nel tab
+  const eventiVisualizzati = eventiInEvidenza;
+
+  console.log("📊 Home: eventiVisualizzati:", eventiVisualizzati);
 
   return (
     <AuthLayout>
@@ -379,17 +417,22 @@ const Home = () => {
               </div>
               {loadingEventi ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-              ) : eventiInEvidenza.length === 0 ? (
+              ) : eventiVisualizzati.length === 0 ? (
                 <Card className="p-8 text-center">
                   <CalendarDays className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="text-muted-foreground">Nessun evento in programma</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {loadingEventi ? "Caricamento..." : `Trovati ${eventiInEvidenza.length} eventi nel DB`}
+                  </p>
                   <Link to="/nuovo-evento"><Button variant="link" className="mt-2">Crea il primo evento</Button></Link>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {eventiInEvidenza.map((evento) => (
-                    <EventCard key={evento.id} event={evento} />
-                  ))}
+                  {console.log("🎉 EVENTI VISUALIZZATI:", eventiVisualizzati)}
+                  {eventiVisualizzati.map((evento) => {
+                    console.log("🎯 Evento:", evento.titolo);
+                    return <EventCard key={evento.id} event={evento} />;
+                  })}
                 </div>
               )}
             </div>

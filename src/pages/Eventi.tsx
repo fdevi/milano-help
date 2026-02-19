@@ -165,15 +165,26 @@ const Eventi = () => {
   const { data: eventiReali = [], isLoading } = useQuery({
     queryKey: ['eventi'],
     queryFn: async () => {
+      console.log("🔍 Inizio caricamento eventi...");
+      
       const { data, error } = await (supabase as any)
         .from('eventi')
         .select('*')
         .order('data', { ascending: true });
-      if (error) throw error;
       
+      if (error) {
+        console.error("❌ Errore caricamento eventi:", error);
+        throw error;
+      }
+      
+      console.log("📊 Eventi dal DB (grezzi):", data);
+      console.log("📊 Numero eventi:", data?.length || 0);
+
       // Per ogni evento, carica i dati dell'organizzatore
       const eventiConOrganizzatore = await Promise.all(
         (data as any[]).map(async (evento: any) => {
+          console.log("👤 Carico profilo per organizzatore:", evento.organizzatore_id);
+          
           const { data: profilo } = await supabase
             .from('profiles')
             .select('nome, cognome, avatar_url')
@@ -188,6 +199,7 @@ const Eventi = () => {
         })
       );
       
+      console.log("✅ Eventi con organizzatore:", eventiConOrganizzatore);
       return eventiConOrganizzatore;
     },
   });
@@ -219,8 +231,10 @@ const Eventi = () => {
   };
 
   const filtered = eventiReali.filter((e) => {
-    if (showMyEvents && e.organizzatore_id !== user?.id) return false;
-    if (selectedCategory && e.categoria !== selectedCategory) return false;
+    // Filtro "I tuoi eventi": applicare solo se c'è un utente loggato, altrimenti mostriamo tutti (evita lista vuota)
+    if (showMyEvents && user?.id && e.organizzatore_id !== user.id) return false;
+    // Filtro categoria: confronto case-insensitive e gestione null
+    if (selectedCategory && (e.categoria == null || String(e.categoria).toLowerCase() !== selectedCategory.toLowerCase())) return false;
     return true;
   });
 
