@@ -124,9 +124,9 @@ const NuovoAnnuncio = () => {
         mostra_telefono: mostraTelefono,
       };
 
-      const { data: annuncio, error } = await supabase
+      const { data: annuncio, error } = await (supabase as any)
         .from("annunci")
-        .insert(payload)
+        .insert([payload])
         .select("id")
         .single();
       if (error) throw error;
