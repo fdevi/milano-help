@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -70,13 +70,14 @@ const NuovoEvento = () => {
           ? parseInt(form.max_partecipanti) 
           : null,
         organizzatore_id: user.id,
+        stato: "in_moderazione", // ← AGGIUNTO: stato di default
       });
 
       if (error) throw error;
 
       toast({
         title: "Evento creato!",
-        description: "Il tuo evento è stato pubblicato.",
+        description: "Il tuo evento è stato inviato e sarà visibile dopo l'approvazione dell'admin.",
       });
       navigate("/eventi");
     } catch (error: any) {
@@ -93,6 +94,16 @@ const NuovoEvento = () => {
   return (
     <AuthLayout>
       <div className="max-w-2xl mx-auto">
+        {/* Bottone Indietro */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.history.back()}
+          className="mb-4 -ml-2 gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" /> Indietro
+        </Button>
+
         <h1 className="text-2xl font-bold mb-6">Crea un nuovo evento</h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -234,12 +245,18 @@ const NuovoEvento = () => {
             />
           </div>
 
+          {/* Nota moderazione */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
+            <p className="font-medium mb-1">📋 Nota sulla moderazione</p>
+            <p>Gli eventi vengono pubblicati solo dopo l'approvazione dell'admin. Riceverai una notifica quando l'evento sarà approvato.</p>
+          </div>
+
           {/* Bottone submit */}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creazione in corso...
+                Invio in corso...
               </>
             ) : (
               "Crea evento"
