@@ -280,6 +280,57 @@ export type Database = {
         }
         Relationships: []
       }
+      eventi: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          data: string
+          descrizione: string | null
+          gratuito: boolean | null
+          id: string
+          immagine: string | null
+          luogo: string
+          max_partecipanti: number | null
+          organizzatore_id: string
+          partecipanti: number | null
+          prezzo: number | null
+          titolo: string
+          updated_at: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          data: string
+          descrizione?: string | null
+          gratuito?: boolean | null
+          id?: string
+          immagine?: string | null
+          luogo: string
+          max_partecipanti?: number | null
+          organizzatore_id: string
+          partecipanti?: number | null
+          prezzo?: number | null
+          titolo: string
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          data?: string
+          descrizione?: string | null
+          gratuito?: boolean | null
+          id?: string
+          immagine?: string | null
+          luogo?: string
+          max_partecipanti?: number | null
+          organizzatore_id?: string
+          partecipanti?: number | null
+          prezzo?: number | null
+          titolo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       gruppi: {
         Row: {
           categoria: string | null

@@ -219,7 +219,7 @@ const Home = () => {
   const { data: eventiInEvidenza = [], isLoading: loadingEventi } = useQuery({
     queryKey: ['home-eventi'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('eventi')
         .select('*')
         .order('data', { ascending: true })
@@ -229,7 +229,7 @@ const Home = () => {
 
       // Carica i profili degli organizzatori
       const eventiConOrganizzatore = await Promise.all(
-        data.map(async (evento) => {
+        (data as any[]).map(async (evento: any) => {
           const { data: profilo } = await supabase
             .from('profiles')
             .select('nome, cognome')

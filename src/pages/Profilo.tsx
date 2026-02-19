@@ -144,8 +144,10 @@ const Profilo = () => {
   const { data: feedData = [], isLoading: feedLoading } = useQuery({
     queryKey: ['feed-cronologico', user?.id],
     queryFn: async () => {
+      console.log('📋 Feed: inizio caricamento...');
+      
       // Carica annunci recenti
-      const { data: annunci } = await supabase
+      const { data: annunci, error: errAnnunci } = await supabase
         .from('annunci')
         .select(`
           *,
@@ -155,31 +157,38 @@ const Profilo = () => {
         .order('created_at', { ascending: false })
         .limit(30);
 
+      console.log('📋 Feed annunci:', annunci?.length, 'errore:', errAnnunci);
+
       // Carica eventi recenti
-      const { data: eventi } = await supabase
+      const { data: eventi, error: errEventi } = await (supabase as any)
         .from('eventi')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(30);
 
+      console.log('📋 Feed eventi:', (eventi as any[])?.length, 'errore:', errEventi);
+
       // Carica i profili degli autori
       const userIds = [
         ...(annunci?.map(a => a.user_id) || []),
-        ...(eventi?.map(e => e.organizzatore_id) || [])
-      ];
+        ...((eventi as any[])?.map((e: any) => e.organizzatore_id) || [])
+      ].filter(Boolean);
       
-      const { data: profili } = await supabase
-        .from('profiles')
-        .select('user_id, nome, cognome, avatar_url')
-        .in('user_id', userIds);
-
-      const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
+      let profiliMap = new Map();
+      if (userIds.length > 0) {
+        const uniqueIds = [...new Set(userIds)];
+        const { data: profili } = await supabase
+          .from('profiles')
+          .select('user_id, nome, cognome, avatar_url')
+          .in('user_id', uniqueIds);
+        profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
+      }
 
       // Combina e formatta tutti gli item
       const items = [
         ...(annunci?.map(a => ({
           id: a.id,
-          tipo: 'annuncio',
+          tipo: 'annuncio' as const,
           titolo: a.titolo,
           descrizione: a.descrizione,
           prezzo: a.prezzo,
@@ -189,9 +198,9 @@ const Profilo = () => {
           categoria: a.categorie_annunci,
           link: `/annuncio/${a.id}`
         })) || []),
-        ...(eventi?.map(e => ({
+        ...((eventi as any[])?.map((e: any) => ({
           id: e.id,
-          tipo: 'evento',
+          tipo: 'evento' as const,
           titolo: e.titolo,
           descrizione: e.descrizione,
           data: e.data,
@@ -204,6 +213,8 @@ const Profilo = () => {
           link: `/eventi`
         })) || [])
       ];
+
+      console.log('📋 Feed totale items:', items.length);
 
       // Ordina per data di creazione (dal più recente)
       return items.sort((a, b) => 

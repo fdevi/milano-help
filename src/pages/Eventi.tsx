@@ -165,7 +165,7 @@ const Eventi = () => {
   const { data: eventiReali = [], isLoading } = useQuery({
     queryKey: ['eventi'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('eventi')
         .select('*')
         .order('data', { ascending: true });
@@ -173,7 +173,7 @@ const Eventi = () => {
       
       // Per ogni evento, carica i dati dell'organizzatore
       const eventiConOrganizzatore = await Promise.all(
-        data.map(async (evento) => {
+        (data as any[]).map(async (evento: any) => {
           const { data: profilo } = await supabase
             .from('profiles')
             .select('nome, cognome, avatar_url')
@@ -196,7 +196,7 @@ const Eventi = () => {
     if (!confirm("Sei sicuro di voler eliminare questo evento?")) return;
     
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('eventi')
         .delete()
         .eq('id', eventId);
