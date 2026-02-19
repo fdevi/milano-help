@@ -427,12 +427,10 @@ const Home = () => {
                   <Link to="/nuovo-evento"><Button variant="link" className="mt-2">Crea il primo evento</Button></Link>
                 </Card>
               ) : (
-                <div className="space-y-3">
-                  {console.log("🎉 EVENTI VISUALIZZATI:", eventiVisualizzati)}
-                  {eventiVisualizzati.map((evento) => {
-                    console.log("🎯 Evento:", evento.titolo);
-                    return <EventCard key={evento.id} event={evento} />;
-                  })}
+              <div className="space-y-3">
+                  {eventiVisualizzati.map((evento) => (
+                    <EventCard key={evento.id} event={evento} />
+                  ))}
                 </div>
               )}
             </div>

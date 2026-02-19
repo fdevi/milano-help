@@ -46,17 +46,38 @@ const AnnuncioPage = () => {
     enabled: !!id,
   });
 
-  // Fetch author profile (including contact info)
+  // Fetch author profile — email/telefono solo se utente loggato e consenso dato
   const { data: autore } = useQuery({
     queryKey: ["profilo_autore", annuncio?.user_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, nome, cognome, avatar_url, quartiere, created_at, email, telefono")
+        .select("user_id, nome, cognome, avatar_url, quartiere, created_at")
         .eq("user_id", annuncio!.user_id)
         .single();
       if (error) throw error;
-      return data;
+      // Fetch email/telefono solo se: utente loggato + consenso venditore + non è il proprietario
+      let email: string | null = null;
+      let telefono: string | null = null;
+      if (user && annuncio?.user_id !== user.id) {
+        if ((annuncio as any).mostra_email) {
+          const { data: contactData } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("user_id", annuncio!.user_id)
+            .single();
+          email = contactData?.email ?? null;
+        }
+        if ((annuncio as any).mostra_telefono) {
+          const { data: contactData } = await supabase
+            .from("profiles")
+            .select("telefono")
+            .eq("user_id", annuncio!.user_id)
+            .single();
+          telefono = contactData?.telefono ?? null;
+        }
+      }
+      return { ...data, email, telefono };
     },
     enabled: !!annuncio?.user_id,
   });
@@ -326,16 +347,21 @@ const AnnuncioPage = () => {
                   </Button>
                 )}
 
-                {/* Contact info */}
-                {((annuncio as any).mostra_email && autore?.email) && (
+                {/* Contact info — visibile solo se utente loggato + venditore ha dato consenso */}
+                {user && autore?.email && (
                   <a href={`mailto:${autore.email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <Mail className="w-4 h-4" /> {autore.email}
                   </a>
                 )}
-                {((annuncio as any).mostra_telefono && autore?.telefono) && (
+                {user && autore?.telefono && (
                   <a href={`tel:${autore.telefono}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <Phone className="w-4 h-4" /> {autore.telefono}
                   </a>
+                )}
+                {!user && ((annuncio as any).mostra_email || (annuncio as any).mostra_telefono) && (
+                  <p className="text-xs text-muted-foreground italic">
+                    <a href="/login" className="underline hover:text-primary">Accedi</a> per vedere i contatti del venditore.
+                  </p>
                 )}
 
                 {user && annuncio.user_id !== user?.id && (
