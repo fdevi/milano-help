@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 const mainItems = [
   { title: "Home", url: "/home", icon: Home },
-  { title: "Sezioni", url: "/categories", icon: LayoutList },
+  { title: "Sezioni", url: "/sezioni", icon: LayoutList }, // MODIFICATO: /categories → /sezioni
   { title: "Gruppi", url: "/gruppi", icon: Users },
   { title: "Eventi", url: "/eventi", icon: CalendarDays },
   { title: "Pubblica", url: "/nuovo-annuncio", icon: PlusCircle },
