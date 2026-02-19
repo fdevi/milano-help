@@ -70,7 +70,7 @@ const Index = () => {
       for (const cat of categorie) {
         if (cat.nome === 'evento') {
           // Per la categoria evento, conta gli eventi veri
-          const { count } = await supabase
+          const { count } = await (supabase as any)
             .from("eventi")
             .select("*", { count: "exact", head: true });
           counts[cat.nome] = count || 0;

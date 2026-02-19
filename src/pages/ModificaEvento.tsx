@@ -51,7 +51,7 @@ const ModificaEvento = () => {
   // Carica i dati dell'evento
   useEffect(() => {
     const fetchEvento = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('eventi')
         .select('*')
         .eq('id', id)
@@ -108,7 +108,7 @@ const ModificaEvento = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('eventi')
         .update({
           titolo: form.titolo,
