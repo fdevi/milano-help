@@ -206,15 +206,16 @@ const Index = () => {
     }
   }, [categorie]);
 
-  // Carica eventi in evidenza con React Query
+  // Carica eventi in evidenza con React Query (SOLO ATTIVI)
   const { data: eventi = [], isLoading: loadingEventi, error: errorEventi } = useQuery({
-    queryKey: ['index-eventi'],
+    queryKey: ['index-eventi-attivi'],
     queryFn: async () => {
-      console.log("🔍 Index: inizio caricamento eventi...");
+      console.log("🔍 Index: inizio caricamento eventi attivi...");
       
       const { data, error } = await supabase
         .from('eventi')
         .select('*')
+        .eq('stato', 'attivo')  // ← FILTRO IMPORTANTE
         .order('data', { ascending: true })
         .limit(6);
       
@@ -223,11 +224,11 @@ const Index = () => {
         throw error;
       }
       
-      console.log("📊 Index: eventi dal DB:", data);
-      console.log("📊 Index: numero eventi:", data?.length || 0);
+      console.log("📊 Index: eventi attivi dal DB:", data);
+      console.log("📊 Index: numero eventi attivi:", data?.length || 0);
 
       if (!data || data.length === 0) {
-        console.log("⚠️ Index: nessun evento trovato nel DB");
+        console.log("⚠️ Index: nessun evento attivo trovato nel DB");
         return [];
       }
 
@@ -247,7 +248,7 @@ const Index = () => {
         })
       );
       
-      console.log("✅ Index: eventi con organizzatore:", eventiConOrganizzatore);
+      console.log("✅ Index: eventi attivi con organizzatore:", eventiConOrganizzatore);
       return eventiConOrganizzatore;
     },
   });
