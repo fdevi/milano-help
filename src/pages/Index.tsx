@@ -1,76 +1,129 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Users, MapPin, Shield } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import CategoryCard, { CATEGORY_COLORS } from "@/components/CategoryCard";
-import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/Footer";
-import heroBg from "@/assets/hero-bg.jpg";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Wrench, Search, ShoppingBag, Gift, GraduationCap, Heart, 
+  Home, Store, Baby, Calendar, MessageCircle, DollarSign,
+  Loader2
+} from "lucide-react";
+import Navbar from "@/components/Navbar";
 
-const steps = [
-  { icon: Users, title: "Registrati", description: "Crea il tuo profilo in pochi minuti" },
-  { icon: MapPin, title: "Trova il quartiere", description: "Localizza la tua zona di Milano" },
-  { icon: Shield, title: "Inizia subito", description: "Pubblica annunci e connettiti con i vicini" },
-];
+// Mappa delle icone per ogni categoria
+const iconMap: Record<string, any> = {
+  offro_servizio: Wrench,
+  cerco: Search,
+  in_vendita: ShoppingBag,
+  regalo: Gift,
+  studenti_e_insegnanti: GraduationCap,
+  aiuto_anziani: Heart,
+  immobili: Home,
+  negozi_di_quartiere: Store,
+  bambini: Baby,
+  evento: Calendar,
+  chat: MessageCircle,
+  donazioni: DollarSign,
+};
+
+// Descrizioni per ogni categoria
+const categoryDescriptions: Record<string, string> = {
+  offro_servizio: "Trova professionisti e servizi nel tuo quartiere",
+  cerco: "Chiedi aiuto o cerca qualcosa di specifico",
+  in_vendita: "Compra e vendi oggetti nuovi e usati",
+  regalo: "Offri o ricevi oggetti gratuitamente",
+  studenti_e_insegnanti: "Lezioni, ripetizioni e aiuto compiti",
+  aiuto_anziani: "Supporto e compagnia per anziani",
+  immobili: "Case in vendita e affitto vicino a te",
+  negozi_di_quartiere: "Scopri i negozi e le attività locali",
+  bambini: "Servizi per bambini e famiglie",
+  evento: "Eventi e iniziative di quartiere",
+  chat: "Discussioni e conversazioni tra vicini",
+  donazioni: "Sostieni cause e raccolte fondi locali",
+};
 
 const Index = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [categorie, setCategorie] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [annunciCount, setAnnunciCount] = useState<Record<string, number>>({});
 
-  const { data: categorie = [], isLoading: loading } = useQuery({
-    queryKey: ["categorie_annunci_home"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categorie_annunci")
-        .select("id, icona, label, nome, ordine")
-        .order("ordine");
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-  });
+  // Carica le categorie
+  useEffect(() => {
+    supabase
+      .from("categorie_annunci")
+      .select("id, nome, label, icona, ordine")
+      .order("ordine")
+      .then(({ data }) => {
+        setCategorie(data || []);
+        setLoading(false);
+      });
+  }, []);
 
-  const handleCategoryClick = (_cat: { nome: string; label: string }) => {
-    // Navigation handled by Link wrapper
-  };
+  // Carica il conteggio degli annunci/eventi per ogni categoria
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const counts: Record<string, number> = {};
+      
+      for (const cat of categorie) {
+        if (cat.nome === 'evento') {
+          // Per la categoria evento, conta gli eventi veri
+          const { count } = await supabase
+            .from("eventi")
+            .select("*", { count: "exact", head: true });
+          counts[cat.nome] = count || 0;
+        } else {
+          // Per le altre categorie, conta gli annunci attivi
+          const { count } = await supabase
+            .from("annunci")
+            .select("*", { count: "exact", head: true })
+            .eq("categoria_id", cat.id)
+            .eq("stato", "attivo");
+          counts[cat.nome] = count || 0;
+        }
+      }
+      
+      setAnnunciCount(counts);
+    };
+
+    if (categorie.length > 0) {
+      fetchCounts();
+    }
+  }, [categorie]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
-      {/* Hero */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-16">
-        <div className="absolute inset-0">
-          <img src={heroBg} alt="Milano community" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-foreground/60" />
-        </div>
-        <div className="relative z-10 container mx-auto px-4 text-center">
+      
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-12 px-4 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
+        <div className="container mx-auto max-w-6xl relative">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="font-heading font-extrabold text-4xl md:text-6xl lg:text-7xl text-background mb-6 leading-tight">
-              La tua community<br />
-              <span className="text-secondary">di quartiere</span>
+            <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-foreground mb-4">
+              La tua community
+              <span className="text-primary block">di quartiere</span>
             </h1>
-            <p className="text-lg md:text-xl text-background/80 max-w-2xl mx-auto mb-10">
-              Connetti, aiuta e cresci insieme ai tuoi vicini a Milano. Offri servizi, cerca aiuto, vendi e regala — tutto nel tuo quartiere.
+            <p className="text-lg text-muted-foreground mb-8">
+              Connetti, aiuta e cresci insieme ai tuoi vicini a Milano. 
+              Offri servizi, cerca aiuto, vendi e regala — tutto nel tuo quartiere.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/registrati">
-                <Button variant="hero" size="lg" className="text-base px-8 py-6">
-                  Unisciti alla community <ArrowRight className="w-5 h-5 ml-1" />
+                <Button size="lg" variant="hero" className="gap-2">
+                  Unisciti alla community
                 </Button>
               </Link>
-              <Link to="/nuovo-annuncio">
-                <Button variant="outline" size="lg" className="text-base px-8 py-6 bg-background/10 border-background/30 text-background hover:bg-background/20">
-                  Pubblica annuncio <ArrowRight className="w-5 h-5 ml-1" />
+              <Link to="/come-funziona">
+                <Button size="lg" variant="outline">
+                  Scopri le sezioni
                 </Button>
               </Link>
             </div>
@@ -78,106 +131,91 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Categories */}
-      <section id="categorie" className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-foreground mb-4">
-              Esplora le <span className="text-gradient-primary">Sezioni</span>
+      {/* Categories Section */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-heading font-bold text-foreground mb-3">
+              Esplora le Sezioni
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Tutto quello di cui hai bisogno nel tuo quartiere, a portata di mano.
             </p>
-          </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="bg-card rounded-xl p-6 border">
-                    <Skeleton className="w-12 h-12 rounded-lg mb-4" />
-                    <Skeleton className="h-5 w-2/3 mb-2" />
-                  </div>
-                ))
-              : categorie.length === 0
-              ? <p className="col-span-full text-center text-muted-foreground">Nessuna categoria disponibile.</p>
-              : categorie.map((cat, i) => (
-                  <CategoryCard
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {categorie.map((cat, index) => {
+                const Icon = iconMap[cat.nome] || Search;
+                const descrizione = categoryDescriptions[cat.nome] || "Esplora gli annunci di questa sezione";
+                const annunciTotali = annunciCount[cat.nome] || 0;
+                
+                return (
+                  <motion.div
                     key={cat.id}
-                    iconName={cat.icona}
-                    title={cat.label}
-                    color={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
-                    delay={i * 0.05}
-                    onClick={() => navigate(`/categoria/${cat.nome}`)}
-                  />
-                ))
-            }
-          </div>
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    {/* Link condizionale: evento → /eventi, altre categorie → /categoria/nome */}
+                    {cat.nome === 'evento' ? (
+                      <Link to="/eventi">
+                        <Card className="p-5 hover:shadow-lg transition-all group hover:-translate-y-1 cursor-pointer">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform">
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-heading font-bold text-foreground truncate">
+                                  {cat.label}
+                                </h3>
+                                <Badge variant="secondary" className="ml-2 shrink-0">
+                                  {annunciTotali}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {descrizione}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    ) : (
+                      <Link to={`/categoria/${cat.nome}`}>
+                        <Card className="p-5 hover:shadow-lg transition-all group hover:-translate-y-1 cursor-pointer">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform">
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-heading font-bold text-foreground truncate">
+                                  {cat.label}
+                                </h3>
+                                <Badge variant="secondary" className="ml-2 shrink-0">
+                                  {annunciTotali}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {descrizione}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
-
-      {/* How it works */}
-      <section id="come-funziona" className="py-20 bg-muted/50">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
-          >
-            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-foreground mb-4">
-              Come <span className="text-gradient-warm">Funziona</span>
-            </h2>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">
-                  <step.icon className="w-8 h-8 text-primary-foreground" />
-                </div>
-                <div className="font-heading font-bold text-sm text-primary mb-2">Passo {i + 1}</div>
-                <h3 className="font-heading font-bold text-xl text-foreground mb-2">{step.title}</h3>
-                <p className="text-muted-foreground text-sm">{step.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 bg-gradient-primary">
-        <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-primary-foreground mb-4">
-              Entra nel tuo quartiere
-            </h2>
-            <p className="text-primary-foreground/80 mb-8 max-w-lg mx-auto">
-              Unisciti a migliaia di milanesi che si aiutano ogni giorno.
-            </p>
-            <Link to="/registrati">
-              <Button variant="warm" size="lg" className="text-base px-10 py-6">
-                Registrati Gratis <ArrowRight className="w-5 h-5 ml-1" />
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      <Footer />
     </div>
   );
 };
