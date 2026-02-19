@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,29 +26,45 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import AuthLayout from "@/components/AuthLayout";
-
-const CATEGORIE_EVENTI = ["Musica", "Cibo", "Sport", "Cultura", "Sociale", "Mercatino", "Volontariato", "Workshop"];
+import { useQuartieri } from "@/hooks/useQuartieri";
 
 const NuovoEvento = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { quartieri } = useQuartieri();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
+  const [categoriaEventoId, setCategoriaEventoId] = useState<string>("");
   const [form, setForm] = useState({
     titolo: "",
     descrizione: "",
-    categoria: "",
     luogo: "",
     prezzo: "",
     gratuito: false,
-    max_partecipanti: "",
+    quartiere: "",
   });
+
+  // Carica l'ID della categoria "evento"
+  useEffect(() => {
+    const fetchCategoriaEvento = async () => {
+      const { data } = await supabase
+        .from("categorie_annunci")
+        .select("id")
+        .eq("nome", "evento")
+        .single();
+      
+      if (data) {
+        setCategoriaEventoId(data.id);
+      }
+    };
+    fetchCategoriaEvento();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!form.titolo || !date || !form.luogo) {
+    if (!form.titolo || !date || !form.luogo || !categoriaEventoId) {
       toast({
         title: "Campi obbligatori",
         description: "Compila tutti i campi richiesti.",
@@ -58,28 +75,26 @@ const NuovoEvento = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("eventi").insert({
+      // Inserisci nella tabella annunci, non eventi
+      const { error } = await supabase.from("annunci").insert({
         titolo: form.titolo,
         descrizione: form.descrizione,
-        categoria: form.categoria,
-        data: date.toISOString(),
-        luogo: form.luogo,
+        categoria_id: categoriaEventoId,
+        quartiere: form.quartiere || null,
+        user_id: user.id,
+        stato: "in_moderazione",
         prezzo: form.gratuito ? 0 : parseFloat(form.prezzo) || null,
-        gratuito: form.gratuito,
-        max_partecipanti: form.max_partecipanti 
-          ? parseInt(form.max_partecipanti) 
-          : null,
-        organizzatore_id: user.id,
-        stato: "in_moderazione", // ← AGGIUNTO: stato di default
+        // Salviamo data e luogo in campi extra? Per ora li mettiamo nella descrizione
+        // Oppure potremmo aggiungere campi specifici alla tabella annunci
       });
 
       if (error) throw error;
 
       toast({
         title: "Evento creato!",
-        description: "Il tuo evento è stato inviato e sarà visibile dopo l'approvazione dell'admin.",
+        description: "Il tuo evento è stato inviato e sarà visibile dopo l'approvazione.",
       });
-      navigate("/eventi");
+      navigate("/categoria/evento");
     } catch (error: any) {
       toast({
         title: "Errore",
@@ -94,7 +109,6 @@ const NuovoEvento = () => {
   return (
     <AuthLayout>
       <div className="max-w-2xl mx-auto">
-        {/* Bottone Indietro */}
         <Button
           variant="ghost"
           size="sm"
@@ -114,7 +128,7 @@ const NuovoEvento = () => {
               id="titolo"
               value={form.titolo}
               onChange={(e) => setForm({ ...form, titolo: e.target.value })}
-              placeholder="Es. Concerto in piazza"
+              placeholder="Es. Festa di quartiere"
               required
             />
           </div>
@@ -131,27 +145,7 @@ const NuovoEvento = () => {
             />
           </div>
 
-          {/* Categoria */}
-          <div>
-            <Label htmlFor="categoria">Categoria</Label>
-            <Select
-              value={form.categoria}
-              onValueChange={(v) => setForm({ ...form, categoria: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona una categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIE_EVENTI.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Data */}
+          {/* Data e ora - da salvare nella descrizione o in campi custom */}
           <div>
             <Label>Data e ora *</Label>
             <Popover>
@@ -203,6 +197,23 @@ const NuovoEvento = () => {
             />
           </div>
 
+          {/* Quartiere */}
+          <div>
+            <Label htmlFor="quartiere">Quartiere</Label>
+            <Select value={form.quartiere} onValueChange={(v) => setForm({ ...form, quartiere: v })}>
+              <SelectTrigger id="quartiere">
+                <SelectValue placeholder="Seleziona un quartiere" />
+              </SelectTrigger>
+              <SelectContent>
+                {quartieri.map((q) => (
+                  <SelectItem key={q.nome} value={q.nome}>
+                    {q.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Prezzo */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -232,26 +243,12 @@ const NuovoEvento = () => {
             )}
           </div>
 
-          {/* Max partecipanti */}
-          <div>
-            <Label htmlFor="max_partecipanti">Numero massimo partecipanti</Label>
-            <Input
-              id="max_partecipanti"
-              type="number"
-              min="1"
-              value={form.max_partecipanti}
-              onChange={(e) => setForm({ ...form, max_partecipanti: e.target.value })}
-              placeholder="Lasciare vuoto per nessun limite"
-            />
-          </div>
-
           {/* Nota moderazione */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
             <p className="font-medium mb-1">📋 Nota sulla moderazione</p>
             <p>Gli eventi vengono pubblicati solo dopo l'approvazione dell'admin. Riceverai una notifica quando l'evento sarà approvato.</p>
           </div>
 
-          {/* Bottone submit */}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
