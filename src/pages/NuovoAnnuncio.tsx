@@ -52,6 +52,7 @@ const NuovoAnnuncio = () => {
       const { data, error } = await supabase
         .from("categorie_annunci")
         .select("id, nome, label, icona, richiede_prezzo")
+        .neq("nome", "evento")  // ← ESCLUDE LA CATEGORIA EVENTO
         .order("ordine");
       if (error) throw error;
       return data || [];
