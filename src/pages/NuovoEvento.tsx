@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, Loader2, ArrowLeft } from "lucide-react";
+import { CalendarIcon, Loader2, ArrowLeft, X, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -28,14 +27,19 @@ import { cn } from "@/lib/utils";
 import AuthLayout from "@/components/AuthLayout";
 import { useQuartieri } from "@/hooks/useQuartieri";
 
+const MAX_IMAGES = 5;
+
 const NuovoEvento = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { quartieri } = useQuartieri();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
   const [categoriaEventoId, setCategoriaEventoId] = useState<string>("");
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [form, setForm] = useState({
     titolo: "",
     descrizione: "",
@@ -61,8 +65,45 @@ const NuovoEvento = () => {
     fetchCategoriaEvento();
   }, []);
 
+  const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const remaining = MAX_IMAGES - images.length;
+    const toAdd = files.slice(0, remaining);
+
+    setImages((prev) => [...prev, ...toAdd]);
+    toAdd.forEach((file) => {
+      const url = URL.createObjectURL(file);
+      setPreviews((prev) => [...prev, url]);
+    });
+    e.target.value = "";
+  };
+
+  const removeImage = (index: number) => {
+    URL.revokeObjectURL(previews[index]);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (annuncioId: string): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const file of images) {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/${annuncioId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("annunci-images")
+        .upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage
+        .from("annunci-images")
+        .getPublicUrl(path);
+      urls.push(urlData.publicUrl);
+    }
+    return urls;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!user) return;
     if (!form.titolo || !date || !form.luogo || !categoriaEventoId) {
       toast({
@@ -75,20 +116,31 @@ const NuovoEvento = () => {
 
     setLoading(true);
     try {
-      // Inserisci nella tabella annunci, non eventi
-      const { error } = await supabase.from("annunci").insert({
+      // Uniamo data e luogo nella descrizione
+      const dataFormattata = date ? format(date, "dd/MM/yyyy HH:mm", { locale: it }) : "";
+      const descrizioneCompleta = `${form.descrizione}\n\n📅 Data: ${dataFormattata}\n📍 Luogo: ${form.luogo}`;
+
+      // Crea l'annuncio
+      const { data: annuncio, error } = await supabase.from("annunci").insert({
         titolo: form.titolo,
-        descrizione: form.descrizione,
+        descrizione: descrizioneCompleta,
         categoria_id: categoriaEventoId,
         quartiere: form.quartiere || null,
         user_id: user.id,
         stato: "in_moderazione",
         prezzo: form.gratuito ? 0 : parseFloat(form.prezzo) || null,
-        // Salviamo data e luogo in campi extra? Per ora li mettiamo nella descrizione
-        // Oppure potremmo aggiungere campi specifici alla tabella annunci
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      // Upload foto se presenti
+      if (images.length > 0) {
+        const urls = await uploadImages(annuncio.id);
+        await supabase
+          .from("annunci")
+          .update({ immagini: urls })
+          .eq("id", annuncio.id);
+      }
 
       toast({
         title: "Evento creato!",
@@ -145,7 +197,7 @@ const NuovoEvento = () => {
             />
           </div>
 
-          {/* Data e ora - da salvare nella descrizione o in campi custom */}
+          {/* Data e ora */}
           <div>
             <Label>Data e ora *</Label>
             <Popover>
@@ -241,6 +293,46 @@ const NuovoEvento = () => {
                 />
               </div>
             )}
+          </div>
+
+          {/* Upload foto - NUOVO */}
+          <div>
+            <Label>Foto (max {MAX_IMAGES})</Label>
+            <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {previews.map((src, i) => (
+                <div key={i} className="relative group aspect-square rounded-md overflow-hidden border">
+                  <img src={src} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {images.length < MAX_IMAGES && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                  <span className="text-xs">Aggiungi</span>
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageAdd}
+              className="hidden"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Formati supportati: JPG, PNG, GIF. Max 5 foto.
+            </p>
           </div>
 
           {/* Nota moderazione */}
