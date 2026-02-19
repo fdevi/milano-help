@@ -42,7 +42,6 @@ const Navbar = () => {
         </Link>
 
         <div style={{ display: 'none', gap: '1.5rem', alignItems: 'center' }}>
-          <Link to="/categories">Categorie</Link>
           <Link to="/how-it-works">Come Funziona</Link>
         </div>
 
@@ -114,7 +113,7 @@ const Navbar = () => {
           padding: '1rem'
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <Link to="/categories">Categorie</Link>
+            {/* RIMOSSO: <Link to="/categories">Categorie</Link> */}
             <Link to="/how-it-works">Come Funziona</Link>
             <Link to="/gruppi">Gruppi</Link>
             {user && (
