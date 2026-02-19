@@ -1,11 +1,11 @@
 // Force rebuild - 2026-02-17
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NuovoEvento from "./pages/NuovoEvento";
 import ModificaEvento from "./pages/ModificaEvento";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
@@ -76,7 +76,7 @@ const App = () => (
             <Route path="/admin/eventi" element={<AdminRoute><AdminEventi /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
-            <Route path="/eventi" element={<Eventi />} />
+            <Route path="/eventi" element={<Navigate to="/categoria/evento" replace />} />
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
             <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
