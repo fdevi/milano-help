@@ -12,6 +12,8 @@ import AdminRoute from "@/components/AdminRoute";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
@@ -57,6 +59,8 @@ const App = () => (
             <Route path="/annuncio/:id" element={<AnnuncioPage />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/gruppi" element={<Gruppi />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/termini" element={<Terms />} />
             <Route path="/gruppo/:id" element={<ProtectedRoute><GruppoDetail /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/sezioni" element={<ProtectedRoute><Sezioni /></ProtectedRoute>} />

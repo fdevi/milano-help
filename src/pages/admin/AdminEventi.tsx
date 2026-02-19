@@ -43,49 +43,79 @@ const AdminEventi = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [categoriaEventoId, setCategoriaEventoId] = useState<string | null>(null);
 
-  // Carica tutti gli eventi con i dati degli organizzatori
-  const { data: eventi = [], isLoading } = useQuery({
-    queryKey: ['admin-eventi'],
+  // Carica l'ID della categoria "evento"
+  useQuery({
+    queryKey: ['categoria-evento-id'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('eventi')
-        .select('*')
+        .from("categorie_annunci")
+        .select("id")
+        .eq("nome", "evento")
+        .single();
+      
+      if (error) {
+        console.error("Errore nel caricamento della categoria evento:", error);
+        return null;
+      }
+      
+      if (data) {
+        setCategoriaEventoId(data.id);
+      }
+      return data?.id;
+    },
+  });
+
+  // Carica tutti gli annunci della categoria "evento"
+  const { data: eventi = [], isLoading } = useQuery({
+    queryKey: ['admin-eventi-annunci', categoriaEventoId],
+    queryFn: async () => {
+      if (!categoriaEventoId) return [];
+
+      const { data, error } = await supabase
+        .from('annunci')
+        .select('*, categorie_annunci(*)')
+        .eq('categoria_id', categoriaEventoId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
 
-      // Carica i profili degli organizzatori
-      const organizzatoriIds = [...new Set(data.map(e => e.organizzatore_id))];
+      // Carica i profili degli utenti
+      const userIds = [...new Set(data.map(e => e.user_id))];
       const { data: profili } = await supabase
         .from('profiles')
         .select('user_id, nome, cognome, email')
-        .in('user_id', organizzatoriIds);
+        .in('user_id', userIds);
 
       const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
 
       return data.map(evento => ({
         ...evento,
-        organizzatore: profiliMap.get(evento.organizzatore_id) || { 
+        utente: profiliMap.get(evento.user_id) || { 
           nome: 'Utente', 
           cognome: '', 
           email: 'n/a' 
-        }
+        },
+        // Estrai data e luogo dalla descrizione (se salvati lì)
+        data_evento: evento.descrizione?.match(/📅 Data: (.*?)\n/)?.[1] || "Data non specificata",
+        luogo_evento: evento.descrizione?.match(/📍 Luogo: (.*?)$/)?.[1] || evento.quartiere || "Luogo non specificato",
       }));
     },
+    enabled: !!categoriaEventoId,
   });
 
   // Approva evento
   const approvaEvento = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('eventi')
+        .from('annunci')
         .update({ stato: 'attivo' })
         .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-eventi'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-eventi-annunci'] });
       toast({
         title: "Evento approvato",
         description: "L'evento è ora visibile al pubblico.",
@@ -104,13 +134,13 @@ const AdminEventi = () => {
   const rifiutaEvento = useMutation({
     mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => {
       const { error } = await supabase
-        .from('eventi')
-        .update({ stato: 'rifiutato', motivo_rifiuto: motivo })
+        .from('annunci')
+        .update({ stato: 'rifiutato' })
         .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-eventi'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-eventi-annunci'] });
       toast({
         title: "Evento rifiutato",
         description: "L'evento non sarà visibile al pubblico.",
@@ -129,13 +159,13 @@ const AdminEventi = () => {
   const eliminaEvento = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('eventi')
+        .from('annunci')
         .delete()
         .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-eventi'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-eventi-annunci'] });
       toast({
         title: "Evento eliminato",
         description: "L'evento è stato rimosso definitivamente.",
@@ -165,8 +195,8 @@ const AdminEventi = () => {
 
   const filteredEventi = eventi.filter((e: any) => 
     e.titolo.toLowerCase().includes(search.toLowerCase()) ||
-    e.organizzatore?.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    e.luogo.toLowerCase().includes(search.toLowerCase())
+    e.utente?.nome?.toLowerCase().includes(search.toLowerCase()) ||
+    e.luogo_evento?.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
@@ -277,82 +307,70 @@ const AdminEventi = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredEventi.map((evento: any) => {
-                    const dataEvento = new Date(evento.data);
-                    
-                    return (
-                      <TableRow key={evento.id}>
-                        <TableCell className="font-medium">
-                          {evento.titolo}
-                        </TableCell>
-                        <TableCell>
-                          {evento.organizzatore?.nome || 'Utente'} {evento.organizzatore?.cognome || ''}
-                          <div className="text-xs text-muted-foreground">
-                            {evento.organizzatore?.email || 'Email non disponibile'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {format(dataEvento, "d MMM yyyy, HH:mm", { locale: it })}
-                        </TableCell>
-                        <TableCell>{evento.luogo}</TableCell>
-                        <TableCell>{evento.partecipanti || 0}</TableCell>
-                        <TableCell>{getStatoBadge(evento.stato)}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={() => navigate(`/eventi`)}
-                              >
-                                <Eye className="w-4 h-4 mr-2" /> Vai alla pagina
-                              </DropdownMenuItem>
-                              
-                              {evento.stato === 'in_moderazione' && (
-                                <>
-                                  <DropdownMenuItem 
-                                    onClick={() => approvaEvento.mutate(evento.id)}
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" /> Approva
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => {
-                                      const motivo = prompt("Inserisci il motivo del rifiuto:");
-                                      if (motivo) {
-                                        rifiutaEvento.mutate({ id: evento.id, motivo });
-                                      }
-                                    }}
-                                  >
-                                    <XCircle className="w-4 h-4 mr-2 text-red-600" /> Rifiuta
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              
-                              <DropdownMenuItem 
-                                onClick={() => navigate(`/modifica-evento/${evento.id}`)}
-                              >
-                                <Edit className="w-4 h-4 mr-2" /> Modifica
-                              </DropdownMenuItem>
-                              
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  if (confirm("Sei sicuro di voler eliminare definitivamente questo evento?")) {
-                                    eliminaEvento.mutate(evento.id);
-                                  }
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" /> Elimina
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  filteredEventi.map((evento: any) => (
+                    <TableRow key={evento.id}>
+                      <TableCell className="font-medium">
+                        {evento.titolo}
+                      </TableCell>
+                      <TableCell>
+                        {evento.utente?.nome || 'Utente'} {evento.utente?.cognome || ''}
+                        <div className="text-xs text-muted-foreground">
+                          {evento.utente?.email || 'Email non disponibile'}
+                        </div>
+                      </TableCell>
+                      <TableCell>{evento.data_evento}</TableCell>
+                      <TableCell>{evento.luogo_evento}</TableCell>
+                      <TableCell>0</TableCell>
+                      <TableCell>{getStatoBadge(evento.stato)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => navigate(`/categoria/evento`)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" /> Vai alla pagina
+                            </DropdownMenuItem>
+                            
+                            {evento.stato === 'in_moderazione' && (
+                              <>
+                                <DropdownMenuItem 
+                                  onClick={() => approvaEvento.mutate(evento.id)}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" /> Approva
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    const motivo = prompt("Inserisci il motivo del rifiuto:");
+                                    if (motivo) {
+                                      rifiutaEvento.mutate({ id: evento.id, motivo });
+                                    }
+                                  }}
+                                >
+                                  <XCircle className="w-4 h-4 mr-2 text-red-600" /> Rifiuta
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                if (confirm("Sei sicuro di voler eliminare definitivamente questo evento?")) {
+                                  eliminaEvento.mutate(evento.id);
+                                }
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Elimina
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
