@@ -10,7 +10,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Wrench, Search, ShoppingBag, Gift, GraduationCap, Heart, 
   Home, Store, Baby, Calendar, MessageCircle, DollarSign,
-  Loader2, ArrowRight, MapPin, Users, Shield, Award, Building2, Sprout, Briefcase
+  Loader2, ArrowRight, MapPin, Users, Shield, Award, Building2, Sprout, Briefcase,
+  Clock
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -99,6 +100,51 @@ const areas = [
   }
 ];
 
+// Funzione per formattare data evento
+const formatEventDate = (iso: string) => {
+  const d = new Date(iso);
+  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const monthNames = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  return `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}, ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+};
+
+// Componente EventCard
+const EventCard = ({ event }: { event: any }) => {
+  const orgInitials = event.organizzatore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?";
+  return (
+    <Card className="p-4 hover:shadow-card-hover transition-shadow cursor-pointer">
+      <div className="flex items-start gap-3">
+        <div className="bg-primary/10 rounded-lg p-2 shrink-0">
+          <Calendar className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <Link to={`/eventi`} className="hover:underline">
+            <h4 className="font-medium text-foreground truncate">{event.titolo}</h4>
+          </Link>
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+            <Clock className="w-3 h-3" />
+            <span>{formatEventDate(event.data)}</span>
+          </p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            <span className="truncate">{event.luogo}</span>
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <Avatar className="w-5 h-5">
+              <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">{event.organizzatore_nome || "Utente"}</span>
+            <Badge variant="secondary" className="text-[10px] px-1.5">
+              {event.gratuito ? "Gratuito" : `€${event.prezzo}`}
+            </Badge>
+          </div>
+        </div>
+        <Badge variant="outline" className="shrink-0">{event.partecipanti || 0} partecipanti</Badge>
+      </div>
+    </Card>
+  );
+};
+
 const Index = () => {
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,6 +205,52 @@ const Index = () => {
       fetchCounts();
     }
   }, [categorie]);
+
+  // Carica eventi in evidenza con React Query
+  const { data: eventi = [], isLoading: loadingEventi, error: errorEventi } = useQuery({
+    queryKey: ['index-eventi'],
+    queryFn: async () => {
+      console.log("🔍 Index: inizio caricamento eventi...");
+      
+      const { data, error } = await supabase
+        .from('eventi')
+        .select('*')
+        .order('data', { ascending: true })
+        .limit(6);
+      
+      if (error) {
+        console.error("❌ Index: errore Supabase:", error);
+        throw error;
+      }
+      
+      console.log("📊 Index: eventi dal DB:", data);
+      console.log("📊 Index: numero eventi:", data?.length || 0);
+
+      if (!data || data.length === 0) {
+        console.log("⚠️ Index: nessun evento trovato nel DB");
+        return [];
+      }
+
+      console.log("👤 Index: caricamento profili organizzatori...");
+      const eventiConOrganizzatore = await Promise.all(
+        data.map(async (evento: any) => {
+          const { data: profilo } = await supabase
+            .from('profiles')
+            .select('nome, cognome')
+            .eq('user_id', evento.organizzatore_id)
+            .single();
+          
+          return { 
+            ...evento, 
+            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente' 
+          };
+        })
+      );
+      
+      console.log("✅ Index: eventi con organizzatore:", eventiConOrganizzatore);
+      return eventiConOrganizzatore;
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -301,6 +393,60 @@ const Index = () => {
                 );
               })}
             </div>
+          )}
+        </div>
+      </section>
+
+      {/* Eventi Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-heading font-bold text-foreground mb-3">
+              Prossimi eventi
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Scopri gli eventi in programma nel tuo quartiere
+            </p>
+          </div>
+
+          {loadingEventi ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : errorEventi ? (
+            <Card className="p-12 text-center">
+              <Calendar className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground mb-2">Impossibile caricare gli eventi</p>
+              <p className="text-sm text-muted-foreground/60 mb-4">
+                {(errorEventi as Error)?.message || "Errore di connessione"}
+              </p>
+              <Link to="/eventi">
+                <Button variant="outline">Vai alla pagina eventi</Button>
+              </Link>
+            </Card>
+          ) : eventi.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Calendar className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground mb-2">Nessun evento in programma</p>
+              <Link to="/eventi">
+                <Button variant="link">Scopri tutti gli eventi</Button>
+              </Link>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {eventi.map((evento) => (
+                  <EventCard key={evento.id} event={evento} />
+                ))}
+              </div>
+              <div className="text-center mt-8">
+                <Link to="/eventi">
+                  <Button variant="outline" size="lg" className="gap-2">
+                    Vedi tutti gli eventi <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>
