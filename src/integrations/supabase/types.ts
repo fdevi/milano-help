@@ -291,9 +291,11 @@ export type Database = {
           immagine: string | null
           luogo: string
           max_partecipanti: number | null
+          motivo_rifiuto: string | null
           organizzatore_id: string
           partecipanti: number | null
           prezzo: number | null
+          stato: string | null
           titolo: string
           updated_at: string | null
         }
@@ -307,9 +309,11 @@ export type Database = {
           immagine?: string | null
           luogo: string
           max_partecipanti?: number | null
+          motivo_rifiuto?: string | null
           organizzatore_id: string
           partecipanti?: number | null
           prezzo?: number | null
+          stato?: string | null
           titolo: string
           updated_at?: string | null
         }
@@ -323,9 +327,11 @@ export type Database = {
           immagine?: string | null
           luogo?: string
           max_partecipanti?: number | null
+          motivo_rifiuto?: string | null
           organizzatore_id?: string
           partecipanti?: number | null
           prezzo?: number | null
+          stato?: string | null
           titolo?: string
           updated_at?: string | null
         }
