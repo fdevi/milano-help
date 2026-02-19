@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, MessageCircle, Search, Heart } from "lucide-react";
+import { Bell, MessageCircle, Search, Heart, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,11 +31,16 @@ const TopNavbar = () => {
       });
   }, [user]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card/95 backdrop-blur-md border-b border-border">
       <div className="h-full flex items-center justify-between px-4 max-w-[1600px] mx-auto">
-        {/* Left: Logo */}
-        <Link to="/home" className="flex items-center gap-2 shrink-0">
+        {/* Left: Logo - MODIFICATO: ora punta a / invece di /home */}
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
             <Heart className="w-4 h-4 text-primary-foreground" />
           </div>
@@ -81,6 +86,15 @@ const TopNavbar = () => {
               </AvatarFallback>
             </Avatar>
           </Link>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg hover:bg-muted transition-colors ml-1"
+            title="Esci"
+          >
+            <LogOut className="w-5 h-5 text-muted-foreground" />
+          </button>
         </div>
       </div>
     </header>
