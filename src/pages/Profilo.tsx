@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
   Loader2, User, Bell, Shield, Eye, Mail, Phone, ImageIcon,
+  Calendar, MessageCircle, Clock, Users
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,19 @@ async function fetchMyAnnunci(userId: string) {
   return data || [];
 }
 
+// Funzione per formattare data evento
+const formatEventDate = (iso: string) => {
+  const d = new Date(iso);
+  const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+  const monthNames = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+  const day = dayNames[d.getDay()];
+  const date = d.getDate();
+  const month = monthNames[d.getMonth()];
+  const hours = d.getHours().toString().padStart(2, "0");
+  const mins = d.getMinutes().toString().padStart(2, "0");
+  return `${day} ${date} ${month}, ${hours}:${mins}`;
+};
+
 // ── Status badge color map ──
 const statoBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   attivo: { label: "Attivo", variant: "default" },
@@ -123,6 +137,79 @@ const Profilo = () => {
   const { data: myAnnunci, isLoading: annunciLoading } = useQuery({
     queryKey: ["profile-annunci", user?.id],
     queryFn: () => fetchMyAnnunci(user!.id),
+    enabled: !!user,
+  });
+
+  // Carica il feed cronologico
+  const { data: feedData = [], isLoading: feedLoading } = useQuery({
+    queryKey: ['feed-cronologico', user?.id],
+    queryFn: async () => {
+      // Carica annunci recenti
+      const { data: annunci } = await supabase
+        .from('annunci')
+        .select(`
+          *,
+          categorie_annunci (nome, label)
+        `)
+        .eq('stato', 'attivo')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      // Carica eventi recenti
+      const { data: eventi } = await supabase
+        .from('eventi')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      // Carica i profili degli autori
+      const userIds = [
+        ...(annunci?.map(a => a.user_id) || []),
+        ...(eventi?.map(e => e.organizzatore_id) || [])
+      ];
+      
+      const { data: profili } = await supabase
+        .from('profiles')
+        .select('user_id, nome, cognome, avatar_url')
+        .in('user_id', userIds);
+
+      const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
+
+      // Combina e formatta tutti gli item
+      const items = [
+        ...(annunci?.map(a => ({
+          id: a.id,
+          tipo: 'annuncio',
+          titolo: a.titolo,
+          descrizione: a.descrizione,
+          prezzo: a.prezzo,
+          immagini: a.immagini,
+          created_at: a.created_at,
+          autore: profiliMap.get(a.user_id) || { nome: 'Utente', cognome: '' },
+          categoria: a.categorie_annunci,
+          link: `/annuncio/${a.id}`
+        })) || []),
+        ...(eventi?.map(e => ({
+          id: e.id,
+          tipo: 'evento',
+          titolo: e.titolo,
+          descrizione: e.descrizione,
+          data: e.data,
+          luogo: e.luogo,
+          gratuito: e.gratuito,
+          prezzo: e.prezzo,
+          partecipanti: e.partecipanti,
+          created_at: e.created_at,
+          autore: profiliMap.get(e.organizzatore_id) || { nome: 'Utente', cognome: '' },
+          link: `/eventi`
+        })) || [])
+      ];
+
+      // Ordina per data di creazione (dal più recente)
+      return items.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    },
     enabled: !!user,
   });
 
@@ -310,8 +397,11 @@ const Profilo = () => {
         </motion.div>
 
         {/* ── Tabs ── */}
-        <Tabs defaultValue="dati" className="w-full">
-          <TabsList className="w-full grid grid-cols-3">
+        <Tabs defaultValue="feed" className="w-full">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="feed" className="gap-1.5">
+              <MessageCircle className="w-4 h-4" /> Feed
+            </TabsTrigger>
             <TabsTrigger value="dati" className="gap-1.5">
               <User className="w-4 h-4" /> I miei dati
             </TabsTrigger>
@@ -322,6 +412,103 @@ const Profilo = () => {
               <Shield className="w-4 h-4" /> Preferenze
             </TabsTrigger>
           </TabsList>
+
+          {/* ── Tab: Feed ── */}
+          <TabsContent value="feed">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {feedLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Card key={i} className="p-4">
+                      <div className="flex gap-3">
+                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-1/3" />
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-3 w-2/3" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : feedData.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <div className="text-6xl mb-4">📭</div>
+                  <h3 className="text-lg font-medium mb-2">Nessuna attività recente</h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Quando qualcuno pubblicherà annunci o eventi, li vedrai qui in ordine cronologico.
+                  </p>
+                  <Link to="/nuovo-annuncio">
+                    <Button>
+                      Pubblica il tuo primo annuncio
+                    </Button>
+                  </Link>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {feedData.map((item: any) => (
+                    <Card key={`${item.tipo}-${item.id}`} className="p-4 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = item.link}>
+                      <div className="flex items-start gap-3">
+                        {/* Icona in base al tipo */}
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          item.tipo === 'evento' ? 'bg-secondary/10' : 'bg-primary/10'
+                        }`}>
+                          {item.tipo === 'evento' ? (
+                            <Calendar className={`w-5 h-5 text-secondary`} />
+                          ) : (
+                            <MessageCircle className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
+
+                        {/* Contenuto */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-medium text-foreground truncate">
+                              {item.titolo}
+                            </h4>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: it })}
+                            </span>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                            {item.descrizione || "Nessuna descrizione"}
+                          </p>
+
+                          {/* Dettagli specifici per tipo */}
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
+                                {item.autore?.nome?.[0] || 'U'}{item.autore?.cognome?.[0] || ''}
+                              </span>
+                              {item.autore?.nome || 'Utente'} {item.autore?.cognome || ''}
+                            </span>
+
+                            {item.tipo === 'evento' && (
+                              <>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatEventDate(item.data)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {item.luogo}
+                                </span>
+                              </>
+                            )}
+
+                            {item.tipo === 'annuncio' && item.prezzo > 0 && (
+                              <Badge variant="secondary">€{item.prezzo.toFixed(2)}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
 
           {/* ── Tab: I miei dati ── */}
           <TabsContent value="dati">

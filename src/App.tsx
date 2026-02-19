@@ -1,4 +1,6 @@
 // Force rebuild - 2026-02-17
+import NuovoEvento from "./pages/NuovoEvento";
+import ModificaEvento from "./pages/ModificaEvento";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,6 +37,7 @@ import GruppoDetail from "./pages/GruppoDetail";
 import Sezioni from "./pages/Sezioni";
 import Profilo from "./pages/Profilo";
 import Eventi from "./pages/Eventi";
+import AdminEventi from "./pages/admin/AdminEventi";
 
 const queryClient = new QueryClient();
 
@@ -70,10 +73,13 @@ const App = () => (
             <Route path="/admin/moderazione/annunci" element={<AdminRoute><AdminModAnnunci /></AdminRoute>} />
             <Route path="/admin/moderazione/segnalazioni" element={<AdminRoute><AdminSegnalazioni /></AdminRoute>} />
             <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
+            <Route path="/admin/eventi" element={<AdminRoute><AdminEventi /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
-            <Route path="/eventi" element={<ProtectedRoute><Eventi /></ProtectedRoute>} />
+            <Route path="/eventi" element={<Eventi />} />
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
+            <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
+            <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

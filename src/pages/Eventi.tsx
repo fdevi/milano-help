@@ -1,8 +1,21 @@
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
-  CalendarDays, MapPin, Users, Plus, Filter, Clock,
-  ImageIcon, Ticket, ChevronRight,
+  CalendarDays,
+  MapPin,
+  Users,
+  Plus,
+  Filter,
+  Clock,
+  Ticket,
+  MoreHorizontal,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,97 +23,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import AuthLayout from "@/components/AuthLayout";
-import { Link } from "react-router-dom";
-
-// ── Mock data ──
-const MOCK_EVENTS = [
-  {
-    id: "1",
-    titolo: "Aperitivo di Quartiere",
-    descrizione: "Un aperitivo informale per conoscere i vicini del quartiere Isola. Portate buon umore!",
-    data: "2026-02-21T18:30:00",
-    luogo: "Bar Rattazzo, Via Borsieri 32",
-    quartiere: "Isola",
-    immagine: null,
-    organizzatore: { nome: "Marco R.", avatar: null },
-    partecipanti: 24,
-    gratuito: true,
-    prezzo: null,
-    categoria: "Social",
-  },
-  {
-    id: "2",
-    titolo: "Corso di Giardinaggio Urbano",
-    descrizione: "Impara a creare il tuo orto sul balcone con i consigli di esperti del verde.",
-    data: "2026-02-22T10:00:00",
-    luogo: "Giardini Pubblici di Porta Venezia",
-    quartiere: "Porta Venezia",
-    immagine: null,
-    organizzatore: { nome: "Laura B.", avatar: null },
-    partecipanti: 15,
-    gratuito: false,
-    prezzo: 10,
-    categoria: "Workshop",
-  },
-  {
-    id: "3",
-    titolo: "Mercatino del Riuso",
-    descrizione: "Vendi e scambia oggetti usati. Sostenibilità e risparmio per tutti!",
-    data: "2026-02-23T09:00:00",
-    luogo: "Piazza Wagner",
-    quartiere: "Wagner",
-    immagine: null,
-    organizzatore: { nome: "Associazione EcoMilano", avatar: null },
-    partecipanti: 89,
-    gratuito: true,
-    prezzo: null,
-    categoria: "Mercatino",
-  },
-  {
-    id: "4",
-    titolo: "Yoga al Parco",
-    descrizione: "Sessione di yoga all'aperto per tutti i livelli. Porta il tuo tappetino!",
-    data: "2026-02-24T07:30:00",
-    luogo: "Parco Sempione, ingresso Arco della Pace",
-    quartiere: "Sempione",
-    immagine: null,
-    organizzatore: { nome: "Giulia T.", avatar: null },
-    partecipanti: 32,
-    gratuito: true,
-    prezzo: null,
-    categoria: "Sport",
-  },
-  {
-    id: "5",
-    titolo: "Cineforum di Quartiere",
-    descrizione: "Proiezione del film 'La Grande Bellezza' seguita da dibattito aperto.",
-    data: "2026-02-25T20:30:00",
-    luogo: "Centro Culturale, Via Padova 36",
-    quartiere: "NoLo",
-    immagine: null,
-    organizzatore: { nome: "Davide M.", avatar: null },
-    partecipanti: 18,
-    gratuito: true,
-    prezzo: null,
-    categoria: "Cultura",
-  },
-  {
-    id: "6",
-    titolo: "Pulizia del Naviglio",
-    descrizione: "Giornata di volontariato per pulire le sponde del Naviglio Grande.",
-    data: "2026-02-28T09:00:00",
-    luogo: "Alzaia Naviglio Grande, Darsena",
-    quartiere: "Navigli",
-    immagine: null,
-    organizzatore: { nome: "Milano Pulita", avatar: null },
-    partecipanti: 45,
-    gratuito: true,
-    prezzo: null,
-    categoria: "Volontariato",
-  },
-];
-
-const MY_EVENTS_IDS = ["1", "4"];
+import { Link, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 const DATE_FILTERS = [
   { label: "Tutti", value: "tutti" },
@@ -124,11 +54,44 @@ function formatEventDate(iso: string) {
   return `${day} ${date} ${month}, ${hours}:${mins}`;
 }
 
-const EventCard = ({ event, isParticipating }: { event: typeof MOCK_EVENTS[0]; isParticipating: boolean }) => {
-  const orgInitials = event.organizzatore.nome.split(" ").map((w) => w[0]).join("").toUpperCase();
+const EventCard = ({ event, isParticipating, onDelete }: { 
+  event: any; 
+  isParticipating: boolean;
+  onDelete: (id: string) => void;
+}) => {
+  const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
+  const navigate = useNavigate();
+  
+  const orgInitials = event.organizzatore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?";
+
+  // Determina se l'utente corrente può modificare/eliminare questo evento
+  const canEdit = isAdmin || event.organizzatore_id === user?.id;
 
   return (
-    <Card className="overflow-hidden shadow-card hover:shadow-card-hover transition-shadow group cursor-pointer">
+    <Card className="overflow-hidden shadow-card hover:shadow-card-hover transition-shadow group relative">
+      {/* Menu azioni (visibile solo se può modificare) */}
+      {canEdit && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/modifica-evento/${event.id}`)}>
+              <Edit className="w-4 h-4 mr-2" /> Modifica
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => onDelete(event.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Elimina
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
       {/* Cover */}
       <div className="relative h-40 bg-muted">
         {event.immagine ? (
@@ -176,13 +139,13 @@ const EventCard = ({ event, isParticipating }: { event: typeof MOCK_EVENTS[0]; i
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Avatar className="w-6 h-6">
-              <AvatarImage src={event.organizzatore.avatar || undefined} />
+              <AvatarImage src={event.organizzatore_avatar || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">{orgInitials}</AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground">{event.organizzatore.nome}</span>
+            <span className="text-xs text-muted-foreground">{event.organizzatore_nome || "Utente"}</span>
           </div>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Users className="w-3 h-3" /> {event.partecipanti}
+            <Users className="w-3 h-3" /> {event.partecipanti || 0}
           </span>
         </div>
       </div>
@@ -191,17 +154,79 @@ const EventCard = ({ event, isParticipating }: { event: typeof MOCK_EVENTS[0]; i
 };
 
 const Eventi = () => {
+  const { user } = useAuth();
   const [showMyEvents, setShowMyEvents] = useState(false);
   const [dateFilter, setDateFilter] = useState("tutti");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast(); 
 
-  const filtered = MOCK_EVENTS.filter((e) => {
-    if (showMyEvents && !MY_EVENTS_IDS.includes(e.id)) return false;
+  // Carica eventi reali dal database
+  const { data: eventiReali = [], isLoading } = useQuery({
+    queryKey: ['eventi'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('eventi')
+        .select('*')
+        .order('data', { ascending: true });
+      if (error) throw error;
+      
+      // Per ogni evento, carica i dati dell'organizzatore
+      const eventiConOrganizzatore = await Promise.all(
+        data.map(async (evento) => {
+          const { data: profilo } = await supabase
+            .from('profiles')
+            .select('nome, cognome, avatar_url')
+            .eq('user_id', evento.organizzatore_id)
+            .single();
+          
+          return {
+            ...evento,
+            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente',
+            organizzatore_avatar: profilo?.avatar_url
+          };
+        })
+      );
+      
+      return eventiConOrganizzatore;
+    },
+  });
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Sei sicuro di voler eliminare questo evento?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('eventi')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['eventi'] });
+      
+      toast({
+        title: "Evento eliminato",
+        description: "L'evento è stato rimosso con successo.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile eliminare l'evento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filtered = eventiReali.filter((e) => {
+    if (showMyEvents && e.organizzatore_id !== user?.id) return false;
     if (selectedCategory && e.categoria !== selectedCategory) return false;
     return true;
   });
 
-  const upcomingMy = MOCK_EVENTS.filter((e) => MY_EVENTS_IDS.includes(e.id)).slice(0, 3);
+  const upcomingMy = eventiReali
+    .filter((e) => e.organizzatore_id === user?.id)
+    .slice(0, 3);
 
   return (
     <AuthLayout>
@@ -222,9 +247,9 @@ const Eventi = () => {
               <Ticket className="w-4 h-4" /> I tuoi eventi
             </Button>
             <Link to="/nuovo-evento">
-             <Button size="sm" className="gap-1.5">
-              <Plus className="w-4 h-4" /> Crea evento
-             </Button>
+              <Button size="sm" className="gap-1.5">
+                <Plus className="w-4 h-4" /> Crea evento
+              </Button>
             </Link>
           </div>
         </div>
@@ -275,7 +300,11 @@ const Eventi = () => {
         <div className="flex gap-6">
           {/* Grid */}
           <div className="flex-1">
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <Card className="p-8 text-center">
+                <p>Caricamento eventi...</p>
+              </Card>
+            ) : filtered.length === 0 ? (
               <Card className="p-8 text-center">
                 <CalendarDays className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground font-medium">Nessun evento trovato</p>
@@ -290,7 +319,11 @@ const Eventi = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i * 0.05, 0.3) }}
                   >
-                    <EventCard event={event} isParticipating={MY_EVENTS_IDS.includes(event.id)} />
+                    <EventCard 
+                      event={event} 
+                      isParticipating={event.organizzatore_id === user?.id}
+                      onDelete={handleDeleteEvent}
+                    />
                   </motion.div>
                 ))}
               </div>
@@ -326,33 +359,6 @@ const Eventi = () => {
                   ))}
                 </div>
               )}
-            </Card>
-
-            {/* Suggested */}
-            <Card className="p-4 shadow-card">
-              <h3 className="font-heading font-bold text-sm text-foreground mb-3 flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-secondary" /> Suggeriti per te
-              </h3>
-              <div className="space-y-3">
-                {MOCK_EVENTS.filter((e) => !MY_EVENTS_IDS.includes(e.id)).slice(0, 3).map((e) => (
-                  <div key={e.id} className="flex items-start gap-2.5 group cursor-pointer">
-                    <div className="bg-secondary/10 rounded-md px-2 py-1 text-center shrink-0">
-                      <p className="text-[10px] font-bold text-secondary leading-tight">
-                        {new Date(e.data).toLocaleDateString("it", { month: "short" }).toUpperCase()}
-                      </p>
-                      <p className="text-sm font-heading font-bold text-foreground leading-tight">
-                        {new Date(e.data).getDate()}
-                      </p>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{e.titolo}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Users className="w-3 h-3" /> {e.partecipanti} partecipanti
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </Card>
           </div>
         </div>
