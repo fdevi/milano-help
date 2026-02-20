@@ -48,7 +48,7 @@ const Navbar = () => {
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {user ? (
             <>
-              <Link to="/dashboard">
+              <Link to="/home">
                 <Button variant="ghost" size="sm">Dashboard</Button>
               </Link>
               <Link to="/miei-annunci">
@@ -113,12 +113,11 @@ const Navbar = () => {
           padding: '1rem'
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {/* RIMOSSO: <Link to="/categories">Categorie</Link> */}
             <Link to="/how-it-works">Come Funziona</Link>
             <Link to="/gruppi">Gruppi</Link>
             {user && (
               <>
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/home">Dashboard</Link>
                 <Link to="/miei-annunci">I miei annunci</Link>
                 <Link to="/chat">Chat {unreadCount > 0 && `(${unreadCount})`}</Link>
                 {isAdmin && <Link to="/admin" style={{ color: '#10b981', fontWeight: 'bold' }}>Admin Panel</Link>}
