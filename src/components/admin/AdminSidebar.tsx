@@ -13,7 +13,7 @@ const navItems = [
   { to: "/admin/servizi", icon: Briefcase, label: "Servizi" },
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
   { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione" },
-  { to: "/admin/eventi", icon: Calendar, label: "Eventi" },  // ← NUOVA VOCE
+  { to: "/admin/eventi", icon: Calendar, label: "Eventi" },
   { to: "/admin/log", icon: ScrollText, label: "Log Attività" },
 ];
 
@@ -79,7 +79,7 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
       {/* Footer */}
       <div className="p-2 border-t">
         <Link
-          to="/dashboard"
+          to="/home"  // ← MODIFICATO: era "/dashboard", ora è "/home"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors"
         >
           <ChevronLeft className="w-5 h-5 shrink-0" />
