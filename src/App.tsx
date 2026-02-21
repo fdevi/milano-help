@@ -40,6 +40,7 @@ import Sezioni from "./pages/Sezioni";
 import Profilo from "./pages/Profilo";
 import Eventi from "./pages/Eventi";
 import AdminEventi from "./pages/admin/AdminEventi";
+import MieiEventi from "./pages/MieiEventi";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
             <Route path="/admin/eventi" element={<AdminRoute><AdminEventi /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
+            <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
             <Route path="/eventi" element={<Navigate to="/categoria/evento" replace />} />
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />

@@ -108,9 +108,7 @@ const ModificaEvento = () => {
 
     setLoading(true);
     try {
-      const { error } = await (supabase as any)
-        .from('eventi')
-        .update({
+      const updateData: any = {
           titolo: form.titolo,
           descrizione: form.descrizione,
           categoria: form.categoria,
@@ -118,10 +116,19 @@ const ModificaEvento = () => {
           luogo: form.luogo,
           prezzo: form.gratuito ? 0 : parseFloat(form.prezzo) || null,
           gratuito: form.gratuito,
-          max_partecipanti: form.max_partecipanti 
-            ? parseInt(form.max_partecipanti) 
+          max_partecipanti: form.max_partecipanti
+            ? parseInt(form.max_partecipanti)
             : null,
-        })
+        };
+
+      // If not admin, send back to moderation after edit
+      if (!isAdmin) {
+        updateData.stato = "in_moderazione";
+      }
+
+      const { error } = await (supabase as any)
+        .from('eventi')
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
