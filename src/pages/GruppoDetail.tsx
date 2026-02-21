@@ -9,9 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X } from "lucide-react";
+import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useQuartieri } from "@/hooks/useQuartieri";
+
+const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
 
 const GruppoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +28,15 @@ const GruppoDetail = () => {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editDescrizione, setEditDescrizione] = useState("");
+  const [editImmagine, setEditImmagine] = useState("");
+  const [editTipo, setEditTipo] = useState<"pubblico" | "privato">("pubblico");
+  const [editCategoria, setEditCategoria] = useState("");
+  const [editQuartiere, setEditQuartiere] = useState("");
+  const { quartieri } = useQuartieri();
 
   const { data: gruppo } = useQuery({
     queryKey: ["gruppo", id],
@@ -56,6 +72,8 @@ const GruppoDetail = () => {
   const isMember = myMembership?.stato === "approvato";
   const isAdmin = myMembership?.ruolo === "admin";
   const isPending = myMembership?.stato === "in_attesa";
+  const isCreatore = (gruppo as any)?.creatore_id === user?.id;
+  const canEditOrDelete = isCreatore || isAdmin;
 
   const { data: messaggi = [] } = useQuery({
     queryKey: ["gruppo_messaggi", id],
@@ -98,19 +116,18 @@ const GruppoDetail = () => {
   });
   const pendingProfileMap = Object.fromEntries((pendingProfiles as any[]).map((p) => [p.user_id, p]));
 
-  // Real-time messages
+  // Real-time messages: solo i membri ricevono gli aggiornamenti
   useEffect(() => {
     if (!id || !isMember) return;
     const channel = supabase
       .channel(`gruppo-${id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, (payload) => {
-        console.log("📩 Realtime gruppo messaggio:", payload);
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
         queryClient.invalidateQueries({ queryKey: ["msg_profiles"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [id, isMember]);
+  }, [id, isMember, queryClient]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -133,18 +150,26 @@ const GruppoDetail = () => {
 
   const joinGroup = useMutation({
     mutationFn: async () => {
-      const stato = (gruppo as any)?.tipo === "privato" ? "in_attesa" : "approvato";
-      const { error } = await supabase.from("gruppi_membri").insert({
-        gruppo_id: id!,
-        user_id: user!.id,
-        ruolo: "membro",
-        stato,
-      } as any);
-      if (error) throw error;
+      if (!user) throw new Error("Devi effettuare l'accesso per unirti.");
+      const tipo = (gruppo as any)?.tipo ?? "pubblico";
+      const stato = tipo === "privato" ? "in_attesa" : "approvato";
+      const payload = { gruppo_id: id!, user_id: user.id, ruolo: "membro", stato };
+      console.log("[joinGroup] Insert gruppi_membri:", payload);
+      const { error } = await supabase.from("gruppi_membri").insert(payload as any);
+      if (error) {
+        console.error("[joinGroup] Errore Supabase:", error.message, error.code);
+        throw error;
+      }
+      console.log("[joinGroup] Inserimento riuscito");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gruppo_membri", id] });
+      queryClient.invalidateQueries({ queryKey: ["my_gruppi_memberships"] });
+      queryClient.invalidateQueries({ queryKey: ["gruppi_member_counts"] });
       toast({ title: (gruppo as any)?.tipo === "privato" ? "Richiesta inviata!" : "Ti sei unito al gruppo!" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Errore", description: err?.message ?? "Impossibile unirsi al gruppo.", variant: "destructive" });
     },
   });
 
@@ -163,6 +188,62 @@ const GruppoDetail = () => {
       await supabase.from("gruppi_membri").update({ stato: action } as any).eq("id", memberId);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["gruppo_membri", id] }),
+  });
+
+  const openEditDialog = () => {
+    const g = gruppo as any;
+    setEditNome(g?.nome ?? "");
+    setEditDescrizione(g?.descrizione ?? "");
+    setEditImmagine(g?.immagine ?? "");
+    setEditTipo((g?.tipo === "privato" ? "privato" : "pubblico") as "pubblico" | "privato");
+    setEditCategoria(g?.categoria ?? "");
+    setEditQuartiere(g?.quartiere ?? "");
+    setShowEdit(true);
+  };
+
+  const updateGruppo = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("gruppi")
+        .update({
+          nome: editNome.trim(),
+          descrizione: editDescrizione?.trim() || null,
+          immagine: editImmagine?.trim() || null,
+          tipo: editTipo,
+          categoria: editCategoria?.trim() || null,
+          quartiere: editQuartiere?.trim() || null,
+        } as any)
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setShowEdit(false);
+      queryClient.invalidateQueries({ queryKey: ["gruppo", id] });
+      queryClient.invalidateQueries({ queryKey: ["gruppi"] });
+      toast({ title: "Gruppo aggiornato." });
+    },
+    onError: (err: any) => {
+      console.error("[updateGruppo] Errore:", err);
+      toast({ title: "Errore", description: err?.message ?? "Impossibile aggiornare il gruppo.", variant: "destructive" });
+    },
+  });
+
+  const deleteGruppo = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("gruppi").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setShowDeleteConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ["gruppi"] });
+      queryClient.invalidateQueries({ queryKey: ["my_gruppi_memberships"] });
+      toast({ title: "Gruppo eliminato." });
+      navigate("/gruppi");
+    },
+    onError: (err: any) => {
+      console.error("[deleteGruppo] Errore:", err);
+      toast({ title: "Errore", description: err?.message ?? "Impossibile eliminare il gruppo.", variant: "destructive" });
+    },
   });
 
   if (!gruppo) return (
@@ -201,6 +282,16 @@ const GruppoDetail = () => {
             <Button variant="outline" size="sm" onClick={() => leaveGroup.mutate()}>
               <LogOut className="w-4 h-4 mr-1" /> Esci
             </Button>
+          )}
+          {canEditOrDelete && (
+            <>
+              <Button variant="outline" size="sm" onClick={openEditDialog}>
+                <Pencil className="w-4 h-4 mr-1" /> Modifica
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(true)} className="text-destructive hover:text-destructive">
+                <Trash2 className="w-4 h-4 mr-1" /> Cancella
+              </Button>
+            </>
           )}
         </div>
 
@@ -276,17 +367,21 @@ const GruppoDetail = () => {
               {memberUserIds.map((uid: string) => {
                 const p = memberProfileMap[uid];
                 const m = (membri as any[]).find((mm) => mm.user_id === uid);
+                const isCreatore = (gruppo as any)?.creatore_id === uid;
                 return (
                   <div key={uid} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
-                    <Avatar className="h-9 w-9">
+                    <Avatar className="h-9 w-9 shrink-0">
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                        {p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}` : "U"}
+                        {p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{p?.nome || "Utente"} {p?.cognome || ""}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p?.nome || "Utente"} {p?.cognome || ""}</p>
                     </div>
-                    {m?.ruolo === "admin" && <Badge variant="secondary">Admin</Badge>}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isCreatore && <Badge variant="default" className="text-xs">Creatore</Badge>}
+                      {m?.ruolo === "admin" && !isCreatore && <Badge variant="secondary">Admin</Badge>}
+                    </div>
                   </div>
                 );
               })}
@@ -318,6 +413,67 @@ const GruppoDetail = () => {
           )}
         </Tabs>
       </div>
+
+      {/* Dialog Modifica gruppo */}
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifica gruppo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input placeholder="Nome gruppo *" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+            <Textarea placeholder="Descrizione" value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} rows={3} />
+            <Input placeholder="URL immagine (opzionale)" value={editImmagine} onChange={(e) => setEditImmagine(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <Select value={editTipo} onValueChange={(v: "pubblico" | "privato") => setEditTipo(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pubblico">Pubblico</SelectItem>
+                  <SelectItem value="privato">Privato</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={editCategoria || "_nessuna"} onValueChange={(v) => setEditCategoria(v === "_nessuna" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_nessuna">Nessuna</SelectItem>
+                  {CATEGORIE_GRUPPI.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Select value={editQuartiere || "_nessuno"} onValueChange={(v) => setEditQuartiere(v === "_nessuno" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Quartiere" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_nessuno">Nessuno</SelectItem>
+                {quartieri.map((q) => <SelectItem key={q.nome} value={q.nome}>{q.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEdit(false)}>Annulla</Button>
+            <Button onClick={() => updateGruppo.mutate()} disabled={!editNome.trim() || updateGruppo.isPending}>
+              {updateGruppo.isPending ? "Salvataggio..." : "Salva"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Conferma cancellazione */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare il gruppo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Il gruppo e tutti i messaggi saranno eliminati definitivamente. Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteGruppo.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleteGruppo.isPending}>
+              {deleteGruppo.isPending ? "Eliminazione..." : "Elimina"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
