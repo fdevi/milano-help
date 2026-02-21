@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Plus, MapPin, Lock, Globe, Search } from "lucide-react";
+import { Users, Plus, MapPin, Lock, Globe, Search, UserPlus, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
@@ -29,10 +29,12 @@ const Gruppi = () => {
   const [filterCat, setFilterCat] = useState("tutti");
   const [filterQuartiere, setFilterQuartiere] = useState("tutti");
   const [filterTipo, setFilterTipo] = useState("tutti");
+  const [joiningGruppoId, setJoiningGruppoId] = useState<string | null>(null);
 
   // Form state
   const [nome, setNome] = useState("");
   const [descrizione, setDescrizione] = useState("");
+  const [immagine, setImmagine] = useState("");
   const [tipo, setTipo] = useState("pubblico");
   const [categoria, setCategoria] = useState("");
   const [quartiere, setQuartiere] = useState("");
@@ -48,6 +50,23 @@ const Gruppi = () => {
       return data;
     },
   });
+
+  // Current user's memberships (to show Admin badge and Unisciti button)
+  const { data: myMemberships = [] } = useQuery({
+    queryKey: ["my_gruppi_memberships", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("gruppi_membri")
+        .select("gruppo_id, stato, ruolo")
+        .eq("user_id", user.id);
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+  const myMembershipByGruppo = Object.fromEntries((myMemberships as any[]).map((m) => [m.gruppo_id, m]));
+  const isMemberOf = (gruppoId: string) => myMembershipByGruppo[gruppoId]?.stato === "approvato";
+  const isPendingIn = (gruppoId: string) => myMembershipByGruppo[gruppoId]?.stato === "in_attesa";
 
   // Fetch member counts
   const { data: memberCounts = {} } = useQuery({
@@ -68,38 +87,115 @@ const Gruppi = () => {
 
   const createGruppo = useMutation({
     mutationFn: async () => {
+      if (!user) {
+        throw new Error("Devi effettuare l'accesso per creare un gruppo.");
+      }
       const { data, error } = await supabase
         .from("gruppi")
         .insert({
-          nome,
-          descrizione: descrizione || null,
+          nome: nome.trim(),
+          descrizione: descrizione?.trim() || null,
+          immagine: immagine?.trim() || null,
           tipo,
-          categoria: categoria || null,
-          quartiere: quartiere || null,
-          creatore_id: user!.id,
+          categoria: categoria?.trim() || null,
+          quartiere: quartiere?.trim() || null,
+          creatore_id: user.id,
         } as any)
         .select("id")
         .single();
       if (error) throw error;
-      // Auto-join as admin
-      await supabase.from("gruppi_membri").insert({
+      // Il creatore diventa automaticamente membro con ruolo admin
+      const { error: errMembro } = await supabase.from("gruppi_membri").insert({
         gruppo_id: data.id,
-        user_id: user!.id,
+        user_id: user.id,
         ruolo: "admin",
         stato: "approvato",
       } as any);
+      if (errMembro) {
+        console.error("[createGruppo] Errore inserimento creatore in gruppi_membri:", errMembro);
+        throw errMembro;
+      }
+      console.log("[createGruppo] Gruppo creato e creatore aggiunto come admin, gruppo_id:", data.id);
       return data;
     },
     onSuccess: (data) => {
       setShowCreate(false);
-      setNome(""); setDescrizione(""); setTipo("pubblico"); setCategoria(""); setQuartiere("");
+      setNome(""); setDescrizione(""); setImmagine(""); setTipo("pubblico"); setCategoria(""); setQuartiere("");
       queryClient.invalidateQueries({ queryKey: ["gruppi"] });
-      toast({ title: "Gruppo creato!" });
+      queryClient.invalidateQueries({ queryKey: ["my_gruppi_memberships"] });
+      queryClient.invalidateQueries({ queryKey: ["gruppo_membri", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["gruppo", data.id] });
+      toast({ title: "Gruppo creato! Sei stato aggiunto come amministratore." });
       navigate(`/gruppo/${data.id}`);
     },
     onError: (err: any) => {
       console.error("Errore creazione gruppo:", err);
       toast({ title: "Errore", description: err?.message || "Impossibile creare il gruppo.", variant: "destructive" });
+    },
+  });
+
+  const uniscitiAlGruppo = useMutation({
+    mutationFn: async ({ gruppoId, tipo }: { gruppoId: string; tipo: string }) => {
+      if (!user) {
+        const msg = "Devi effettuare l'accesso per unirti a un gruppo.";
+        console.error("[uniscitiAlGruppo] Utente non loggato");
+        throw new Error(msg);
+      }
+      const stato = tipo === "privato" ? "in_attesa" : "approvato";
+      const payload = {
+        gruppo_id: gruppoId,
+        user_id: user.id,
+        ruolo: "membro",
+        stato,
+      };
+      console.log("[uniscitiAlGruppo] Insert gruppi_membri:", payload);
+      const { data, error } = await supabase
+        .from("gruppi_membri")
+        .insert(payload as any)
+        .select("id")
+        .single();
+      if (error) {
+        console.error("[uniscitiAlGruppo] Errore Supabase:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
+      }
+      console.log("[uniscitiAlGruppo] Inserimento riuscito, id:", data?.id);
+      return data;
+    },
+    onMutate: ({ gruppoId }) => {
+      setJoiningGruppoId(gruppoId);
+    },
+    onSuccess: (_data, { tipo }) => {
+      setJoiningGruppoId(null);
+      queryClient.invalidateQueries({ queryKey: ["my_gruppi_memberships"] });
+      queryClient.invalidateQueries({ queryKey: ["gruppi_member_counts"] });
+      queryClient.invalidateQueries({ queryKey: ["gruppi"] });
+      toast({
+        title: tipo === "privato" ? "Richiesta inviata!" : "Ti sei unito al gruppo!",
+        description: tipo === "privato" ? "Attendi l'approvazione di un amministratore." : undefined,
+      });
+    },
+    onError: (err: any) => {
+      setJoiningGruppoId(null);
+      const message = err?.message || "Impossibile unirsi al gruppo.";
+      const code = err?.code;
+      const isDuplicate = code === "23505";
+      const friendlyMessage = isDuplicate
+        ? "Sei già membro o hai già inviato una richiesta per questo gruppo."
+        : message;
+      console.error("[uniscitiAlGruppo] onError:", { message, code, err });
+      toast({
+        title: "Errore",
+        description: friendlyMessage,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setJoiningGruppoId(null);
     },
   });
 
@@ -117,9 +213,13 @@ const Gruppi = () => {
       <div className="container mx-auto px-4 pt-24 pb-12">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-heading text-2xl font-extrabold text-foreground">Gruppi di discussione</h1>
-          {user && (
+          {user ? (
             <Button onClick={() => setShowCreate(true)}>
               <Plus className="w-4 h-4 mr-2" /> Crea gruppo
+            </Button>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link to="/login">Accedi per creare un gruppo</Link>
             </Button>
           )}
         </div>
@@ -165,12 +265,19 @@ const Gruppi = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((g: any) => (
-              <Link key={g.id} to={`/gruppo/${g.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full">
+              <Card key={g.id} className="hover:shadow-md transition-shadow h-full flex flex-col">
+                <Link to={`/gruppo/${g.id}`} className="block flex-1">
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-lg line-clamp-1">{g.nome}</CardTitle>
-                      {g.tipo === "privato" ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {user?.id === g.creatore_id && (
+                          <Badge variant="default" className="gap-1 text-xs">
+                            <Shield className="w-3 h-3" /> Admin
+                          </Badge>
+                        )}
+                        {g.tipo === "privato" ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -187,8 +294,31 @@ const Gruppi = () => {
                       </Badge>
                     </div>
                   </CardContent>
-                </Card>
-              </Link>
+                </Link>
+                {user && !isMemberOf(g.id) && !isPendingIn(g.id) && (
+                  <div className="px-6 pb-4 pt-0">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        uniscitiAlGruppo.mutate({ gruppoId: g.id, tipo: g.tipo ?? "pubblico" });
+                      }}
+                      disabled={uniscitiAlGruppo.isPending && joiningGruppoId === g.id}
+                    >
+                      {joiningGruppoId === g.id ? (
+                        <>Unisco...</>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 mr-2" /> Unisciti
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </Card>
             ))}
           </div>
         )}
@@ -202,7 +332,8 @@ const Gruppi = () => {
           </DialogHeader>
           <div className="space-y-4">
             <Input placeholder="Nome del gruppo *" value={nome} onChange={(e) => setNome(e.target.value)} />
-            <Textarea placeholder="Descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)} />
+            <Textarea placeholder="Descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)} rows={3} />
+            <Input placeholder="URL immagine (opzionale)" value={immagine} onChange={(e) => setImmagine(e.target.value)} />
             <div className="grid grid-cols-2 gap-3">
               <Select value={tipo} onValueChange={setTipo}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -211,16 +342,18 @@ const Gruppi = () => {
                   <SelectItem value="privato">Privato</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={categoria} onValueChange={setCategoria}>
+              <Select value={categoria || "_nessuna"} onValueChange={(v) => setCategoria(v === "_nessuna" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="_nessuna">Nessuna</SelectItem>
                   {CATEGORIE_GRUPPI.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <Select value={quartiere} onValueChange={setQuartiere}>
+            <Select value={quartiere || "_nessuno"} onValueChange={(v) => setQuartiere(v === "_nessuno" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="Quartiere (opzionale)" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="_nessuno">Nessuno</SelectItem>
                 {quartieri.map((q) => <SelectItem key={q.nome} value={q.nome}>{q.nome}</SelectItem>)}
               </SelectContent>
             </Select>
