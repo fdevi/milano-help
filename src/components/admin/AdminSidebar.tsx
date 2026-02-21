@@ -5,6 +5,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import BadgeNotifiche from "./BadgeNotifiche";
 
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -12,8 +13,8 @@ const navItems = [
   { to: "/admin/categorie", icon: Grid3X3, label: "Categorie" },
   { to: "/admin/servizi", icon: Briefcase, label: "Servizi" },
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
-  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione" },
-  { to: "/admin/eventi", icon: Calendar, label: "Eventi" },
+  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", badgeTipo: "moderazione" as const },
+  { to: "/admin/eventi", icon: Calendar, label: "Eventi", badgeTipo: "eventi" as const },
   { to: "/admin/log", icon: ScrollText, label: "Log Attività" },
 ];
 
@@ -71,6 +72,9 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
             >
               <item.icon className="w-5 h-5 shrink-0" />
               {!collapsed && <span>{item.label}</span>}
+              {!collapsed && "badgeTipo" in item && item.badgeTipo && (
+                <BadgeNotifiche tipo={item.badgeTipo} />
+              )}
             </Link>
           );
         })}
