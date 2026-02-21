@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Check, X, Eye } from "lucide-react";
+import { Check, X, Eye, MoreHorizontal, Trash2, PauseCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface Annuncio {
@@ -23,6 +24,7 @@ interface Annuncio {
   user_id: string;
   categoria_id: string | null;
   immagini: string[];
+  motivo_rifiuto: string | null;
   categoria?: { label: string } | null;
   profilo?: { nome: string | null; cognome: string | null; email: string | null } | null;
 }
@@ -37,6 +39,7 @@ const AdminModAnnunci = () => {
   const [annunci, setAnnunci] = useState<Annuncio[]>([]);
   const [categorie, setCategorie] = useState<CategoriaAnnuncio[]>([]);
   const [filtroCategoria, setFiltroCategoria] = useState("all");
+  const [filtroStato, setFiltroStato] = useState("in_moderazione");
   const [rifiutoModal, setRifiutoModal] = useState<string | null>(null);
   const [motivoRifiuto, setMotivoRifiuto] = useState("");
   const [detailModal, setDetailModal] = useState<Annuncio | null>(null);
@@ -47,23 +50,24 @@ const AdminModAnnunci = () => {
     let query = supabase
       .from("annunci")
       .select("*, categoria:categorie_annunci(label)")
-      .eq("stato", "in_moderazione")
       .order("created_at", { ascending: true });
 
+    if (filtroStato !== "all") {
+      query = query.eq("stato", filtroStato);
+    }
     if (filtroCategoria !== "all") {
       query = query.eq("categoria_id", filtroCategoria);
     }
 
     const { data } = await query;
-    
-    // Fetch profiles for each annuncio
+
     if (data && data.length > 0) {
       const userIds = [...new Set(data.map(a => a.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, nome, cognome, email")
         .in("user_id", userIds);
-      
+
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) ?? []);
       const enriched = data.map(a => ({
         ...a,
@@ -84,20 +88,15 @@ const AdminModAnnunci = () => {
 
   useEffect(() => {
     fetchAnnunci();
-  }, [filtroCategoria]);
+  }, [filtroCategoria, filtroStato]);
 
   const approva = async (id: string) => {
     const { error } = await supabase
       .from("annunci")
       .update({ stato: "attivo", moderato_da: user?.id, moderato_il: new Date().toISOString() })
       .eq("id", id);
-    if (error) { toast.error("Errore nell'approvazione"); return; }
-    
-    await supabase.from("activity_logs").insert({
-      user_id: user?.id,
-      azione: "annuncio_approvato",
-      dettagli: `Annuncio ${id} approvato`,
-    });
+    if (error) { toast.error(`Errore: ${error.message}`); return; }
+    await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "annuncio_approvato", dettagli: `Annuncio ${id} approvato` });
     toast.success("Annuncio approvato");
     fetchAnnunci();
   };
@@ -106,41 +105,66 @@ const AdminModAnnunci = () => {
     if (!rifiutoModal || !motivoRifiuto.trim()) return;
     const { error } = await supabase
       .from("annunci")
-      .update({
-        stato: "rifiutato",
-        motivo_rifiuto: motivoRifiuto,
-        moderato_da: user?.id,
-        moderato_il: new Date().toISOString(),
-      })
+      .update({ stato: "rifiutato", motivo_rifiuto: motivoRifiuto, moderato_da: user?.id, moderato_il: new Date().toISOString() })
       .eq("id", rifiutoModal);
-    if (error) { toast.error("Errore nel rifiuto"); return; }
-    
-    await supabase.from("activity_logs").insert({
-      user_id: user?.id,
-      azione: "annuncio_rifiutato",
-      dettagli: `Annuncio ${rifiutoModal} rifiutato: ${motivoRifiuto}`,
-    });
+    if (error) { toast.error(`Errore: ${error.message}`); return; }
+    await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "annuncio_rifiutato", dettagli: `Annuncio ${rifiutoModal} rifiutato: ${motivoRifiuto}` });
     toast.success("Annuncio rifiutato");
     setRifiutoModal(null);
     setMotivoRifiuto("");
     fetchAnnunci();
   };
 
+  const mettiInModerazione = async (id: string) => {
+    const { error } = await supabase
+      .from("annunci")
+      .update({ stato: "in_moderazione" })
+      .eq("id", id);
+    if (error) { toast.error(`Errore: ${error.message}`); return; }
+    toast.success("Annuncio rimesso in moderazione");
+    fetchAnnunci();
+  };
+
+  const elimina = async (id: string) => {
+    if (!confirm("Sei sicuro di voler eliminare definitivamente questo annuncio?")) return;
+    const { error } = await supabase
+      .from("annunci")
+      .delete()
+      .eq("id", id);
+    if (error) { toast.error(`Errore: ${error.message}`); return; }
+    await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "annuncio_eliminato", dettagli: `Annuncio ${id} eliminato` });
+    toast.success("Annuncio eliminato");
+    fetchAnnunci();
+  };
+
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-        <h1 className="font-heading font-extrabold text-2xl">Annunci da Moderare</h1>
-        <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Tutte le categorie" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutte le categorie</SelectItem>
-            {categorie.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <h1 className="font-heading font-extrabold text-2xl">Moderazione Annunci</h1>
+        <div className="flex gap-2">
+          <Select value={filtroStato} onValueChange={setFiltroStato}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Stato" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli stati</SelectItem>
+              <SelectItem value="in_moderazione">In moderazione</SelectItem>
+              <SelectItem value="attivo">Attivo</SelectItem>
+              <SelectItem value="rifiutato">Rifiutato</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Tutte le categorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutte le categorie</SelectItem>
+              {categorie.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card>
@@ -151,6 +175,7 @@ const AdminModAnnunci = () => {
                 <TableHead>Titolo</TableHead>
                 <TableHead>Autore</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Stato</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
@@ -165,26 +190,50 @@ const AdminModAnnunci = () => {
                   <TableCell>
                     <Badge variant="secondary">{(a.categoria as any)?.label ?? "—"}</Badge>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant={a.stato === "attivo" ? "default" : a.stato === "rifiutato" ? "destructive" : "secondary"}>
+                      {a.stato === "in_moderazione" ? "In moderazione" : a.stato === "attivo" ? "Attivo" : a.stato === "rifiutato" ? "Rifiutato" : a.stato}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {new Date(a.created_at).toLocaleDateString("it-IT")}
                   </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button size="sm" variant="ghost" onClick={() => setDetailModal(a)}>
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="default" onClick={() => approva(a.id)} className="gap-1">
-                      <Check className="w-4 h-4" /> Approva
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => setRifiutoModal(a.id)} className="gap-1">
-                      <X className="w-4 h-4" /> Rifiuta
-                    </Button>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost"><MoreHorizontal className="w-4 h-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setDetailModal(a)}>
+                          <Eye className="w-4 h-4 mr-2" /> Dettagli
+                        </DropdownMenuItem>
+                        {a.stato === "in_moderazione" && (
+                          <>
+                            <DropdownMenuItem onClick={() => approva(a.id)}>
+                              <Check className="w-4 h-4 mr-2 text-green-600" /> Approva
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setRifiutoModal(a.id); setMotivoRifiuto(""); }}>
+                              <X className="w-4 h-4 mr-2 text-red-600" /> Rifiuta
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {a.stato === "attivo" && (
+                          <DropdownMenuItem onClick={() => mettiInModerazione(a.id)}>
+                            <PauseCircle className="w-4 h-4 mr-2 text-yellow-600" /> Metti in moderazione
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => elimina(a.id)} className="text-destructive focus:text-destructive">
+                          <Trash2 className="w-4 h-4 mr-2" /> Elimina
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
               {!loading && annunci.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    Nessun annuncio in attesa di moderazione
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    Nessun annuncio trovato
                   </TableCell>
                 </TableRow>
               )}
@@ -196,15 +245,8 @@ const AdminModAnnunci = () => {
       {/* Reject modal */}
       <Dialog open={!!rifiutoModal} onOpenChange={() => { setRifiutoModal(null); setMotivoRifiuto(""); }}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Motivo del rifiuto</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            placeholder="Spiega il motivo del rifiuto..."
-            value={motivoRifiuto}
-            onChange={(e) => setMotivoRifiuto(e.target.value)}
-            rows={4}
-          />
+          <DialogHeader><DialogTitle>Motivo del rifiuto</DialogTitle></DialogHeader>
+          <Textarea placeholder="Spiega il motivo del rifiuto..." value={motivoRifiuto} onChange={(e) => setMotivoRifiuto(e.target.value)} rows={4} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRifiutoModal(null)}>Annulla</Button>
             <Button variant="destructive" onClick={rifiuta} disabled={!motivoRifiuto.trim()}>Rifiuta annuncio</Button>
@@ -215,20 +257,15 @@ const AdminModAnnunci = () => {
       {/* Detail modal */}
       <Dialog open={!!detailModal} onOpenChange={() => setDetailModal(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{detailModal?.titolo}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{detailModal?.titolo}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{detailModal?.descrizione ?? "Nessuna descrizione"}</p>
-            {detailModal?.prezzo != null && (
-              <p className="text-sm font-medium">Prezzo: €{detailModal.prezzo}</p>
-            )}
-            {detailModal?.quartiere && (
-              <p className="text-sm">Quartiere: {detailModal.quartiere}</p>
-            )}
+            {detailModal?.prezzo != null && <p className="text-sm font-medium">Prezzo: €{detailModal.prezzo}</p>}
+            {detailModal?.quartiere && <p className="text-sm">Quartiere: {detailModal.quartiere}</p>}
+            {detailModal?.motivo_rifiuto && <p className="text-sm text-destructive">Motivo rifiuto: {detailModal.motivo_rifiuto}</p>}
             {detailModal?.immagini && detailModal.immagini.length > 0 && (
               <div className="flex gap-2 flex-wrap">
-                {detailModal.immagini.map((url, i) => (
+                {detailModal.immagini.map((url: string, i: number) => (
                   <img key={i} src={url} alt="" className="w-24 h-24 object-cover rounded-lg border" />
                 ))}
               </div>
