@@ -9,9 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X } from "lucide-react";
+import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const GruppoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +24,8 @@ const GruppoDetail = () => {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isAdmin: isSiteAdmin } = useAdminCheck();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: gruppo } = useQuery({
     queryKey: ["gruppo", id],
@@ -54,8 +59,23 @@ const GruppoDetail = () => {
 
   const myMembership = user ? (membri as any[]).find((m) => m.user_id === user.id) : null;
   const isMember = myMembership?.stato === "approvato";
-  const isAdmin = myMembership?.ruolo === "admin";
+  const isGroupAdmin = myMembership?.ruolo === "admin";
   const isPending = myMembership?.stato === "in_attesa";
+  const canEditOrDelete = (gruppo as any)?.creatore_id === user?.id || isSiteAdmin;
+
+  const deleteGroup = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("gruppi").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Gruppo eliminato." });
+      navigate("/gruppi");
+    },
+    onError: (err: any) => {
+      toast({ title: "Errore", description: err?.message, variant: "destructive" });
+    },
+  });
 
   const { data: messaggi = [] } = useQuery({
     queryKey: ["gruppo_messaggi", id],
@@ -197,10 +217,17 @@ const GruppoDetail = () => {
             </Button>
           )}
           {isPending && <Badge variant="secondary">In attesa</Badge>}
-          {isMember && !isAdmin && (
+          {isMember && !isGroupAdmin && (
             <Button variant="outline" size="sm" onClick={() => leaveGroup.mutate()}>
               <LogOut className="w-4 h-4 mr-1" /> Esci
             </Button>
+          )}
+          {canEditOrDelete && (
+            <>
+              <Button variant="outline" size="icon" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </>
           )}
         </div>
 
@@ -209,7 +236,7 @@ const GruppoDetail = () => {
           <TabsList className="mx-4 mt-2 w-fit">
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="membri">Membri ({memberUserIds.length})</TabsTrigger>
-            {isAdmin && pendingMembers.length > 0 && (
+            {isGroupAdmin && pendingMembers.length > 0 && (
               <TabsTrigger value="richieste">
                 Richieste <Badge variant="destructive" className="ml-1 text-[10px] px-1.5">{pendingMembers.length}</Badge>
               </TabsTrigger>
@@ -293,7 +320,7 @@ const GruppoDetail = () => {
             </div>
           </TabsContent>
 
-          {isAdmin && (
+          {isGroupAdmin && (
             <TabsContent value="richieste" className="px-4 py-4">
               <div className="space-y-2">
                 {pendingMembers.map((m: any) => {
@@ -318,6 +345,22 @@ const GruppoDetail = () => {
           )}
         </Tabs>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminare questo gruppo?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Questa azione è irreversibile. Tutti i messaggi e i membri verranno rimossi.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Annulla</Button>
+            <Button variant="destructive" onClick={() => deleteGroup.mutate()} disabled={deleteGroup.isPending}>
+              {deleteGroup.isPending ? "Eliminazione..." : "Elimina"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
