@@ -11,14 +11,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useQuartieri } from "@/hooks/useQuartieri";
-
-const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
 
 const GruppoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,15 +22,6 @@ const GruppoDetail = () => {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showEdit, setShowEdit] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [editNome, setEditNome] = useState("");
-  const [editDescrizione, setEditDescrizione] = useState("");
-  const [editImmagine, setEditImmagine] = useState("");
-  const [editTipo, setEditTipo] = useState<"pubblico" | "privato">("pubblico");
-  const [editCategoria, setEditCategoria] = useState("");
-  const [editQuartiere, setEditQuartiere] = useState("");
-  const { quartieri } = useQuartieri();
 
   const { data: gruppo } = useQuery({
     queryKey: ["gruppo", id],
@@ -70,10 +55,8 @@ const GruppoDetail = () => {
 
   const myMembership = user ? (membri as any[]).find((m) => m.user_id === user.id) : null;
   const isMember = myMembership?.stato === "approvato";
-  const isAdmin = myMembership?.ruolo === "admin";
+  const isGroupAdmin = myMembership?.ruolo === "admin";
   const isPending = myMembership?.stato === "in_attesa";
-  const isCreatore = (gruppo as any)?.creatore_id === user?.id;
-  const canEditOrDelete = isCreatore || isAdmin;
 
   const { data: messaggi = [] } = useQuery({
     queryKey: ["gruppo_messaggi", id],
@@ -278,20 +261,10 @@ const GruppoDetail = () => {
             </Button>
           )}
           {isPending && <Badge variant="secondary">In attesa</Badge>}
-          {isMember && !isAdmin && (
+          {isMember && !isGroupAdmin && (
             <Button variant="outline" size="sm" onClick={() => leaveGroup.mutate()}>
               <LogOut className="w-4 h-4 mr-1" /> Esci
             </Button>
-          )}
-          {canEditOrDelete && (
-            <>
-              <Button variant="outline" size="sm" onClick={openEditDialog}>
-                <Pencil className="w-4 h-4 mr-1" /> Modifica
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(true)} className="text-destructive hover:text-destructive">
-                <Trash2 className="w-4 h-4 mr-1" /> Cancella
-              </Button>
-            </>
           )}
         </div>
 
@@ -300,7 +273,7 @@ const GruppoDetail = () => {
           <TabsList className="mx-4 mt-2 w-fit">
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="membri">Membri ({memberUserIds.length})</TabsTrigger>
-            {isAdmin && pendingMembers.length > 0 && (
+            {isGroupAdmin && pendingMembers.length > 0 && (
               <TabsTrigger value="richieste">
                 Richieste <Badge variant="destructive" className="ml-1 text-[10px] px-1.5">{pendingMembers.length}</Badge>
               </TabsTrigger>
@@ -388,7 +361,7 @@ const GruppoDetail = () => {
             </div>
           </TabsContent>
 
-          {isAdmin && (
+          {isGroupAdmin && (
             <TabsContent value="richieste" className="px-4 py-4">
               <div className="space-y-2">
                 {pendingMembers.map((m: any) => {
@@ -413,67 +386,6 @@ const GruppoDetail = () => {
           )}
         </Tabs>
       </div>
-
-      {/* Dialog Modifica gruppo */}
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifica gruppo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input placeholder="Nome gruppo *" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
-            <Textarea placeholder="Descrizione" value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} rows={3} />
-            <Input placeholder="URL immagine (opzionale)" value={editImmagine} onChange={(e) => setEditImmagine(e.target.value)} />
-            <div className="grid grid-cols-2 gap-3">
-              <Select value={editTipo} onValueChange={(v: "pubblico" | "privato") => setEditTipo(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pubblico">Pubblico</SelectItem>
-                  <SelectItem value="privato">Privato</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={editCategoria || "_nessuna"} onValueChange={(v) => setEditCategoria(v === "_nessuna" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_nessuna">Nessuna</SelectItem>
-                  {CATEGORIE_GRUPPI.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <Select value={editQuartiere || "_nessuno"} onValueChange={(v) => setEditQuartiere(v === "_nessuno" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Quartiere" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_nessuno">Nessuno</SelectItem>
-                {quartieri.map((q) => <SelectItem key={q.nome} value={q.nome}>{q.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEdit(false)}>Annulla</Button>
-            <Button onClick={() => updateGruppo.mutate()} disabled={!editNome.trim() || updateGruppo.isPending}>
-              {updateGruppo.isPending ? "Salvataggio..." : "Salva"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Conferma cancellazione */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminare il gruppo?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Il gruppo e tutti i messaggi saranno eliminati definitivamente. Questa azione non può essere annullata.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteGruppo.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleteGruppo.isPending}>
-              {deleteGruppo.isPending ? "Eliminazione..." : "Elimina"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
