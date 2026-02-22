@@ -478,6 +478,44 @@ export type Database = {
           },
         ]
       }
+      messaggi_letti: {
+        Row: {
+          created_at: string | null
+          gruppo_id: string
+          id: string
+          ultimo_letto: string | null
+          ultimo_messaggio_letto_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          gruppo_id: string
+          id?: string
+          ultimo_letto?: string | null
+          ultimo_messaggio_letto_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          gruppo_id?: string
+          id?: string
+          ultimo_letto?: string | null
+          ultimo_messaggio_letto_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaggi_letti_gruppo_id_fkey"
+            columns: ["gruppo_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifiche: {
         Row: {
           created_at: string
