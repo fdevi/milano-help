@@ -747,6 +747,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_group_members: { Args: { _gruppo_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

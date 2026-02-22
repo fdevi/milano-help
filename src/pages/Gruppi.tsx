@@ -47,7 +47,28 @@ const Gruppi = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Fetch member counts and creator profiles in parallel
+      const gruppiWithExtra = await Promise.all(
+        (data || []).map(async (gruppo) => {
+          const [countResult, creatorResult] = await Promise.all([
+            supabase.rpc("count_group_members", { _gruppo_id: gruppo.id }),
+            supabase
+              .from("profiles")
+              .select("nome, cognome")
+              .eq("user_id", gruppo.creatore_id)
+              .single(),
+          ]);
+          return {
+            ...gruppo,
+            membri_count: countResult.data ?? 0,
+            creatore_nome: creatorResult.data
+              ? `${creatorResult.data.nome || ""} ${creatorResult.data.cognome || ""}`.trim()
+              : null,
+          };
+        })
+      );
+      return gruppiWithExtra;
     },
   });
 
@@ -68,22 +89,7 @@ const Gruppi = () => {
   const isMemberOf = (gruppoId: string) => myMembershipByGruppo[gruppoId]?.stato === "approvato";
   const isPendingIn = (gruppoId: string) => myMembershipByGruppo[gruppoId]?.stato === "in_attesa";
 
-  // Fetch member counts
-  const { data: memberCounts = {} } = useQuery({
-    queryKey: ["gruppi_member_counts", gruppi.map((g: any) => g.id).join(",")],
-    queryFn: async () => {
-      if (gruppi.length === 0) return {};
-      const { data } = await supabase
-        .from("gruppi_membri")
-        .select("gruppo_id")
-        .eq("stato", "approvato")
-        .in("gruppo_id", gruppi.map((g: any) => g.id));
-      const counts: Record<string, number> = {};
-      (data || []).forEach((m: any) => { counts[m.gruppo_id] = (counts[m.gruppo_id] || 0) + 1; });
-      return counts;
-    },
-    enabled: gruppi.length > 0,
-  });
+  // memberCounts and creator info are now embedded in gruppi query
 
   const createGruppo = useMutation({
     mutationFn: async () => {
@@ -290,9 +296,12 @@ const Gruppi = () => {
                         </Badge>
                       )}
                       <Badge variant="outline" className="gap-1">
-                        <Users className="w-3 h-3" /> {(memberCounts as any)[g.id] || 0}
+                        <Users className="w-3 h-3" /> {g.membri_count ?? 0}
                       </Badge>
                     </div>
+                    {g.creatore_nome && (
+                      <p className="text-xs text-muted-foreground mt-2">Creato da {g.creatore_nome}</p>
+                    )}
                   </CardContent>
                 </Link>
                 {user && !isMemberOf(g.id) && !isPendingIn(g.id) && (
