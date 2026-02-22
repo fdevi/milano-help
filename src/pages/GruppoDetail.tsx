@@ -134,25 +134,70 @@ const GruppoDetail = () => {
   const joinGroup = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Devi effettuare l'accesso per unirti.");
+      
+      // 🔍 VERIFICA se l'utente è già membro o in attesa
+      const { data: existing } = await supabase
+        .from("gruppi_membri")
+        .select("stato")
+        .eq("gruppo_id", id!)
+        .eq("user_id", user.id)
+        .maybeSingle();
+  
+      if (existing) {
+        if (existing.stato === "approvato") {
+          throw new Error("Sei già membro di questo gruppo.");
+        } else if (existing.stato === "in_attesa") {
+          throw new Error("Hai già una richiesta in attesa per questo gruppo.");
+        }
+      }
+  
       const tipo = (gruppo as any)?.tipo ?? "pubblico";
       const stato = tipo === "privato" ? "in_attesa" : "approvato";
-      const payload = { gruppo_id: id!, user_id: user.id, ruolo: "membro", stato };
+      const payload = { 
+        gruppo_id: id!, 
+        user_id: user.id, 
+        ruolo: "membro", 
+        stato 
+      };
+      
       console.log("[joinGroup] Insert gruppi_membri:", payload);
-      const { error } = await supabase.from("gruppi_membri").insert(payload as any);
+      
+      const { error } = await supabase
+        .from("gruppi_membri")
+        .insert(payload as any);
+  
       if (error) {
         console.error("[joinGroup] Errore Supabase:", error.message, error.code);
+        
+        // Gestione errori specifici
+        if (error.code === '23505') { // Duplicato
+          throw new Error("Sei già membro o hai già inviato una richiesta.");
+        } else if (error.code === '42501') { // RLS
+          throw new Error("Non hai i permessi per unirti a questo gruppo.");
+        }
         throw error;
       }
+      
       console.log("[joinGroup] Inserimento riuscito");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gruppo_membri", id] });
       queryClient.invalidateQueries({ queryKey: ["my_gruppi_memberships"] });
       queryClient.invalidateQueries({ queryKey: ["gruppi_member_counts"] });
-      toast({ title: (gruppo as any)?.tipo === "privato" ? "Richiesta inviata!" : "Ti sei unito al gruppo!" });
+      
+      const tipo = (gruppo as any)?.tipo;
+      toast({ 
+        title: tipo === "privato" ? "Richiesta inviata!" : "✅ Ti sei unito al gruppo!",
+        description: tipo === "privato" ? "Attendi l'approvazione di un amministratore." : undefined
+      });
     },
     onError: (err: any) => {
-      toast({ title: "Errore", description: err?.message ?? "Impossibile unirsi al gruppo.", variant: "destructive" });
+      console.error("[joinGroup] onError:", err);
+      toast({ 
+        title: "❌ Errore", 
+        description: err?.message ?? "Impossibile unirsi al gruppo.", 
+        variant: "destructive" 
+      });
     },
   });
 
