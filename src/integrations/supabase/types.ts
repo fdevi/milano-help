@@ -754,6 +754,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_group_admin: {
+        Args: { _gruppo_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_group_creator: {
+        Args: { _gruppo_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { _gruppo_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
