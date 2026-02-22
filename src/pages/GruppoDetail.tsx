@@ -13,6 +13,9 @@ import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const GruppoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +24,14 @@ const GruppoDetail = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editDescrizione, setEditDescrizione] = useState("");
+  const [editImmagine, setEditImmagine] = useState("");
+  const [editTipo, setEditTipo] = useState<"pubblico" | "privato">("pubblico");
+  const [editCategoria, setEditCategoria] = useState("");
+  const [editQuartiere, setEditQuartiere] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: gruppo } = useQuery({
@@ -57,6 +68,8 @@ const GruppoDetail = () => {
   const isMember = myMembership?.stato === "approvato";
   const isGroupAdmin = myMembership?.ruolo === "admin";
   const isPending = myMembership?.stato === "in_attesa";
+  const { isAdmin: isSiteAdmin } = useAdminCheck();
+  const canEditOrDelete = (gruppo as any)?.creatore_id === user?.id || isSiteAdmin;
 
   const { data: messaggi = [] } = useQuery({
     queryKey: ["gruppo_messaggi", id],
@@ -311,6 +324,16 @@ const GruppoDetail = () => {
               <LogOut className="w-4 h-4 mr-1" /> Esci
             </Button>
           )}
+          {canEditOrDelete && (
+            <>
+              <Button variant="ghost" size="icon" onClick={openEditDialog}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setShowDeleteConfirm(true)}>
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Content */}
@@ -431,6 +454,50 @@ const GruppoDetail = () => {
           )}
         </Tabs>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifica gruppo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nome</Label>
+              <Input value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+            </div>
+            <div>
+              <Label>Descrizione</Label>
+              <Textarea value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} />
+            </div>
+            <div>
+              <Label>Tipo</Label>
+              <select className="w-full border rounded px-3 py-2 text-sm" value={editTipo} onChange={(e) => setEditTipo(e.target.value as any)}>
+                <option value="pubblico">Pubblico</option>
+                <option value="privato">Privato</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEdit(false)}>Annulla</Button>
+            <Button onClick={() => updateGruppo.mutate()} disabled={!editNome.trim() || updateGruppo.isPending}>Salva</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Elimina gruppo</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Sei sicuro di voler eliminare questo gruppo? L'azione è irreversibile.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Annulla</Button>
+            <Button variant="destructive" onClick={() => deleteGruppo.mutate()} disabled={deleteGruppo.isPending}>Elimina</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
