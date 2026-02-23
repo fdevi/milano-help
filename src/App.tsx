@@ -41,6 +41,7 @@ import Profilo from "./pages/Profilo";
 import Eventi from "./pages/Eventi";
 import AdminEventi from "./pages/admin/AdminEventi";
 import MieiEventi from "./pages/MieiEventi";
+import Donazioni from './pages/Donazioni';
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,7 @@ const App = () => (
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
             <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
+            <Route path="/donazioni" element={<Donazioni />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
