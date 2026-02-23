@@ -280,6 +280,47 @@ export type Database = {
         }
         Relationships: []
       }
+      conversazioni_private: {
+        Row: {
+          acquirente_id: string | null
+          annuncio_id: string | null
+          created_at: string | null
+          id: string
+          ultimo_aggiornamento: string | null
+          ultimo_messaggio: string | null
+          ultimo_mittente_id: string | null
+          venditore_id: string | null
+        }
+        Insert: {
+          acquirente_id?: string | null
+          annuncio_id?: string | null
+          created_at?: string | null
+          id?: string
+          ultimo_aggiornamento?: string | null
+          ultimo_messaggio?: string | null
+          ultimo_mittente_id?: string | null
+          venditore_id?: string | null
+        }
+        Update: {
+          acquirente_id?: string | null
+          annuncio_id?: string | null
+          created_at?: string | null
+          id?: string
+          ultimo_aggiornamento?: string | null
+          ultimo_messaggio?: string | null
+          ultimo_mittente_id?: string | null
+          venditore_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversazioni_private_annuncio_id_fkey"
+            columns: ["annuncio_id"]
+            isOneToOne: false
+            referencedRelation: "annunci"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventi: {
         Row: {
           categoria: string | null
@@ -512,6 +553,86 @@ export type Database = {
             columns: ["gruppo_id"]
             isOneToOne: false
             referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaggi_privati: {
+        Row: {
+          conversazione_id: string | null
+          created_at: string | null
+          id: string
+          letto: boolean | null
+          letto_at: string | null
+          mittente_id: string | null
+          testo: string
+        }
+        Insert: {
+          conversazione_id?: string | null
+          created_at?: string | null
+          id?: string
+          letto?: boolean | null
+          letto_at?: string | null
+          mittente_id?: string | null
+          testo: string
+        }
+        Update: {
+          conversazione_id?: string | null
+          created_at?: string | null
+          id?: string
+          letto?: boolean | null
+          letto_at?: string | null
+          mittente_id?: string | null
+          testo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaggi_privati_conversazione_id_fkey"
+            columns: ["conversazione_id"]
+            isOneToOne: false
+            referencedRelation: "conversazioni_private"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaggi_privati_letti: {
+        Row: {
+          conversazione_id: string | null
+          created_at: string | null
+          id: string
+          ultimo_letto: string | null
+          ultimo_messaggio_letto_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversazione_id?: string | null
+          created_at?: string | null
+          id?: string
+          ultimo_letto?: string | null
+          ultimo_messaggio_letto_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversazione_id?: string | null
+          created_at?: string | null
+          id?: string
+          ultimo_letto?: string | null
+          ultimo_messaggio_letto_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaggi_privati_letti_conversazione_id_fkey"
+            columns: ["conversazione_id"]
+            isOneToOne: false
+            referencedRelation: "conversazioni_private"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaggi_privati_letti_ultimo_messaggio_letto_id_fkey"
+            columns: ["ultimo_messaggio_letto_id"]
+            isOneToOne: false
+            referencedRelation: "messaggi_privati"
             referencedColumns: ["id"]
           },
         ]
