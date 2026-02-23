@@ -508,15 +508,18 @@ useEffect(() => {
             .upload(filePath, form.fotoProfilo, { upsert: true });
 
           if (uploadError) {
-            console.error("Avatar upload error:", uploadError);
+            console.error("🖼️ Register: Avatar upload error:", uploadError);
           } else {
             const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+            console.log("🖼️ Register: Avatar URL generato:", urlData.publicUrl);
             const { error: avatarError } = await supabase
               .from("profiles")
               .update({ avatar_url: urlData.publicUrl })
               .eq("user_id", signUpData.user.id);
             if (avatarError) {
-              console.error("Avatar URL update error:", avatarError);
+              console.error("🖼️ Register: Avatar URL update error:", avatarError);
+            } else {
+              console.log("🖼️ Register: avatar_url salvato nel profilo con successo");
             }
           }
         } catch (err) {
