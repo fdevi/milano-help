@@ -1,16 +1,15 @@
 import { Link } from "react-router-dom";
-import { Bell, MessageCircle, Search, Heart, LogOut } from "lucide-react";
+import { Bell, Search, Heart, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import PannelloNotifiche from "@/components/PannelloNotifiche";
 
 const TopNavbar = () => {
   const { user } = useAuth();
-  const unreadCount = useUnreadCount();
+  
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initials, setInitials] = useState("U");
 
@@ -67,15 +66,8 @@ const TopNavbar = () => {
             <Bell className="w-5 h-5 text-muted-foreground" />
           </Link>
 
-          {/* Chat */}
-          <Link to="/chat" className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-            <MessageCircle className="w-5 h-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <Badge className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] px-1 py-0 h-4 min-w-[16px] flex items-center justify-center">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Badge>
-            )}
-          </Link>
+          {/* Chat / Notifiche */}
+          <PannelloNotifiche />
 
           {/* Avatar */}
           <Link to="/profilo" className="ml-1">
