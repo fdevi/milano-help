@@ -497,6 +497,32 @@ useEffect(() => {
       if (profileError) {
         console.error("Profile update error:", profileError);
       }
+
+      // 3. Upload foto profilo se presente
+      if (form.fotoProfilo) {
+        try {
+          const ext = form.fotoProfilo.name.split(".").pop();
+          const filePath = `${signUpData.user.id}/avatar.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(filePath, form.fotoProfilo, { upsert: true });
+
+          if (uploadError) {
+            console.error("Avatar upload error:", uploadError);
+          } else {
+            const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+            const { error: avatarError } = await supabase
+              .from("profiles")
+              .update({ avatar_url: urlData.publicUrl })
+              .eq("user_id", signUpData.user.id);
+            if (avatarError) {
+              console.error("Avatar URL update error:", avatarError);
+            }
+          }
+        } catch (err) {
+          console.error("Avatar upload exception:", err);
+        }
+      }
     }
 
     setLoading(false);

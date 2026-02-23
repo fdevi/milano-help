@@ -115,9 +115,9 @@ const Profilo = () => {
     setUploading(true);
     const ext = file.name.split(".").pop();
     const path = `${user.id}/avatar.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("annunci-images").upload(path, file, { upsert: true });
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (uploadError) { toast({ title: "Errore upload", description: uploadError.message, variant: "destructive" }); setUploading(false); return; }
-    const { data: urlData } = supabase.storage.from("annunci-images").getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
     const { error: updateError } = await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("user_id", user.id);
     if (updateError) { toast({ title: "Errore", description: "Upload riuscito ma impossibile aggiornare il profilo.", variant: "destructive" }); }
     else { queryClient.invalidateQueries({ queryKey: ["profile", user.id] }); toast({ title: "Foto aggiornata" }); }
