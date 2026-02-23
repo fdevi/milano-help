@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -58,7 +58,7 @@ const GruppoDetail = () => {
     queryKey: ["gruppo_profiles", memberUserIds.join(",")],
     queryFn: async () => {
       if (memberUserIds.length === 0) return [];
-      const { data } = await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", memberUserIds);
+      const { data } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url").in("user_id", memberUserIds);
       return data || [];
     },
     enabled: memberUserIds.length > 0,
@@ -90,7 +90,7 @@ const GruppoDetail = () => {
     queryKey: ["msg_profiles", msgUserIds.join(",")],
     queryFn: async () => {
       if (msgUserIds.length === 0) return [];
-      const { data } = await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", msgUserIds);
+      const { data } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url").in("user_id", msgUserIds);
       return data || [];
     },
     enabled: msgUserIds.length > 0,
@@ -105,7 +105,7 @@ const GruppoDetail = () => {
     queryKey: ["pending_profiles", pendingUserIds.join(",")],
     queryFn: async () => {
       if (pendingUserIds.length === 0) return [];
-      const { data } = await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", pendingUserIds);
+      const { data } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url").in("user_id", pendingUserIds);
       return data || [];
     },
     enabled: pendingUserIds.length > 0,
@@ -389,6 +389,7 @@ const GruppoDetail = () => {
                         <div key={msg.id} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
                           {!isMine && (
                             <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarImage src={p?.avatar_url || undefined} />
                               <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
                                 {initials}
                               </AvatarFallback>
@@ -431,6 +432,7 @@ const GruppoDetail = () => {
                 return (
                   <div key={uid} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
                     <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarImage src={p?.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                         {p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U"}
                       </AvatarFallback>
@@ -457,7 +459,7 @@ const GruppoDetail = () => {
                   const pName = pp ? `${pp.nome || "Utente"} ${pp.cognome || ""}`.trim() : "Utente";
                   return (
                     <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                      <Avatar className="h-9 w-9"><AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{pInitials}</AvatarFallback></Avatar>
+                      <Avatar className="h-9 w-9"><AvatarImage src={pp?.avatar_url || undefined} /><AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{pInitials}</AvatarFallback></Avatar>
                       <p className="flex-1 text-sm font-medium">{pName}</p>
                       <Button size="icon" variant="ghost" onClick={() => handleMemberAction.mutate({ memberId: m.id, action: "approvato" })}>
                         <Check className="w-4 h-4 text-green-600" />
