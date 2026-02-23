@@ -5,12 +5,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
+import { useQuery } from "@tanstack/react-query";
 
 const Navbar = () => {
   const { user } = useAuth();
   const { isAdmin } = useAdminCheck();
   
   const [isOpen, setIsOpen] = useState(false);
+
+  const { data: profile } = useQuery({
+    queryKey: ['navbar-profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('nome, cognome')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -64,7 +79,8 @@ const Navbar = () => {
                 </Link>
               )}
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                Ciao, {user.email?.split('@')[0]}
+                Ciao, {profile?.nome || user.email?.split('@')[0] || 'Utente'}
+                {profile?.cognome ? ` ${profile.cognome}` : ''}
               </span>
               <Button onClick={handleLogout} variant="outline" size="sm">
                 Esci
