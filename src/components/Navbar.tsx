@@ -1,18 +1,15 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageCircle } from "lucide-react";
-import BadgeNotificheChat from "@/components/BadgeNotificheChat";
+import PannelloNotifiche from "@/components/PannelloNotifiche";
 
 const Navbar = () => {
   const { user } = useAuth();
   const { isAdmin } = useAdminCheck();
-  const unreadCount = useUnreadCount();
+  
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -58,17 +55,7 @@ const Navbar = () => {
               <Link to="/gruppi">
                 <Button variant="ghost" size="sm">Gruppi</Button>
               </Link>
-              <Link to="/chat" className="relative">
-                <Button variant="ghost" size="icon" className="relative">
-                  <MessageCircle className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </Badge>
-                  )}
-                  <BadgeNotificheChat />
-                </Button>
-              </Link>
+              <PannelloNotifiche />
               {isAdmin && (
                 <Link to="/admin">
                   <Button variant="outline" size="sm" className="text-primary border-primary">
@@ -121,7 +108,7 @@ const Navbar = () => {
               <>
                 <Link to="/home">Dashboard</Link>
                 <Link to="/miei-annunci">I miei annunci</Link>
-                <Link to="/chat">Chat {unreadCount > 0 && `(${unreadCount})`}</Link>
+                <Link to="/chat">Chat</Link>
                 {isAdmin && <Link to="/admin" style={{ color: '#10b981', fontWeight: 'bold' }}>Admin Panel</Link>}
               </>
             )}
