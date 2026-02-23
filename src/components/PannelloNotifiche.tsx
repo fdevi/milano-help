@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Users, ChevronRight } from "lucide-react";
+import { MessageCircle, Users, User, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface GruppoNotifica {
-  gruppoId: string;
-  gruppoNome: string;
+interface NotificaItem {
+  id: string;
+  nome: string;
   count: number;
   ultimoMessaggio?: string;
   ultimoMittente?: string;
   ultimoTimestamp?: string;
+  tipo: "gruppo" | "privata";
 }
 
 const PannelloNotifiche = () => {
@@ -21,7 +22,7 @@ const PannelloNotifiche = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [totaleNonLetti, setTotaleNonLetti] = useState(0);
-  const [notifiche, setNotifiche] = useState<GruppoNotifica[]>([]);
+  const [notifiche, setNotifiche] = useState<NotificaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -38,6 +39,10 @@ const PannelloNotifiche = () => {
     if (!user) return;
     setLoading(true);
 
+    const risultati: NotificaItem[] = [];
+    let totale = 0;
+
+    // === GRUPPI ===
     const { data: membri } = await supabase
       .from("gruppi_membri")
       .select("gruppo_id")
@@ -45,72 +50,128 @@ const PannelloNotifiche = () => {
       .eq("stato", "approvato");
 
     const gruppiIds = membri?.map(m => m.gruppo_id) || [];
-    if (gruppiIds.length === 0) {
-      setTotaleNonLetti(0);
-      setNotifiche([]);
-      setLoading(false);
-      return;
+
+    if (gruppiIds.length > 0) {
+      const { data: gruppi } = await supabase
+        .from("gruppi")
+        .select("id, nome")
+        .in("id", gruppiIds);
+      const gruppiMap = new Map(gruppi?.map(g => [g.id, g.nome]) || []);
+
+      const { data: letti } = await supabase
+        .from("messaggi_letti")
+        .select("gruppo_id, ultimo_letto")
+        .eq("user_id", user.id);
+      const mapLetti = new Map(letti?.map(l => [l.gruppo_id, l.ultimo_letto]) || []);
+
+      await Promise.all(gruppiIds.map(async (gruppoId) => {
+        const ultimoLetto = mapLetti.get(gruppoId) || new Date(0).toISOString();
+        const { count } = await supabase
+          .from("gruppi_messaggi")
+          .select("*", { count: "exact", head: true })
+          .eq("gruppo_id", gruppoId)
+          .gt("created_at", ultimoLetto);
+
+        const nonLetti = count || 0;
+        totale += nonLetti;
+
+        if (nonLetti > 0) {
+          const { data: ultimo } = await supabase
+            .from("gruppi_messaggi")
+            .select("testo, mittente_id, created_at")
+            .eq("gruppo_id", gruppoId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          let mittente = "Utente";
+          if (ultimo?.mittente_id) {
+            const { data: prof } = await supabase
+              .from("profiles")
+              .select("nome, cognome")
+              .eq("user_id", ultimo.mittente_id)
+              .single();
+            if (prof) mittente = `${prof.nome || ""}${prof.cognome ? ` ${prof.cognome[0]}.` : ""}`.trim() || "Utente";
+          }
+
+          risultati.push({
+            id: gruppoId,
+            nome: gruppiMap.get(gruppoId) || "Gruppo",
+            count: nonLetti,
+            ultimoMessaggio: ultimo?.testo,
+            ultimoMittente: mittente,
+            ultimoTimestamp: ultimo?.created_at,
+            tipo: "gruppo",
+          });
+        }
+      }));
     }
 
-    // Fetch group names
-    const { data: gruppi } = await supabase
-      .from("gruppi")
-      .select("id, nome")
-      .in("id", gruppiIds);
-    const gruppiMap = new Map(gruppi?.map(g => [g.id, g.nome]) || []);
+    // === CHAT PRIVATE ===
+    const { data: convPrivate } = await supabase
+      .from("conversazioni_private")
+      .select("id, acquirente_id, venditore_id, ultimo_messaggio, ultimo_aggiornamento, ultimo_mittente_id, annuncio_id")
+      .or(`acquirente_id.eq.${user.id},venditore_id.eq.${user.id}`);
 
-    // Fetch read status
-    const { data: letti } = await supabase
-      .from("messaggi_letti")
-      .select("gruppo_id, ultimo_letto")
-      .eq("user_id", user.id);
-    const mapLetti = new Map(letti?.map(l => [l.gruppo_id, l.ultimo_letto]) || []);
+    if (convPrivate && convPrivate.length > 0) {
+      // Get read status for private conversations
+      const { data: lettiPrivati } = await supabase
+        .from("messaggi_privati_letti")
+        .select("conversazione_id, ultimo_letto")
+        .eq("user_id", user.id);
+      const mapLettiPrivati = new Map(lettiPrivati?.map(l => [l.conversazione_id, l.ultimo_letto]) || []);
 
-    const risultati: GruppoNotifica[] = [];
-    let totale = 0;
+      // Get other user profiles
+      const otherUserIds = convPrivate.map(c =>
+        c.acquirente_id === user.id ? c.venditore_id : c.acquirente_id
+      ).filter(Boolean) as string[];
 
-    await Promise.all(gruppiIds.map(async (gruppoId) => {
-      const ultimoLetto = mapLetti.get(gruppoId) || new Date(0).toISOString();
+      const { data: profili } = otherUserIds.length > 0
+        ? await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", otherUserIds)
+        : { data: [] as { user_id: string; nome: string | null; cognome: string | null }[] };
+      const profMap = new Map((profili || []).map(p => [p.user_id, p] as const));
 
-      const { count } = await supabase
-        .from("gruppi_messaggi")
-        .select("*", { count: "exact", head: true })
-        .eq("gruppo_id", gruppoId)
-        .gt("created_at", ultimoLetto);
+      await Promise.all(convPrivate.map(async (conv) => {
+        const ultimoLetto = mapLettiPrivati.get(conv.id) || new Date(0).toISOString();
 
-      const nonLetti = count || 0;
-      totale += nonLetti;
+        const { count } = await supabase
+          .from("messaggi_privati")
+          .select("*", { count: "exact", head: true })
+          .eq("conversazione_id", conv.id)
+          .neq("mittente_id", user.id)
+          .gt("created_at", ultimoLetto);
 
-      if (nonLetti > 0) {
-        // Get latest message
-        const { data: ultimo } = await supabase
-          .from("gruppi_messaggi")
-          .select("testo, mittente_id, created_at")
-          .eq("gruppo_id", gruppoId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+        const nonLetti = count || 0;
+        totale += nonLetti;
 
-        let mittente = "Utente";
-        if (ultimo?.mittente_id) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("nome, cognome")
-            .eq("user_id", ultimo.mittente_id)
+        if (nonLetti > 0) {
+          const otherId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
+          const prof = profMap.get(otherId || "");
+          const nomeAltro = prof
+            ? `${prof.nome || ""}${prof.cognome ? ` ${prof.cognome[0]}.` : ""}`.trim() || "Utente"
+            : "Utente";
+
+          // Get latest message
+          const { data: ultimo } = await supabase
+            .from("messaggi_privati")
+            .select("testo, mittente_id, created_at")
+            .eq("conversazione_id", conv.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
             .single();
-          if (prof) mittente = `${prof.nome || ""}${prof.cognome ? ` ${prof.cognome[0]}.` : ""}`.trim() || "Utente";
-        }
 
-        risultati.push({
-          gruppoId,
-          gruppoNome: gruppiMap.get(gruppoId) || "Gruppo",
-          count: nonLetti,
-          ultimoMessaggio: ultimo?.testo,
-          ultimoMittente: mittente,
-          ultimoTimestamp: ultimo?.created_at,
-        });
-      }
-    }));
+          risultati.push({
+            id: conv.id,
+            nome: nomeAltro,
+            count: nonLetti,
+            ultimoMessaggio: ultimo?.testo || conv.ultimo_messaggio || "",
+            ultimoMittente: nomeAltro,
+            ultimoTimestamp: ultimo?.created_at || conv.ultimo_aggiornamento || "",
+            tipo: "privata",
+          });
+        }
+      }));
+    }
 
     risultati.sort((a, b) => {
       const ta = a.ultimoTimestamp || "";
@@ -126,22 +187,23 @@ const PannelloNotifiche = () => {
   // Initial load + realtime
   useEffect(() => {
     if (!user) return;
-    console.log("📢 PannelloNotifiche: init, user:", user.id);
     caricaNotifiche();
 
     const channel = supabase
       .channel("pannello-notifiche-" + user.id)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi" }, (payload) => {
-        console.log("📢 PannelloNotifiche: nuovo messaggio gruppo ricevuto", payload);
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi" }, () => {
         caricaNotifiche();
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_letti", filter: `user_id=eq.${user.id}` }, (payload) => {
-        console.log("📢 PannelloNotifiche: messaggi_letti aggiornato", payload);
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_letti", filter: `user_id=eq.${user.id}` }, () => {
         caricaNotifiche();
       })
-      .subscribe((status) => {
-        console.log("📢 PannelloNotifiche: realtime status:", status);
-      });
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messaggi_privati" }, () => {
+        caricaNotifiche();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_privati_letti", filter: `user_id=eq.${user.id}` }, () => {
+        caricaNotifiche();
+      })
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
@@ -154,6 +216,15 @@ const PannelloNotifiche = () => {
       return d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
     }
     return d.toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
+  };
+
+  const handleClick = (n: NotificaItem) => {
+    setOpen(false);
+    if (n.tipo === "gruppo") {
+      navigate(`/gruppo/${n.id}`);
+    } else {
+      navigate(`/chat/${n.id}`);
+    }
   };
 
   return (
@@ -176,7 +247,7 @@ const PannelloNotifiche = () => {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-[60] overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="font-heading font-bold text-sm text-foreground">Notifiche</h3>
+            <h3 className="font-heading font-bold text-sm text-foreground">Messaggi</h3>
             {totaleNonLetti > 0 && (
               <Badge variant="secondary" className="text-[10px]">
                 {totaleNonLetti} non {totaleNonLetti === 1 ? "letto" : "letti"}
@@ -196,22 +267,28 @@ const PannelloNotifiche = () => {
               <div className="divide-y divide-border">
                 {notifiche.map((n) => (
                   <button
-                    key={n.gruppoId}
-                    onClick={() => { setOpen(false); navigate(`/gruppo/${n.gruppoId}`); }}
+                    key={`${n.tipo}-${n.id}`}
+                    onClick={() => handleClick(n)}
                     className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
                   >
                     <Avatar className="h-9 w-9 shrink-0 mt-0.5">
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                        <Users className="w-4 h-4" />
+                        {n.tipo === "gruppo" ? <Users className="w-4 h-4" /> : <User className="w-4 h-4" />}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-foreground truncate">{n.gruppoNome}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm font-semibold text-foreground truncate">{n.nome}</span>
+                          <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded shrink-0">
+                            {n.tipo === "gruppo" ? "Gruppo" : "Chat"}
+                          </span>
+                        </div>
                         <span className="text-[10px] text-muted-foreground shrink-0">{formatTime(n.ultimoTimestamp)}</span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        <span className="font-medium">{n.ultimoMittente}:</span> {n.ultimoMessaggio}
+                        {n.tipo === "gruppo" && <><span className="font-medium">{n.ultimoMittente}:</span> </>}
+                        {n.ultimoMessaggio}
                       </p>
                     </div>
                     <Badge variant="destructive" className="text-[10px] px-1.5 h-5 shrink-0 mt-1">
