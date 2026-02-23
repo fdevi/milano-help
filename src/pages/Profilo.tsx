@@ -74,6 +74,7 @@ const Profilo = () => {
 
   useEffect(() => {
     if (profile) {
+      console.log("🖼️ Profilo: avatar_url dal DB:", profile.avatar_url);
       setForm({
         nome: profile.nome || "", cognome: profile.cognome || "",
         username: profile.username || "", telefono: profile.telefono || "",
