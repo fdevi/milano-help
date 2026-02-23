@@ -70,6 +70,7 @@ const EventCard = ({ event }: { event: any }) => {
           </p>
           <div className="flex items-center gap-2 mt-2">
             <Avatar className="w-5 h-5">
+              <AvatarImage src={event.organizzatore_avatar || undefined} />
               <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
             </Avatar>
             <span className="text-xs text-muted-foreground">{event.organizzatore_nome || "Utente"}</span>
@@ -239,16 +240,16 @@ const Home = () => {
 
       const eventiConOrganizzatore = await Promise.all(
         (data as any[]).map(async (evento: any) => {
-          console.log("👤 Home: carico profilo per organizzatore:", evento.organizzatore_id);
           const { data: profilo } = await supabase
             .from('profiles')
-            .select('nome, cognome')
+            .select('nome, cognome, avatar_url')
             .eq('user_id', evento.organizzatore_id)
             .single();
           
           return { 
             ...evento, 
-            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente' 
+            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente',
+            organizzatore_avatar: profilo?.avatar_url || null,
           };
         })
       );
@@ -328,9 +329,12 @@ const Home = () => {
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{item.descrizione || "Nessuna descrizione"}</p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
-                              {item.autore?.nome?.[0] || 'U'}{item.autore?.cognome?.[0] || ''}
-                            </span>
+                            <Avatar className="w-5 h-5">
+                              <AvatarImage src={item.autore?.avatar_url || undefined} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-bold">
+                                {item.autore?.nome?.[0] || 'U'}{item.autore?.cognome?.[0] || ''}
+                              </AvatarFallback>
+                            </Avatar>
                             {item.autore?.nome || 'Utente'} {item.autore?.cognome || ''}
                           </span>
                           {item.tipo === 'evento' && (
