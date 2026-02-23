@@ -37,7 +37,22 @@ const Chat = () => {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<string>("private");
 
-  // Fetch real conversations
+  // Determine if current conversationId is a private conversation
+  const { data: isPrivateConv } = useQuery({
+    queryKey: ["is_private_conv", conversationId],
+    queryFn: async () => {
+      if (!conversationId) return false;
+      const { data } = await supabase
+        .from("conversazioni_private")
+        .select("id")
+        .eq("id", conversationId)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!conversationId,
+  });
+
+  // === OLD CONVERSATIONS (conversazioni/messaggi) ===
   const { data: conversations = [] } = useQuery({
     queryKey: ["conversazioni", user?.id],
     queryFn: async () => {
@@ -53,25 +68,46 @@ const Chat = () => {
     enabled: !!user,
   });
 
-  // Fetch profiles for other users in conversations
-  const otherUserIds = conversations.map((c: any) =>
+  // === PRIVATE CONVERSATIONS (conversazioni_private/messaggi_privati) ===
+  const { data: privateConversations = [] } = useQuery({
+    queryKey: ["conversazioni_private", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("conversazioni_private")
+        .select("*")
+        .or(`acquirente_id.eq.${user.id},venditore_id.eq.${user.id}`)
+        .order("ultimo_aggiornamento", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  // Merge user IDs for profiles
+  const otherUserIdsOld = conversations.map((c: any) =>
     c.utente1_id === user?.id ? c.utente2_id : c.utente1_id
   );
+  const otherUserIdsPrivate = (privateConversations as any[]).map((c) =>
+    c.acquirente_id === user?.id ? c.venditore_id : c.acquirente_id
+  ).filter(Boolean);
+  const allOtherUserIds = [...new Set([...otherUserIdsOld, ...otherUserIdsPrivate])];
+
   const { data: otherProfiles = [] } = useQuery({
-    queryKey: ["chat_profiles", otherUserIds.join(",")],
+    queryKey: ["chat_profiles", allOtherUserIds.join(",")],
     queryFn: async () => {
-      if (otherUserIds.length === 0) return [];
+      if (allOtherUserIds.length === 0) return [];
       const { data } = await supabase
         .from("profiles")
         .select("user_id, nome, cognome, quartiere")
-        .in("user_id", otherUserIds);
+        .in("user_id", allOtherUserIds);
       return data || [];
     },
-    enabled: otherUserIds.length > 0,
+    enabled: allOtherUserIds.length > 0,
   });
   const profileMap = Object.fromEntries((otherProfiles as any[]).map((p) => [p.user_id, p]));
 
-  // Fetch unread counts per conversation
+  // Unread counts for old conversations
   const { data: unreadCounts = {} } = useQuery({
     queryKey: ["unread_per_conv", user?.id],
     queryFn: async () => {
@@ -88,65 +124,159 @@ const Chat = () => {
     enabled: !!user,
   });
 
-  // Build conversation list for ChatList component
-  const chatConversations: MockConversation[] = conversations.map((c: any) => {
+  // Unread counts for private conversations
+  const { data: unreadCountsPrivate = {} } = useQuery({
+    queryKey: ["unread_per_conv_private", user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      const { data: letti } = await supabase
+        .from("messaggi_privati_letti")
+        .select("conversazione_id, ultimo_letto")
+        .eq("user_id", user.id);
+      const mapLetti = new Map(letti?.map(l => [l.conversazione_id, l.ultimo_letto]) || []);
+
+      const counts: Record<string, number> = {};
+      await Promise.all((privateConversations as any[]).map(async (conv) => {
+        const ultimoLetto = mapLetti.get(conv.id) || new Date(0).toISOString();
+        const { count } = await supabase
+          .from("messaggi_privati")
+          .select("*", { count: "exact", head: true })
+          .eq("conversazione_id", conv.id)
+          .neq("mittente_id", user.id)
+          .gt("created_at", ultimoLetto);
+        if (count && count > 0) counts[conv.id] = count;
+      }));
+      return counts;
+    },
+    enabled: !!user && (privateConversations as any[]).length > 0,
+  });
+
+  // Build combined conversation list
+  const chatConversationsOld: MockConversation[] = conversations.map((c: any) => {
     const otherId = c.utente1_id === user?.id ? c.utente2_id : c.utente1_id;
     const profile = profileMap[otherId];
     return {
       id: c.id,
-      otherUser: {
-        id: otherId,
-        nome: profile?.nome || "Utente",
-        cognome: profile?.cognome || "",
-        quartiere: profile?.quartiere || "",
-      },
+      otherUser: { id: otherId, nome: profile?.nome || "Utente", cognome: profile?.cognome || "", quartiere: profile?.quartiere || "" },
       ultimoMessaggio: c.ultimo_messaggio || "",
       ultimoAggiornamento: c.ultimo_aggiornamento,
       nonLetti: (unreadCounts as any)[c.id] || 0,
     };
   });
 
-  // Fetch messages for active conversation
+  const chatConversationsPrivate: MockConversation[] = (privateConversations as any[]).map((c) => {
+    const otherId = c.acquirente_id === user?.id ? c.venditore_id : c.acquirente_id;
+    const profile = profileMap[otherId || ""];
+    return {
+      id: c.id,
+      otherUser: { id: otherId || "", nome: profile?.nome || "Utente", cognome: profile?.cognome || "", quartiere: profile?.quartiere || "" },
+      ultimoMessaggio: c.ultimo_messaggio || "",
+      ultimoAggiornamento: c.ultimo_aggiornamento || "",
+      nonLetti: (unreadCountsPrivate as any)[c.id] || 0,
+    };
+  });
+
+  const chatConversations = [...chatConversationsOld, ...chatConversationsPrivate]
+    .sort((a, b) => (b.ultimoAggiornamento || "").localeCompare(a.ultimoAggiornamento || ""));
+
+  // Fetch messages for active conversation (old or private)
   const { data: messages = [] } = useQuery({
-    queryKey: ["messaggi", conversationId],
+    queryKey: ["messaggi", conversationId, isPrivateConv],
     queryFn: async () => {
       if (!conversationId) return [];
-      const { data, error } = await supabase
-        .from("messaggi")
-        .select("*")
-        .eq("conversazione_id", conversationId)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data || [];
+      if (isPrivateConv) {
+        const { data, error } = await supabase
+          .from("messaggi_privati")
+          .select("*")
+          .eq("conversazione_id", conversationId)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        return data || [];
+      } else {
+        const { data, error } = await supabase
+          .from("messaggi")
+          .select("*")
+          .eq("conversazione_id", conversationId)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        return data || [];
+      }
     },
-    enabled: !!conversationId,
+    enabled: !!conversationId && isPrivateConv !== undefined,
   });
 
   // Mark messages as read
   useEffect(() => {
     if (!conversationId || !user) return;
+
     const markRead = async () => {
-      await supabase
-        .from("messaggi")
-        .update({ letto: true })
-        .eq("conversazione_id", conversationId)
-        .neq("mittente_id", user.id)
-        .eq("letto", false);
-      queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
+      if (isPrivateConv) {
+        // Upsert messaggi_privati_letti for private conversations
+        console.log("📖 Marking private conversation as read:", conversationId);
+        const { error } = await supabase
+          .from("messaggi_privati_letti")
+          .upsert(
+            {
+              conversazione_id: conversationId,
+              user_id: user.id,
+              ultimo_letto: new Date().toISOString(),
+            },
+            { onConflict: "conversazione_id,user_id" }
+          );
+        if (error) {
+          console.error("❌ Error upserting messaggi_privati_letti:", error);
+          // Fallback: try insert then update
+          const { data: existing } = await supabase
+            .from("messaggi_privati_letti")
+            .select("id")
+            .eq("conversazione_id", conversationId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (existing) {
+            await supabase
+              .from("messaggi_privati_letti")
+              .update({ ultimo_letto: new Date().toISOString() })
+              .eq("conversazione_id", conversationId)
+              .eq("user_id", user.id);
+          } else {
+            await supabase
+              .from("messaggi_privati_letti")
+              .insert({
+                conversazione_id: conversationId,
+                user_id: user.id,
+                ultimo_letto: new Date().toISOString(),
+              });
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ["unread_per_conv_private"] });
+      } else {
+        // Old system: update messaggi.letto
+        await supabase
+          .from("messaggi")
+          .update({ letto: true })
+          .eq("conversazione_id", conversationId)
+          .neq("mittente_id", user.id)
+          .eq("letto", false);
+        queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
+      }
     };
     markRead();
-  }, [conversationId, user, messages]);
+  }, [conversationId, user, isPrivateConv, messages]);
 
   // Realtime for messages
   useEffect(() => {
     if (!user) return;
     const channel = supabase
       .channel("chat-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi" }, (payload) => {
-        console.log("📩 Realtime messaggi:", payload);
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi" }, () => {
         queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
         queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
         queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_privati" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
+        queryClient.invalidateQueries({ queryKey: ["unread_per_conv_private"] });
+        queryClient.invalidateQueries({ queryKey: ["conversazioni_private"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -157,24 +287,40 @@ const Chat = () => {
     mittenteId: m.mittente_id,
     testo: m.testo,
     createdAt: m.created_at,
-    letto: m.letto,
+    letto: m.letto ?? false,
   }));
 
   const activeConversation = conversationId ? chatConversations.find((c) => c.id === conversationId) : null;
 
   const handleSend = async (text: string) => {
     if (!conversationId || !user) return;
-    await supabase.from("messaggi").insert({
-      conversazione_id: conversationId,
-      mittente_id: user.id,
-      testo: text,
-    });
-    await supabase.from("conversazioni").update({
-      ultimo_messaggio: text,
-      ultimo_aggiornamento: new Date().toISOString(),
-    }).eq("id", conversationId);
-    queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
-    queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
+
+    if (isPrivateConv) {
+      await supabase.from("messaggi_privati").insert({
+        conversazione_id: conversationId,
+        mittente_id: user.id,
+        testo: text,
+      });
+      await supabase.from("conversazioni_private").update({
+        ultimo_messaggio: text,
+        ultimo_aggiornamento: new Date().toISOString(),
+        ultimo_mittente_id: user.id,
+      }).eq("id", conversationId);
+      queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversazioni_private"] });
+    } else {
+      await supabase.from("messaggi").insert({
+        conversazione_id: conversationId,
+        mittente_id: user.id,
+        testo: text,
+      });
+      await supabase.from("conversazioni").update({
+        ultimo_messaggio: text,
+        ultimo_aggiornamento: new Date().toISOString(),
+      }).eq("id", conversationId);
+      queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
+    }
   };
 
   // Fetch user's groups for the groups tab
@@ -206,7 +352,6 @@ const Chat = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="flex-1 pt-16 flex">
-        {/* Sidebar */}
         {showList && (
           <div className={`${isMobile ? "w-full" : "w-80 lg:w-96"} border-r bg-card flex flex-col`}>
             <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1">
@@ -260,7 +405,6 @@ const Chat = () => {
           </div>
         )}
 
-        {/* Chat detail */}
         {showDetail && (
           <div className="flex-1 flex flex-col">
             {activeConversation ? (
