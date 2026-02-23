@@ -112,6 +112,25 @@ const GruppoDetail = () => {
   });
   const pendingProfileMap = Object.fromEntries((pendingProfiles as any[]).map((p) => [p.user_id, p]));
 
+  // Segna messaggi come letti
+  const segnaComeLetto = async () => {
+    if (!user || !id || !isMember) return;
+    const now = new Date().toISOString();
+    await supabase
+      .from("messaggi_letti")
+      .upsert(
+        { user_id: user.id, gruppo_id: id, ultimo_letto: now, updated_at: now } as any,
+        { onConflict: "user_id,gruppo_id" }
+      );
+  };
+
+  // Segna come letto al mount e quando cambiano i messaggi
+  useEffect(() => {
+    if (isMember && messaggi.length > 0) {
+      segnaComeLetto();
+    }
+  }, [isMember, messaggi]);
+
   // Real-time messages: solo i membri ricevono gli aggiornamenti
   useEffect(() => {
     if (!id || !isMember) return;
