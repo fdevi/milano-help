@@ -126,13 +126,22 @@ const PannelloNotifiche = () => {
   // Initial load + realtime
   useEffect(() => {
     if (!user) return;
+    console.log("📢 PannelloNotifiche: init, user:", user.id);
     caricaNotifiche();
 
     const channel = supabase
-      .channel("pannello-notifiche")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi" }, () => caricaNotifiche())
-      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_letti" }, () => caricaNotifiche())
-      .subscribe();
+      .channel("pannello-notifiche-" + user.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi" }, (payload) => {
+        console.log("📢 PannelloNotifiche: nuovo messaggio gruppo ricevuto", payload);
+        caricaNotifiche();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_letti", filter: `user_id=eq.${user.id}` }, (payload) => {
+        console.log("📢 PannelloNotifiche: messaggi_letti aggiornato", payload);
+        caricaNotifiche();
+      })
+      .subscribe((status) => {
+        console.log("📢 PannelloNotifiche: realtime status:", status);
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
@@ -188,7 +197,7 @@ const PannelloNotifiche = () => {
                 {notifiche.map((n) => (
                   <button
                     key={n.gruppoId}
-                    onClick={() => { setOpen(false); navigate(`/gruppi/${n.gruppoId}`); }}
+                    onClick={() => { setOpen(false); navigate(`/gruppo/${n.gruppoId}`); }}
                     className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
                   >
                     <Avatar className="h-9 w-9 shrink-0 mt-0.5">
