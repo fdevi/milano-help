@@ -113,12 +113,15 @@ const PannelloNotifiche = () => {
       .select("id, acquirente_id, venditore_id, ultimo_messaggio, ultimo_aggiornamento, ultimo_mittente_id, annuncio_id")
       .or(`acquirente_id.eq.${user.id},venditore_id.eq.${user.id}`);
 
+    console.log("📞 Conversazioni private trovate:", convPrivate?.length || 0);
+
     if (convPrivate && convPrivate.length > 0) {
       // Get read status for private conversations
       const { data: lettiPrivati } = await supabase
         .from("messaggi_privati_letti")
         .select("conversazione_id, ultimo_letto")
         .eq("user_id", user.id);
+      console.log("📞 Stato lettura privati:", lettiPrivati);
       const mapLettiPrivati = new Map(lettiPrivati?.map(l => [l.conversazione_id, l.ultimo_letto]) || []);
 
       // Get other user profiles
@@ -142,6 +145,7 @@ const PannelloNotifiche = () => {
           .gt("created_at", ultimoLetto);
 
         const nonLetti = count || 0;
+        console.log(`💬 Conversazione ID: ${conv.id} non letti = ${nonLetti} (ultimoLetto: ${ultimoLetto})`);
         totale += nonLetti;
 
         if (nonLetti > 0) {
