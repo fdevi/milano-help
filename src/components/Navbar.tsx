@@ -7,6 +7,7 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle } from "lucide-react";
+import BadgeNotificheChat from "@/components/BadgeNotificheChat";
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -65,6 +66,7 @@ const Navbar = () => {
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </Badge>
                   )}
+                  <BadgeNotificheChat />
                 </Button>
               </Link>
               {isAdmin && (
