@@ -182,23 +182,30 @@ const Home = () => {
       if (userIds.length > 0) {
         const uniqueIds = [...new Set(userIds)];
         const { data: profili } = await supabase.from('profiles').select('user_id, nome, cognome, avatar_url').in('user_id', uniqueIds);
+        console.log("🖼️ Home Feed: profili caricati con avatar_url:", profili?.map(p => ({ user_id: p.user_id, nome: p.nome, avatar_url: p.avatar_url })));
         profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
       }
 
       const items = [
-        ...(annunci?.map(a => ({
-          id: a.id, tipo: 'annuncio' as const, titolo: a.titolo, descrizione: a.descrizione,
-          prezzo: a.prezzo, immagini: a.immagini, created_at: a.created_at,
-          autore: profiliMap.get(a.user_id) || { nome: 'Utente', cognome: '' },
-          categoria: a.categorie_annunci, link: `/annuncio/${a.id}`
-        })) || []),
-        ...((eventi as any[])?.map((e: any) => ({
-          id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
-          data: e.data, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
-          partecipanti: e.partecipanti, created_at: e.created_at,
-          autore: profiliMap.get(e.organizzatore_id) || { nome: 'Utente', cognome: '' },
-          link: `/eventi`
-        })) || [])
+        ...(annunci?.map(a => {
+          const autore = profiliMap.get(a.user_id) || { nome: 'Utente', cognome: '' };
+          console.log("🖼️ Home Feed: annuncio", a.id, "autore:", autore);
+          return {
+            id: a.id, tipo: 'annuncio' as const, titolo: a.titolo, descrizione: a.descrizione,
+            prezzo: a.prezzo, immagini: a.immagini, created_at: a.created_at,
+            autore, categoria: a.categorie_annunci, link: `/annuncio/${a.id}`
+          };
+        }) || []),
+        ...((eventi as any[])?.map((e: any) => {
+          const autore = profiliMap.get(e.organizzatore_id) || { nome: 'Utente', cognome: '' };
+          console.log("🖼️ Home Feed: evento", e.id, "autore:", autore);
+          return {
+            id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
+            data: e.data, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
+            partecipanti: e.partecipanti, created_at: e.created_at,
+            autore, link: `/eventi`
+          };
+        }) || [])
       ];
 
       return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
