@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: ['fabio.dvt@hotmail.com'],
+        to: ['fabio.dvt0@gmail.com'],
         subject: `[Milano Help] ${oggetto}`,
         html: `
           <h2>Nuovo messaggio dal form "Contattaci"</h2>
