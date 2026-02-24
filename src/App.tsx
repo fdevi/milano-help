@@ -41,7 +41,8 @@ import Profilo from "./pages/Profilo";
 import Eventi from "./pages/Eventi";
 import AdminEventi from "./pages/admin/AdminEventi";
 import MieiEventi from "./pages/MieiEventi";
-import Donazioni from './pages/Donazioni';
+import Donazioni from "./pages/Donazioni";
+import Contattaci from "./pages/Contattaci";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ const App = () => (
             <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
             <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
             <Route path="/donazioni" element={<Donazioni />} />
+            <Route path="/contattaci" element={<Contattaci />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
