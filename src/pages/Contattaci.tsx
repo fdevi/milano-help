@@ -8,10 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
-
-const EMAIL_DESTINO = "fabio.dvt@hotmail.com";
-// Per invio diretto senza aprire il client email: installa @emailjs/browser e configura
-// VITE_EMAILJS_PUBLIC_KEY, VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID in .env
+import { supabase } from "@/integrations/supabase/client";
 
 const Contattaci = () => {
   const { toast } = useToast();
@@ -35,19 +32,20 @@ const Contattaci = () => {
     setInviando(true);
 
     try {
-      // Opzione mailto: apre il client email con dati precompilati (funziona subito, nessuna dipendenza)
-      const body = [
-        `Nome: ${nome.trim()}`,
-        `Email: ${email.trim()}`,
-        "",
-        messaggio.trim(),
-      ].join("\n");
-      const mailtoUrl = `mailto:${EMAIL_DESTINO}?subject=${encodeURIComponent(oggetto.trim())}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailtoUrl;
+      const { data, error } = await supabase.functions.invoke("send-contact-email", {
+        body: {
+          nome: nome.trim(),
+          email: email.trim(),
+          oggetto: oggetto.trim(),
+          messaggio: messaggio.trim(),
+        },
+      });
+
+      if (error) throw error;
 
       toast({
-        title: "Grazie per averci contattato!",
-        description: "Si è aperto il tuo client email. Completa l'invio del messaggio per inviare la richiesta.",
+        title: "Messaggio inviato!",
+        description: "Grazie per averci contattato, ti risponderemo al più presto.",
       });
 
       setNome("");
@@ -57,7 +55,7 @@ const Contattaci = () => {
     } catch {
       toast({
         title: "Errore",
-        description: "Non è stato possibile preparare l'email. Riprova o scrivi a " + EMAIL_DESTINO,
+        description: "Non è stato possibile inviare il messaggio. Riprova più tardi.",
         variant: "destructive",
       });
     } finally {
@@ -73,7 +71,7 @@ const Contattaci = () => {
           <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Contattaci</h1>
           <p className="text-muted-foreground">
             Compila il form e ti risponderemo al più presto. I messaggi vengono inviati a{" "}
-            <span className="text-foreground font-medium">{EMAIL_DESTINO}</span>.
+            <span className="text-foreground font-medium">fabio.dvt@hotmail.com</span>.
           </p>
         </div>
 
