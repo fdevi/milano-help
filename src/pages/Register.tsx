@@ -1066,7 +1066,7 @@ useEffect(() => {
                     </label>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <Checkbox checked={form.privacy} onCheckedChange={v => updateForm("privacy", v)} className="mt-0.5" />
-                      <span className="text-sm text-foreground">Acconsento al trattamento dei <a href="#" className="text-primary underline">dati personali</a> *</span>
+                      <span className="text-sm text-foreground">Acconsento al trattamento dei <a href="/privacy" className="text-primary underline" target="_blank" rel="noopener noreferrer">dati personali</a> *</span>
                     </label>
                   </div>
 
