@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Users, User, ChevronRight } from "lucide-react";
+import { Bell, MessageCircle, Users, User, ChevronRight, Heart, MessageSquare, CheckCircle, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -14,7 +14,9 @@ interface NotificaItem {
   ultimoMessaggio?: string;
   ultimoMittente?: string;
   ultimoTimestamp?: string;
-  tipo: "gruppo" | "privata";
+  tipo: "gruppo" | "privata" | "notifica";
+  notificaTipo?: string;
+  link?: string;
 }
 
 const PannelloNotifiche = () => {
@@ -177,6 +179,31 @@ const PannelloNotifiche = () => {
       }));
     }
 
+    // === NOTIFICHE GENERALI (like, commenti, moderazione) ===
+    const { data: notificheDb } = await supabase
+      .from("notifiche")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("letta", false)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (notificheDb && notificheDb.length > 0) {
+      totale += notificheDb.length;
+      notificheDb.forEach((n: any) => {
+        risultati.push({
+          id: n.id,
+          nome: n.titolo || "Notifica",
+          count: 1,
+          ultimoMessaggio: n.messaggio,
+          ultimoTimestamp: n.created_at,
+          tipo: "notifica",
+          notificaTipo: n.tipo,
+          link: n.link,
+        });
+      });
+    }
+
     risultati.sort((a, b) => {
       const ta = a.ultimoTimestamp || "";
       const tb = b.ultimoTimestamp || "";
@@ -207,6 +234,9 @@ const PannelloNotifiche = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_privati_letti", filter: `user_id=eq.${user.id}` }, () => {
         caricaNotifiche();
       })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifiche", filter: `user_id=eq.${user.id}` }, () => {
+        caricaNotifiche();
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -222,12 +252,27 @@ const PannelloNotifiche = () => {
     return d.toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
   };
 
-  const handleClick = (n: NotificaItem) => {
+  const handleClick = async (n: NotificaItem) => {
     setOpen(false);
-    if (n.tipo === "gruppo") {
+    if (n.tipo === "notifica") {
+      // Mark as read
+      await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
+      caricaNotifiche();
+      if (n.link) navigate(n.link);
+    } else if (n.tipo === "gruppo") {
       navigate(`/gruppo/${n.id}`);
     } else {
       navigate(`/chat/${n.id}`);
+    }
+  };
+
+  const getNotificaIcon = (tipo?: string) => {
+    switch (tipo) {
+      case "like_annuncio": return <Heart className="w-4 h-4 text-rose-500" />;
+      case "commento_annuncio": return <MessageSquare className="w-4 h-4 text-blue-500" />;
+      case "approvato": return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+      case "rifiutato": return <XCircle className="w-4 h-4 text-destructive" />;
+      default: return <Bell className="w-4 h-4" />;
     }
   };
 
@@ -237,7 +282,7 @@ const PannelloNotifiche = () => {
         onClick={() => { setOpen(!open); if (!open) caricaNotifiche(); }}
         className="relative p-2 rounded-lg hover:bg-muted transition-colors"
       >
-        <MessageCircle className="w-5 h-5 text-muted-foreground" />
+        <Bell className="w-5 h-5 text-muted-foreground" />
         {totaleNonLetti > 0 && (
           <Badge
             variant="destructive"
@@ -251,7 +296,7 @@ const PannelloNotifiche = () => {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-[60] overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="font-heading font-bold text-sm text-foreground">Messaggi</h3>
+            <h3 className="font-heading font-bold text-sm text-foreground">Notifiche</h3>
             {totaleNonLetti > 0 && (
               <Badge variant="secondary" className="text-[10px]">
                 {totaleNonLetti} non {totaleNonLetti === 1 ? "letto" : "letti"}
@@ -277,7 +322,7 @@ const PannelloNotifiche = () => {
                   >
                     <Avatar className="h-9 w-9 shrink-0 mt-0.5">
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                        {n.tipo === "gruppo" ? <Users className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                        {n.tipo === "notifica" ? getNotificaIcon(n.notificaTipo) : n.tipo === "gruppo" ? <Users className="w-4 h-4" /> : <User className="w-4 h-4" />}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -285,7 +330,7 @@ const PannelloNotifiche = () => {
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-sm font-semibold text-foreground truncate">{n.nome}</span>
                           <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded shrink-0">
-                            {n.tipo === "gruppo" ? "Gruppo" : "Chat"}
+                            {n.tipo === "gruppo" ? "Gruppo" : n.tipo === "privata" ? "Chat" : "Avviso"}
                           </span>
                         </div>
                         <span className="text-[10px] text-muted-foreground shrink-0">{formatTime(n.ultimoTimestamp)}</span>
@@ -295,9 +340,11 @@ const PannelloNotifiche = () => {
                         {n.ultimoMessaggio}
                       </p>
                     </div>
-                    <Badge variant="destructive" className="text-[10px] px-1.5 h-5 shrink-0 mt-1">
-                      {n.count}
-                    </Badge>
+                    {n.tipo !== "notifica" && (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 h-5 shrink-0 mt-1">
+                        {n.count}
+                      </Badge>
+                    )}
                   </button>
                 ))}
               </div>
