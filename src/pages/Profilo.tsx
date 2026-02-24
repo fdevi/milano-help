@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useQuartieri } from "@/hooks/useQuartieri";
 
 // ── Profile fetching ──
 async function fetchProfile(userId: string) {
@@ -47,6 +48,10 @@ const Profilo = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { quartieri, aree } = useQuartieri();
+  const [quartiereSearch, setQuartiereSearch] = useState("");
+  const [showQuartiereSuggestions, setShowQuartiereSuggestions] = useState(false);
+  const quartiereRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     nome: "", cognome: "", username: "", telefono: "", quartiere: "",
@@ -211,7 +216,53 @@ const Profilo = () => {
                 <Separator />
                 <h3 className="font-heading font-semibold text-foreground text-sm">Indirizzo</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label htmlFor="quartiere">Quartiere</Label><Input id="quartiere" value={form.quartiere} onChange={(e) => setForm({ ...form, quartiere: e.target.value })} /></div>
+                  <div className="space-y-1.5 relative" ref={quartiereRef}>
+                    <Label htmlFor="quartiere">Zona di appartenenza</Label>
+                    <Input
+                      id="quartiere"
+                      placeholder="Cerca la tua zona..."
+                      value={showQuartiereSuggestions ? quartiereSearch : (form.quartiere || "")}
+                      onChange={(e) => {
+                        setQuartiereSearch(e.target.value);
+                        setShowQuartiereSuggestions(true);
+                      }}
+                      onFocus={() => {
+                        setQuartiereSearch(form.quartiere || "");
+                        setShowQuartiereSuggestions(true);
+                      }}
+                      autoComplete="off"
+                    />
+                    {form.quartiere && !showQuartiereSuggestions && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {form.quartiere}</p>
+                    )}
+                    {showQuartiereSuggestions && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {quartieri
+                          .filter(q => {
+                            const s = quartiereSearch.toLowerCase();
+                            return !s || q.nome.toLowerCase().includes(s) || q.area.toLowerCase().includes(s);
+                          })
+                          .slice(0, 10)
+                          .map(q => (
+                            <button
+                              key={q.nome}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex justify-between items-center"
+                              onMouseDown={() => {
+                                setForm({ ...form, quartiere: q.nome });
+                                setShowQuartiereSuggestions(false);
+                              }}
+                            >
+                              <span className="text-foreground">{q.nome}</span>
+                              <span className="text-xs text-muted-foreground">{q.area}</span>
+                            </button>
+                          ))}
+                        {quartiereSearch && quartieri.filter(q => q.nome.toLowerCase().includes(quartiereSearch.toLowerCase())).length === 0 && (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">Nessuna zona trovata</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1.5"><Label htmlFor="citta">Città</Label><Input id="citta" value={form.citta} onChange={(e) => setForm({ ...form, citta: e.target.value })} /></div>
                   <div className="space-y-1.5 sm:col-span-1"><Label htmlFor="indirizzo">Via</Label><Input id="indirizzo" value={form.indirizzo} onChange={(e) => setForm({ ...form, indirizzo: e.target.value })} /></div>
                   <div className="grid grid-cols-2 gap-3">
