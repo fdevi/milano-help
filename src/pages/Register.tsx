@@ -145,7 +145,7 @@ const Register = () => {
   const { quartieri } = useQuartieri();
 
   const filteredQuartieri = quartiereQuery.trim().length > 0
-    ? quartieri.filter(q => q.nome.toLowerCase().includes(quartiereQuery.toLowerCase()) || `${q.nome} (Municipio ${q.municipio})`.toLowerCase().includes(quartiereQuery.toLowerCase())).slice(0, 6)
+    ? quartieri.filter(q => q.nome.toLowerCase().includes(quartiereQuery.toLowerCase()) || q.area.toLowerCase().includes(quartiereQuery.toLowerCase())).slice(0, 8)
     : [];
 
   const selectQuartiere = (nome: string) => {
@@ -927,7 +927,7 @@ useEffect(() => {
                             onMouseDown={() => selectQuartiere(q.nome)}
                           >
                             <span className="text-foreground">{q.nome}</span>
-                            <span className="text-xs text-muted-foreground">Municipio {q.municipio}</span>
+                            <span className="text-xs text-muted-foreground">{q.area}</span>
                           </button>
                         ))}
                       </div>
