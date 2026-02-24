@@ -13,9 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 interface Props {
   annuncioId: string;
   annuncioAutoreId: string;
+  annuncioTitolo?: string;
 }
 
-const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId }: Props) => {
+const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -66,6 +67,16 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId }: Props) => {
 
   const profileMap = Object.fromEntries((profiles as any[]).map((p) => [p.user_id, p]));
 
+  // Get current user profile for notification
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-profile-comment", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user!.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const addComment = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("annunci_commenti").insert({
@@ -77,12 +88,16 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId }: Props) => {
 
       // Create notification for annuncio author if commenter is not the author
       if (user!.id !== annuncioAutoreId) {
+        const nomeUtente = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
+        const testoTroncato = testo.length > 50 ? testo.slice(0, 50) + "…" : testo;
         await supabase.from("notifiche").insert({
           user_id: annuncioAutoreId,
-          tipo: "commento",
+          tipo: "commento_annuncio",
           titolo: "Nuovo commento",
-          messaggio: `Qualcuno ha commentato il tuo annuncio`,
+          messaggio: `${nomeUtente} ha commentato il tuo annuncio "${annuncioTitolo || ""}": "${testoTroncato}"`,
           link: `/annuncio/${annuncioId}`,
+          riferimento_id: annuncioId,
+          mittente_id: user!.id,
         } as any);
       }
     },

@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -97,6 +97,16 @@ const AnnuncioPage = () => {
     enabled: !!id && !!user,
   });
 
+  // Fetch current user profile for notification name
+  const { data: currentUserProfile } = useQuery({
+    queryKey: ["my-profile-name", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user!.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const toggleLike = async () => {
     if (!user) { navigate("/login"); return; }
     if (!annuncio) return;
@@ -106,10 +116,34 @@ const AnnuncioPage = () => {
     } else {
       await supabase.from("annunci_mi_piace").insert({ annuncio_id: annuncio.id, user_id: user.id } as any);
       await supabase.from("annunci").update({ mi_piace: (annuncio.mi_piace ?? 0) + 1 } as any).eq("id", annuncio.id);
+      // Send notification to annuncio owner
+      if (user.id !== annuncio.user_id) {
+        const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
+        await supabase.from("notifiche").insert({
+          user_id: annuncio.user_id,
+          tipo: "like_annuncio",
+          titolo: "Nuovo Mi Piace",
+          messaggio: `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`,
+          link: `/annuncio/${annuncio.id}`,
+          riferimento_id: annuncio.id,
+          mittente_id: user.id,
+        } as any);
+      }
     }
     queryClient.invalidateQueries({ queryKey: ["annuncio_like", id] });
     queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
   };
+
+  // View counter with sessionStorage dedup
+  useEffect(() => {
+    if (!annuncio?.id) return;
+    const key = `viewed_annuncio_${annuncio.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    supabase.from("annunci").update({ visualizzazioni: (annuncio.visualizzazioni ?? 0) + 1 } as any).eq("id", annuncio.id).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
+    });
+  }, [annuncio?.id]);
 
   // Fetch other ads by author
   const { data: altriAnnunci = [] } = useQuery({
@@ -465,7 +499,7 @@ const AnnuncioPage = () => {
       {/* Commenti */}
       {annuncio && (
         <div className="container mx-auto px-4 pb-12">
-          <CommentiAnnuncio annuncioId={annuncio.id} annuncioAutoreId={annuncio.user_id} />
+          <CommentiAnnuncio annuncioId={annuncio.id} annuncioAutoreId={annuncio.user_id} annuncioTitolo={annuncio.titolo} />
         </div>
       )}
 
