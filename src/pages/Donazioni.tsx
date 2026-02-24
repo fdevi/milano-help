@@ -132,6 +132,7 @@ const Donazioni = () => {
                         return Promise.reject();
                       }
                       return actions.order.create({
+                        intent: "CAPTURE",
                         purchase_units: [
                           {
                             amount: {
