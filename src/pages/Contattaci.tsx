@@ -70,8 +70,7 @@ const Contattaci = () => {
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold text-foreground mb-2">Contattaci</h1>
           <p className="text-muted-foreground">
-            Compila il form e ti risponderemo al più presto. I messaggi vengono inviati a{" "}
-            <span className="text-foreground font-medium">fabio.dvt0@gmail.com</span>.
+            Compila il form e ti risponderemo al più presto. I messaggi vengono inviati allo staff di Milano Help.
           </p>
         </div>
 
