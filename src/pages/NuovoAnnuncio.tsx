@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,13 +17,14 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft,
-  CalendarIcon,
   Loader2,
   X,
   Image as ImageIcon,
+  AlertCircle,
+  MapPin,
 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
-import { useQuartieri } from "@/hooks/useQuartieri";
+import { Link } from "react-router-dom";
 
 const MAX_IMAGES = 5;
 
@@ -32,19 +33,34 @@ const NuovoAnnuncio = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { quartieri } = useQuartieri();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
   const [descrizione, setDescrizione] = useState("");
   const [prezzo, setPrezzo] = useState("");
-  const [quartiere, setQuartiere] = useState("");
   const [mostraEmail, setMostraEmail] = useState(false);
   const [mostraTelefono, setMostraTelefono] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Fetch user profile to get quartiere
+  const { data: userProfile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("quartiere")
+        .eq("user_id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userQuartiere = userProfile?.quartiere || "";
 
   const { data: categorie = [] } = useQuery({
     queryKey: ["categorie_annunci"],
@@ -52,7 +68,7 @@ const NuovoAnnuncio = () => {
       const { data, error } = await supabase
         .from("categorie_annunci")
         .select("id, nome, label, icona, richiede_prezzo")
-        .neq("nome", "evento")  // ← ESCLUDE LA CATEGORIA EVENTO
+        .neq("nome", "evento")
         .order("ordine");
       if (error) throw error;
       return data || [];
@@ -67,7 +83,6 @@ const NuovoAnnuncio = () => {
     const files = Array.from(e.target.files || []);
     const remaining = MAX_IMAGES - images.length;
     const toAdd = files.slice(0, remaining);
-
     setImages((prev) => [...prev, ...toAdd]);
     toAdd.forEach((file) => {
       const url = URL.createObjectURL(file);
@@ -87,13 +102,9 @@ const NuovoAnnuncio = () => {
     for (const file of images) {
       const ext = file.name.split(".").pop();
       const path = `${user!.id}/${annuncioId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("annunci-images")
-        .upload(path, file);
+      const { error } = await supabase.storage.from("annunci-images").upload(path, file);
       if (error) throw error;
-      const { data: urlData } = supabase.storage
-        .from("annunci-images")
-        .getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from("annunci-images").getPublicUrl(path);
       urls.push(urlData.publicUrl);
     }
     return urls;
@@ -103,8 +114,13 @@ const NuovoAnnuncio = () => {
     e.preventDefault();
     if (!user) return;
     if (!categoriaId || !titolo.trim()) {
+      toast({ title: "Compila i campi obbligatori", variant: "destructive" });
+      return;
+    }
+    if (!userQuartiere) {
       toast({
-        title: "Compila i campi obbligatori",
+        title: "Zona non impostata",
+        description: "Imposta la tua zona di appartenenza nel Profilo prima di pubblicare.",
         variant: "destructive",
       });
       return;
@@ -117,7 +133,7 @@ const NuovoAnnuncio = () => {
         titolo: titolo.trim(),
         descrizione: descrizione.trim() || null,
         categoria_id: categoriaId,
-        quartiere: quartiere || null,
+        quartiere: userQuartiere,
         stato: "in_moderazione",
         prezzo: richiedePrezzo && prezzo ? parseFloat(prezzo) : null,
         mostra_email: mostraEmail,
@@ -133,10 +149,7 @@ const NuovoAnnuncio = () => {
 
       if (images.length > 0) {
         const urls = await uploadImages(annuncio.id);
-        await supabase
-          .from("annunci")
-          .update({ immagini: urls })
-          .eq("id", annuncio.id);
+        await supabase.from("annunci").update({ immagini: urls }).eq("id", annuncio.id);
       }
 
       await queryClient.invalidateQueries({ queryKey: ["categorie_annunci"] });
@@ -161,7 +174,6 @@ const NuovoAnnuncio = () => {
   return (
     <AuthLayout>
       <div className="max-w-2xl mx-auto">
-        {/* Bottone Indietro */}
         <Button
           variant="ghost"
           size="sm"
@@ -172,7 +184,22 @@ const NuovoAnnuncio = () => {
         </Button>
 
         <h1 className="text-2xl font-bold mb-6">Crea un nuovo annuncio</h1>
-        
+
+        {/* Zona info banner */}
+        {userQuartiere ? (
+          <div className="mb-6 flex items-center gap-2 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+            <MapPin className="w-4 h-4 text-primary shrink-0" />
+            <span>L'annuncio verrà pubblicato nella zona: <strong className="text-foreground">{userQuartiere}</strong></span>
+            <Link to="/profilo" className="ml-auto text-primary underline text-xs whitespace-nowrap">Modifica</Link>
+          </div>
+        ) : (
+          <div className="mb-6 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Devi impostare la tua zona di appartenenza prima di pubblicare.</span>
+            <Link to="/profilo" className="ml-auto text-primary underline text-xs whitespace-nowrap">Vai al Profilo</Link>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Categoria */}
           <div>
@@ -183,9 +210,7 @@ const NuovoAnnuncio = () => {
               </SelectTrigger>
               <SelectContent>
                 {categorie.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.label}
-                  </SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -232,49 +257,16 @@ const NuovoAnnuncio = () => {
             </div>
           )}
 
-          {/* Quartiere */}
-          <div>
-            <Label htmlFor="quartiere">Quartiere</Label>
-            <Select value={quartiere} onValueChange={setQuartiere}>
-              <SelectTrigger id="quartiere">
-                <SelectValue placeholder="Seleziona un quartiere" />
-              </SelectTrigger>
-              <SelectContent>
-                {quartieri.map((q) => (
-                  <SelectItem key={q.nome} value={q.nome}>
-                    {q.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Contatti */}
           <div className="space-y-2">
             <Label>Contatti visibili nell'annuncio</Label>
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="mostraEmail"
-                checked={mostraEmail}
-                onChange={(e) => setMostraEmail(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="mostraEmail" className="text-sm font-normal">
-                Mostra la mia email
-              </Label>
+              <input type="checkbox" id="mostraEmail" checked={mostraEmail} onChange={(e) => setMostraEmail(e.target.checked)} className="rounded border-gray-300" />
+              <Label htmlFor="mostraEmail" className="text-sm font-normal">Mostra la mia email</Label>
             </div>
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="mostraTelefono"
-                checked={mostraTelefono}
-                onChange={(e) => setMostraTelefono(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="mostraTelefono" className="text-sm font-normal">
-                Mostra il mio telefono
-              </Label>
+              <input type="checkbox" id="mostraTelefono" checked={mostraTelefono} onChange={(e) => setMostraTelefono(e.target.checked)} className="rounded border-gray-300" />
+              <Label htmlFor="mostraTelefono" className="text-sm font-normal">Mostra il mio telefono</Label>
             </div>
           </div>
 
@@ -285,43 +277,24 @@ const NuovoAnnuncio = () => {
               {previews.map((src, i) => (
                 <div key={i} className="relative group aspect-square rounded-md overflow-hidden border">
                   <img src={src} alt={`Preview ${i}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
+                  <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
               {images.length < MAX_IMAGES && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                >
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors">
                   <ImageIcon className="w-5 h-5" />
                   <span className="text-xs">Aggiungi</span>
                 </button>
               )}
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageAdd}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageAdd} className="hidden" />
           </div>
 
-          {/* Bottone submit */}
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button type="submit" className="w-full" disabled={submitting || !userQuartiere}>
             {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Invio in corso...
-              </>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Invio in corso...</>
             ) : (
               "Pubblica annuncio"
             )}
