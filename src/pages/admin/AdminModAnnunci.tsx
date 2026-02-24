@@ -91,24 +91,50 @@ const AdminModAnnunci = () => {
   }, [filtroCategoria, filtroStato]);
 
   const approva = async (id: string) => {
+    const annuncio = annunci.find(a => a.id === id);
     const { error } = await supabase
       .from("annunci")
       .update({ stato: "attivo", moderato_da: user?.id, moderato_il: new Date().toISOString() })
       .eq("id", id);
     if (error) { toast.error(`Errore: ${error.message}`); return; }
     await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "annuncio_approvato", dettagli: `Annuncio ${id} approvato` });
+    // Notify author
+    if (annuncio) {
+      await supabase.from("notifiche").insert({
+        user_id: annuncio.user_id,
+        tipo: "approvato",
+        titolo: "Annuncio approvato",
+        messaggio: `Il tuo annuncio "${annuncio.titolo}" è stato approvato`,
+        link: `/annuncio/${id}`,
+        riferimento_id: id,
+        mittente_id: user?.id,
+      } as any);
+    }
     toast.success("Annuncio approvato");
     fetchAnnunci();
   };
 
   const rifiuta = async () => {
     if (!rifiutoModal || !motivoRifiuto.trim()) return;
+    const annuncio = annunci.find(a => a.id === rifiutoModal);
     const { error } = await supabase
       .from("annunci")
       .update({ stato: "rifiutato", motivo_rifiuto: motivoRifiuto, moderato_da: user?.id, moderato_il: new Date().toISOString() })
       .eq("id", rifiutoModal);
     if (error) { toast.error(`Errore: ${error.message}`); return; }
     await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "annuncio_rifiutato", dettagli: `Annuncio ${rifiutoModal} rifiutato: ${motivoRifiuto}` });
+    // Notify author
+    if (annuncio) {
+      await supabase.from("notifiche").insert({
+        user_id: annuncio.user_id,
+        tipo: "rifiutato",
+        titolo: "Annuncio rifiutato",
+        messaggio: `Il tuo annuncio "${annuncio.titolo}" è stato rifiutato. Motivo: ${motivoRifiuto}`,
+        link: `/annuncio/${rifiutoModal}`,
+        riferimento_id: rifiutoModal,
+        mittente_id: user?.id,
+      } as any);
+    }
     toast.success("Annuncio rifiutato");
     setRifiutoModal(null);
     setMotivoRifiuto("");
