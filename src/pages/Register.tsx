@@ -1062,7 +1062,7 @@ useEffect(() => {
                     <h3 className="font-heading font-bold text-foreground text-sm">Consensi obbligatori</h3>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <Checkbox checked={form.termini} onCheckedChange={v => updateForm("termini", v)} className="mt-0.5" />
-                      <span className="text-sm text-foreground">Accetto i <a href="#" className="text-primary underline">Termini e Condizioni</a> *</span>
+                      <span className="text-sm text-foreground">Accetto i <a href="/termini" className="text-primary underline" target="_blank" rel="noopener noreferrer">Termini e Condizioni</a> *</span>
                     </label>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <Checkbox checked={form.privacy} onCheckedChange={v => updateForm("privacy", v)} className="mt-0.5" />
