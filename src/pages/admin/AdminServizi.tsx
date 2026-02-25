@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Trash2 } from "lucide-react";
@@ -17,11 +19,13 @@ interface Servizio {
   created_at: string;
   categoria_id: string | null;
   operatore_id: string;
+  operatore_nome?: string;
+  operatore_email?: string;
 }
 
 const statusColors: Record<string, string> = {
   attivo: "bg-primary/10 text-primary",
-  in_attesa: "bg-secondary/10 text-secondary",
+  in_attesa: "bg-secondary/10 text-secondary-foreground",
   rifiutato: "bg-destructive/10 text-destructive",
   disattivato: "bg-muted text-muted-foreground",
 };
@@ -31,6 +35,7 @@ const AdminServizi = () => {
   const [categorie, setCategorie] = useState<{ id: string; nome: string }[]>([]);
   const [filterCat, setFilterCat] = useState("");
   const [filterStato, setFilterStato] = useState("");
+  const [autoApprove, setAutoApprove] = useState(false);
   const { toast } = useToast();
 
   const fetchAll = async () => {
@@ -38,11 +43,39 @@ const AdminServizi = () => {
       supabase.from("servizi").select("*").order("created_at", { ascending: false }),
       supabase.from("categorie").select("id, nome"),
     ]);
-    setServizi((s.data as Servizio[]) ?? []);
+
+    const serviziData = (s.data || []) as any[];
+    
+    // Fetch operator profiles
+    const opIds = [...new Set(serviziData.map((sv) => sv.operatore_id))];
+    const { data: profiles } = opIds.length > 0
+      ? await supabase.from("profiles").select("user_id, nome, cognome, email").in("user_id", opIds)
+      : { data: [] };
+    const profMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+    setServizi(serviziData.map((sv) => {
+      const prof = profMap.get(sv.operatore_id);
+      return {
+        ...sv,
+        operatore_nome: prof ? `${prof.nome || ""} ${prof.cognome || ""}`.trim() : "—",
+        operatore_email: prof?.email || "—",
+      };
+    }));
     setCategorie(c.data ?? []);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  const fetchSetting = async () => {
+    const { data } = await supabase.from("impostazioni").select("valore").eq("chiave", "servizi_approvazione_automatica").single();
+    setAutoApprove(data?.valore === "true");
+  };
+
+  useEffect(() => { fetchAll(); fetchSetting(); }, []);
+
+  const toggleAutoApprove = async (checked: boolean) => {
+    setAutoApprove(checked);
+    await supabase.from("impostazioni").update({ valore: checked ? "true" : "false" }).eq("chiave", "servizi_approvazione_automatica");
+    toast({ title: checked ? "Approvazione automatica attivata" : "Approvazione automatica disattivata" });
+  };
 
   const updateStato = async (id: string, stato: string) => {
     await supabase.from("servizi").update({ stato }).eq("id", id);
@@ -67,6 +100,16 @@ const AdminServizi = () => {
   return (
     <AdminLayout>
       <h1 className="font-heading font-extrabold text-2xl mb-6">Gestione Servizi</h1>
+
+      <Card className="mb-6">
+        <CardContent className="p-4 flex items-center gap-3">
+          <Switch id="auto-approve" checked={autoApprove} onCheckedChange={toggleAutoApprove} />
+          <Label htmlFor="auto-approve" className="text-sm">
+            Approvazione automatica dei nuovi servizi
+          </Label>
+          <Badge variant="secondary" className="ml-2">{autoApprove ? "Attiva" : "Disattiva"}</Badge>
+        </CardContent>
+      </Card>
 
       <div className="flex gap-3 mb-4">
         <Select value={filterCat} onValueChange={(v) => setFilterCat(v === "all" ? "" : v)}>
@@ -94,6 +137,7 @@ const AdminServizi = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Titolo</TableHead>
+                <TableHead>Operatore</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Stato</TableHead>
                 <TableHead>Data</TableHead>
@@ -104,6 +148,10 @@ const AdminServizi = () => {
               {filtered.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.titolo}</TableCell>
+                  <TableCell className="text-sm">
+                    <div>{s.operatore_nome}</div>
+                    <div className="text-xs text-muted-foreground">{s.operatore_email}</div>
+                  </TableCell>
                   <TableCell className="text-sm">{catName(s.categoria_id)}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={statusColors[s.stato]}>{s.stato.replace("_", " ")}</Badge>
@@ -128,7 +176,7 @@ const AdminServizi = () => {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nessun servizio trovato</TableCell>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nessun servizio trovato</TableCell>
                 </TableRow>
               )}
             </TableBody>
