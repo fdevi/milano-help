@@ -134,15 +134,15 @@ const AnnuncioPage = () => {
     queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
   };
 
-  // View counter — increment on every page load with 1s debounce
+  // View counter — one increment per session per annuncio
   useEffect(() => {
     if (!annuncio?.id) return;
-    const timer = setTimeout(() => {
-      supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
-      });
-    }, 1000);
-    return () => clearTimeout(timer);
+    const key = `visto_annuncio_${annuncio.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
+    });
   }, [annuncio?.id]);
 
   // Fetch other ads by author
@@ -342,10 +342,10 @@ const AnnuncioPage = () => {
                   {annuncio.titolo}
                 </h1>
                 <div className="flex items-center gap-4 mb-2">
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Heart className={`w-4 h-4 ${(annuncio as any).mi_piace > 0 ? "text-red-500 fill-red-500" : ""}`} />
-                    {(annuncio as any).mi_piace || 0} Mi piace
-                  </span>
+                  <button onClick={toggleLike} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Heart className={`w-4 h-4 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
+                    {annuncio.mi_piace || 0} Mi piace
+                  </button>
                 </div>
                 {annuncio.prezzo != null && (
                   <p className="text-2xl font-bold text-primary mb-2">€{annuncio.prezzo.toFixed(2)}</p>
