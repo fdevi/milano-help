@@ -644,6 +644,8 @@ export type Database = {
           letta: boolean
           link: string | null
           messaggio: string | null
+          mittente_id: string | null
+          riferimento_id: string | null
           tipo: string
           titolo: string
           user_id: string
@@ -654,6 +656,8 @@ export type Database = {
           letta?: boolean
           link?: string | null
           messaggio?: string | null
+          mittente_id?: string | null
+          riferimento_id?: string | null
           tipo: string
           titolo: string
           user_id: string
@@ -664,6 +668,8 @@ export type Database = {
           letta?: boolean
           link?: string | null
           messaggio?: string | null
+          mittente_id?: string | null
+          riferimento_id?: string | null
           tipo?: string
           titolo?: string
           user_id?: string
