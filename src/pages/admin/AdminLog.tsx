@@ -23,7 +23,11 @@ const AdminLog = () => {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100)
-      .then(({ data }) => setLogs((data as LogEntry[]) ?? []));
+      .then(({ data, error }) => {
+        console.log("AdminLog fetch:", { data, error });
+        if (error) console.error("AdminLog error:", error);
+        setLogs((data as LogEntry[]) ?? []);
+      });
   }, []);
 
   const exportCSV = () => {
