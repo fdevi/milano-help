@@ -16,6 +16,7 @@ interface ChatPreview {
   timestamp: string;
   targetUrl: string;
   conversazioneId: string;
+  unreadCount: number;
 }
 
 const DropdownChat = () => {
@@ -40,124 +41,124 @@ const DropdownChat = () => {
     setLoading(true);
 
     const allPreviews: ChatPreview[] = [];
+    let totalUnread = 0;
 
-    // === Group messages ===
-    const { data: membri } = await supabase
-      .from("gruppi_membri")
-      .select("gruppo_id")
-      .eq("user_id", user.id)
-      .eq("stato", "approvato");
+    try {
+      // === Group messages ===
+      const { data: membri } = await supabase
+        .from("gruppi_membri")
+        .select("gruppo_id")
+        .eq("user_id", user.id)
+        .eq("stato", "approvato");
 
-    const gruppiIds = (membri || []).map(m => m.gruppo_id);
+      const gruppiIds = (membri || []).map(m => m.gruppo_id);
 
-    if (gruppiIds.length > 0) {
-      const { data: letti } = await supabase
-        .from("messaggi_letti")
-        .select("gruppo_id, ultimo_letto")
-        .eq("user_id", user.id);
-      const mapLetti = new Map((letti || []).map(l => [l.gruppo_id, l.ultimo_letto]));
+      if (gruppiIds.length > 0) {
+        const [{ data: letti }, { data: gruppi }] = await Promise.all([
+          supabase.from("messaggi_letti").select("gruppo_id, ultimo_letto").eq("user_id", user.id),
+          supabase.from("gruppi").select("id, nome").in("id", gruppiIds),
+        ]);
+        const mapLetti = new Map((letti || []).map(l => [l.gruppo_id, l.ultimo_letto]));
+        const mapGruppi = new Map((gruppi || []).map(g => [g.id, g.nome]));
 
-      const { data: gruppi } = await supabase
-        .from("gruppi")
-        .select("id, nome")
-        .in("id", gruppiIds);
-      const mapGruppi = new Map((gruppi || []).map(g => [g.id, g.nome]));
+        await Promise.all(gruppiIds.map(async (gid) => {
+          const ultimoLetto = mapLetti.get(gid) || new Date(0).toISOString();
 
-      await Promise.all(gruppiIds.map(async (gid) => {
-        const ultimoLetto = mapLetti.get(gid) || new Date(0).toISOString();
+          const { data: msgs, count } = await supabase
+            .from("gruppi_messaggi")
+            .select("*", { count: "exact" })
+            .eq("gruppo_id", gid)
+            .neq("mittente_id", user.id)
+            .gt("created_at", ultimoLetto)
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-        const { data: msgs, count } = await supabase
-          .from("gruppi_messaggi")
-          .select("*", { count: "exact" })
-          .eq("gruppo_id", gid)
-          .neq("mittente_id", user.id)
-          .gt("created_at", ultimoLetto)
-          .order("created_at", { ascending: false })
-          .limit(1);
+          if (count && count > 0 && msgs && msgs.length > 0) {
+            const msg = msgs[0];
+            const { data: profilo } = await supabase
+              .from("profiles")
+              .select("nome, cognome")
+              .eq("user_id", msg.mittente_id)
+              .single();
+            const mittNome = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Utente" : "Utente";
+            totalUnread += count;
+            allPreviews.push({
+              id: `g-${gid}`,
+              tipo: "gruppo",
+              nome: mapGruppi.get(gid) || "Gruppo",
+              mittente: mittNome,
+              testo: msg.testo?.substring(0, 60) || "",
+              timestamp: msg.created_at,
+              targetUrl: `/gruppo/${gid}`,
+              conversazioneId: gid,
+              unreadCount: count,
+            });
+          }
+        }));
+      }
 
-        if (count && count > 0 && msgs && msgs.length > 0) {
-          const msg = msgs[0];
-          // Fetch sender profile
-          const { data: profilo } = await supabase
-            .from("profiles")
-            .select("nome, cognome")
-            .eq("user_id", msg.mittente_id)
-            .single();
-          const mittNome = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Utente" : "Utente";
-          allPreviews.push({
-            id: `g-${gid}`,
-            tipo: "gruppo",
-            nome: mapGruppi.get(gid) || "Gruppo",
-            mittente: mittNome,
-            testo: msg.testo?.substring(0, 60) || "",
-            timestamp: msg.created_at,
-            targetUrl: `/gruppo/${gid}`,
-            conversazioneId: gid,
-          });
-        }
-      }));
+      // === Private messages ===
+      const { data: convPrivate } = await supabase
+        .from("conversazioni_private")
+        .select("id, acquirente_id, venditore_id, annuncio_id")
+        .or(`acquirente_id.eq.${user.id},venditore_id.eq.${user.id}`);
+
+      if (convPrivate && convPrivate.length > 0) {
+        const { data: lettiPrivati } = await supabase
+          .from("messaggi_privati_letti")
+          .select("conversazione_id, ultimo_letto")
+          .eq("user_id", user.id);
+        const mapLettiPriv = new Map((lettiPrivati || []).map(l => [l.conversazione_id, l.ultimo_letto]));
+
+        const otherUserIds = convPrivate.map(c =>
+          c.acquirente_id === user.id ? c.venditore_id : c.acquirente_id
+        ).filter(Boolean) as string[];
+
+        const { data: profiles } = otherUserIds.length > 0
+          ? await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", otherUserIds)
+          : { data: [] };
+        const mapProfiles = new Map((profiles || []).map(p => [p.user_id, p]));
+
+        await Promise.all(convPrivate.map(async (conv) => {
+          const ultimoLetto = mapLettiPriv.get(conv.id) || new Date(0).toISOString();
+
+          const { data: msgs, count } = await supabase
+            .from("messaggi_privati")
+            .select("*", { count: "exact" })
+            .eq("conversazione_id", conv.id)
+            .neq("mittente_id", user.id)
+            .gt("created_at", ultimoLetto)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          if (count && count > 0 && msgs && msgs.length > 0) {
+            const msg = msgs[0];
+            const otherUserId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
+            const prof = otherUserId ? mapProfiles.get(otherUserId) : null;
+            const nomeAltro = prof ? `${prof.nome || ""} ${prof.cognome || ""}`.trim() || "Utente" : "Utente";
+
+            totalUnread += count;
+            allPreviews.push({
+              id: `p-${conv.id}`,
+              tipo: "privata",
+              nome: nomeAltro,
+              mittente: nomeAltro,
+              testo: msg.testo?.substring(0, 60) || "",
+              timestamp: msg.created_at || "",
+              targetUrl: `/chat?conv=${conv.id}`,
+              conversazioneId: conv.id,
+              unreadCount: count,
+            });
+          }
+        }));
+      }
+    } catch (err) {
+      console.error("DropdownChat fetchUnread error:", err);
     }
 
-    // === Private messages ===
-    const { data: convPrivate } = await supabase
-      .from("conversazioni_private")
-      .select("id, acquirente_id, venditore_id, annuncio_id")
-      .or(`acquirente_id.eq.${user.id},venditore_id.eq.${user.id}`);
-
-    if (convPrivate && convPrivate.length > 0) {
-      const { data: lettiPrivati } = await supabase
-        .from("messaggi_privati_letti")
-        .select("conversazione_id, ultimo_letto")
-        .eq("user_id", user.id);
-      const mapLetti = new Map((lettiPrivati || []).map(l => [l.conversazione_id, l.ultimo_letto]));
-
-      // Gather other user IDs for profile lookup
-      const otherUserIds = convPrivate.map(c =>
-        c.acquirente_id === user.id ? c.venditore_id : c.acquirente_id
-      ).filter(Boolean) as string[];
-
-      const { data: profiles } = otherUserIds.length > 0
-        ? await supabase.from("profiles").select("user_id, nome, cognome").in("user_id", otherUserIds)
-        : { data: [] };
-      const mapProfiles = new Map((profiles || []).map(p => [p.user_id, p]));
-
-      await Promise.all(convPrivate.map(async (conv) => {
-        const ultimoLetto = mapLetti.get(conv.id) || new Date(0).toISOString();
-
-        const { data: msgs, count } = await supabase
-          .from("messaggi_privati")
-          .select("*", { count: "exact" })
-          .eq("conversazione_id", conv.id)
-          .neq("mittente_id", user.id)
-          .gt("created_at", ultimoLetto)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (count && count > 0 && msgs && msgs.length > 0) {
-          const msg = msgs[0];
-          const otherUserId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
-          const prof = otherUserId ? mapProfiles.get(otherUserId) : null;
-          const nomeAltro = prof ? `${prof.nome || ""} ${prof.cognome || ""}`.trim() || "Utente" : "Utente";
-
-          allPreviews.push({
-            id: `p-${conv.id}`,
-            tipo: "privata",
-            nome: nomeAltro,
-            mittente: nomeAltro,
-            testo: msg.testo?.substring(0, 60) || "",
-            timestamp: msg.created_at || "",
-            targetUrl: `/chat?conv=${conv.id}`,
-            conversazioneId: conv.id,
-          });
-        }
-      }));
-    }
-
-    // Sort by timestamp desc
     allPreviews.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
     setPreviews(allPreviews);
-    setTotale(allPreviews.length);
+    setTotale(totalUnread);
     setLoading(false);
   }, [user]);
 
@@ -189,7 +190,6 @@ const DropdownChat = () => {
   const handleClick = async (item: ChatPreview) => {
     setOpen(false);
 
-    // Mark as read
     if (item.tipo === "gruppo") {
       await supabase.from("messaggi_letti").upsert({
         user_id: user!.id,
@@ -273,6 +273,11 @@ const DropdownChat = () => {
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
                         <span className="font-medium">{item.mittente}:</span> {item.testo}
                       </p>
+                      {item.unreadCount > 1 && (
+                        <Badge variant="destructive" className="mt-1 text-[9px] px-1.5 py-0 h-3.5">
+                          {item.unreadCount} messaggi
+                        </Badge>
+                      )}
                     </div>
                   </button>
                 ))}
