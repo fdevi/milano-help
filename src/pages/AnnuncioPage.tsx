@@ -134,15 +134,15 @@ const AnnuncioPage = () => {
     queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
   };
 
-  // View counter with sessionStorage dedup
+  // View counter — increment on every page load with 1s debounce
   useEffect(() => {
     if (!annuncio?.id) return;
-    const key = `viewed_annuncio_${annuncio.id}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id }).then(() => {
-      queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
-    });
+    const timer = setTimeout(() => {
+      supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [annuncio?.id]);
 
   // Fetch other ads by author
@@ -341,6 +341,12 @@ const AnnuncioPage = () => {
                 <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground mb-2">
                   {annuncio.titolo}
                 </h1>
+                <div className="flex items-center gap-4 mb-2">
+                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Heart className={`w-4 h-4 ${(annuncio as any).mi_piace > 0 ? "text-red-500 fill-red-500" : ""}`} />
+                    {(annuncio as any).mi_piace || 0} Mi piace
+                  </span>
+                </div>
                 {annuncio.prezzo != null && (
                   <p className="text-2xl font-bold text-primary mb-2">€{annuncio.prezzo.toFixed(2)}</p>
                 )}
