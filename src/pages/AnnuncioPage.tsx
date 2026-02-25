@@ -140,7 +140,7 @@ const AnnuncioPage = () => {
     const key = `viewed_annuncio_${annuncio.id}`;
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");
-    supabase.from("annunci").update({ visualizzazioni: (annuncio.visualizzazioni ?? 0) + 1 } as any).eq("id", annuncio.id).then(() => {
+    supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id }).then(() => {
       queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
     });
   }, [annuncio?.id]);

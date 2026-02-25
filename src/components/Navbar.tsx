@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
-import BadgeChat from "@/components/BadgeChat";
+import DropdownChat from "@/components/DropdownChat";
 import { useQuery } from "@tanstack/react-query";
 
 const Navbar = () => {
@@ -71,7 +71,7 @@ const Navbar = () => {
               <Link to="/gruppi">
                 <Button variant="ghost" size="sm">Gruppi</Button>
               </Link>
-              <BadgeChat />
+              <DropdownChat />
               <PannelloNotifiche />
               {isAdmin && (
                 <Link to="/admin">
