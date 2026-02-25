@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
-import BadgeChat from "@/components/BadgeChat";
+import DropdownChat from "@/components/DropdownChat";
 
 const TopNavbar = () => {
   const { user } = useAuth();
@@ -59,7 +59,7 @@ const TopNavbar = () => {
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <BadgeChat />
+          <DropdownChat />
           <PannelloNotifiche />
 
           <Link to="/profilo" className="ml-1">

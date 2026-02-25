@@ -920,6 +920,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      incrementa_visualizzazioni: {
+        Args: { _annuncio_id: string }
+        Returns: undefined
+      }
       is_group_admin: {
         Args: { _gruppo_id: string; _user_id: string }
         Returns: boolean
