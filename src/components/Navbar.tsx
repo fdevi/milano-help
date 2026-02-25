@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
+import BadgeChat from "@/components/BadgeChat";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle } from "lucide-react";
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -71,11 +71,7 @@ const Navbar = () => {
               <Link to="/gruppi">
                 <Button variant="ghost" size="sm">Gruppi</Button>
               </Link>
-              <Link to="/chat">
-                <Button variant="ghost" size="icon">
-                  <MessageCircle className="w-5 h-5" />
-                </Button>
-              </Link>
+              <BadgeChat />
               <PannelloNotifiche />
               {isAdmin && (
                 <Link to="/admin">
