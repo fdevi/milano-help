@@ -481,6 +481,30 @@ export type Database = {
           },
         ]
       }
+      impostazioni: {
+        Row: {
+          chiave: string
+          created_at: string
+          id: string
+          updated_at: string
+          valore: string
+        }
+        Insert: {
+          chiave: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          valore?: string
+        }
+        Update: {
+          chiave?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          valore?: string
+        }
+        Relationships: []
+      }
       messaggi: {
         Row: {
           allegato_url: string | null
@@ -851,7 +875,10 @@ export type Database = {
           created_at: string
           descrizione: string | null
           id: string
+          immagini: string[] | null
           operatore_id: string
+          prezzo: number | null
+          quartiere: string | null
           stato: string
           titolo: string
           updated_at: string
@@ -861,7 +888,10 @@ export type Database = {
           created_at?: string
           descrizione?: string | null
           id?: string
+          immagini?: string[] | null
           operatore_id: string
+          prezzo?: number | null
+          quartiere?: string | null
           stato?: string
           titolo: string
           updated_at?: string
@@ -871,7 +901,10 @@ export type Database = {
           created_at?: string
           descrizione?: string | null
           id?: string
+          immagini?: string[] | null
           operatore_id?: string
+          prezzo?: number | null
+          quartiere?: string | null
           stato?: string
           titolo?: string
           updated_at?: string

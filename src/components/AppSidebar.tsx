@@ -1,4 +1,4 @@
-import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle } from "lucide-react";
+import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ const mainItems = [
   { title: "Sezioni", url: "/sezioni", icon: LayoutList },
   { title: "Gruppi", url: "/gruppi", icon: Users },
   { title: "Eventi", url: "/eventi", icon: CalendarDays },
+  { title: "Servizi", url: "/servizi", icon: Briefcase },
   { title: "Pubblica", url: "/nuovo-annuncio", icon: PlusCircle },
   { title: "Chat", url: "/chat", icon: MessageCircle },
 ];

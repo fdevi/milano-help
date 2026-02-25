@@ -44,6 +44,12 @@ import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
 import FAQ from './pages/FAQ';
+import Servizi from "./pages/Servizi";
+import ServizioPage from "./pages/ServizioPage";
+import NuovoServizio from "./pages/NuovoServizio";
+import MieiServizi from "./pages/MieiServizi";
+import MieiPrenotazioni from "./pages/MieiPrenotazioni";
+import MieiServiziPrenotati from "./pages/MieiServiziPrenotati";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +98,13 @@ const App = () => (
             <Route path="/donazioni" element={<Donazioni />} />
             <Route path="/contattaci" element={<Contattaci />} />
             <Route path="/faq" element={<FAQ />} />
+            {/* Servizi & Prenotazioni */}
+            <Route path="/servizi" element={<ProtectedRoute><Servizi /></ProtectedRoute>} />
+            <Route path="/servizio/:id" element={<ProtectedRoute><ServizioPage /></ProtectedRoute>} />
+            <Route path="/nuovo-servizio" element={<ProtectedRoute><NuovoServizio /></ProtectedRoute>} />
+            <Route path="/miei-servizi" element={<ProtectedRoute><MieiServizi /></ProtectedRoute>} />
+            <Route path="/miei-prenotazioni" element={<ProtectedRoute><MieiPrenotazioni /></ProtectedRoute>} />
+            <Route path="/miei-servizi-prenotati" element={<ProtectedRoute><MieiServiziPrenotati /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
