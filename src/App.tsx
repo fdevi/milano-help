@@ -50,6 +50,8 @@ import NuovoServizio from "./pages/NuovoServizio";
 import MieiServizi from "./pages/MieiServizi";
 import MieiPrenotazioni from "./pages/MieiPrenotazioni";
 import MieiServiziPrenotati from "./pages/MieiServiziPrenotati";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,8 @@ const App = () => (
             <Route path="/gruppi" element={<Gruppi />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/termini" element={<Terms />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/gruppo/:id" element={<ProtectedRoute><GruppoDetail /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/sezioni" element={<ProtectedRoute><Sezioni /></ProtectedRoute>} />
