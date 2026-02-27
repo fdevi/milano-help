@@ -24,13 +24,13 @@ export const MagicLinkEmail = ({
 }: MagicLinkEmailProps) => (
   <Html lang="it" dir="ltr">
     <Head />
-    <Preview>Il tuo link di accesso a Milano Help</Preview>
+    <Preview>Il tuo link di accesso per {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Accedi a Milano Help</Heading>
+        <Heading style={h1}>Il tuo link di accesso</Heading>
         <Text style={text}>
-          Clicca il pulsante qui sotto per accedere al tuo account.
-          Questo link scadrà a breve.
+          Clicca il pulsante qui sotto per accedere a {siteName}. Questo link
+          scadrà a breve.
         </Text>
         <Button style={button} href={confirmationUrl}>
           Accedi
@@ -45,13 +45,12 @@ export const MagicLinkEmail = ({
 
 export default MagicLinkEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
   color: 'hsl(220, 20%, 14%)',
-  fontFamily: '"Plus Jakarta Sans", Arial, sans-serif',
   margin: '0 0 20px',
 }
 const text = {
@@ -64,9 +63,8 @@ const button = {
   backgroundColor: 'hsl(158, 64%, 36%)',
   color: '#ffffff',
   fontSize: '14px',
-  fontWeight: '600' as const,
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
