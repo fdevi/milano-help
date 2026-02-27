@@ -29,16 +29,16 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="it" dir="ltr">
     <Head />
-    <Preview>Conferma la tua email per Milano Help</Preview>
+    <Preview>Conferma la tua email per {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Benvenuto nella community! 🎉</Heading>
+        <Heading style={h1}>Benvenuto su {siteName}! 🏙️</Heading>
         <Text style={text}>
           Grazie per esserti registrato su{' '}
           <Link href={siteUrl} style={link}>
-            <strong>Milano Help</strong>
+            <strong>{siteName}</strong>
           </Link>
-          , la tua community di quartiere.
+          !
         </Text>
         <Text style={text}>
           Conferma il tuo indirizzo email (
@@ -48,10 +48,10 @@ export const SignupEmail = ({
           ) cliccando il pulsante qui sotto:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Conferma la tua email
+          Conferma Email
         </Button>
         <Text style={footer}>
-          Se non hai creato un account su Milano Help, puoi ignorare questa email.
+          Se non hai creato un account, puoi ignorare questa email.
         </Text>
       </Container>
     </Body>
@@ -60,13 +60,12 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
   color: 'hsl(220, 20%, 14%)',
-  fontFamily: '"Plus Jakarta Sans", Arial, sans-serif',
   margin: '0 0 20px',
 }
 const text = {
@@ -80,9 +79,8 @@ const button = {
   backgroundColor: 'hsl(158, 64%, 36%)',
   color: '#ffffff',
   fontSize: '14px',
-  fontWeight: '600' as const,
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
