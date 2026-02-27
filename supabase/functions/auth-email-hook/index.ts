@@ -35,7 +35,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "milanohelp"
+const SITE_NAME = "Milano Help"
 const SENDER_DOMAIN = "noreply.auth.milanohelp.it"
 const ROOT_DOMAIN = "auth.milanohelp.it"
 const FROM_DOMAIN = "noreply.auth.milanohelp.it" // Domain shown in From address (may be root or sender subdomain)
