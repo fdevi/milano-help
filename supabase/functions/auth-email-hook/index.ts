@@ -16,12 +16,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Conferma la tua email - Milano Help',
-  invite: 'Sei stato invitato su Milano Help!',
-  magiclink: 'Il tuo link di accesso - Milano Help',
-  recovery: 'Reimposta la password - Milano Help',
-  email_change: 'Conferma il cambio email - Milano Help',
-  reauthentication: 'Codice di verifica - Milano Help',
+  signup: 'Conferma la tua email',
+  invite: 'Sei stato invitato',
+  magiclink: 'Il tuo link di accesso',
+  recovery: 'Reimposta la tua password',
+  email_change: 'Conferma il cambio email',
+  reauthentication: 'Il tuo codice di verifica',
 }
 
 // Template mapping
@@ -35,7 +35,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "milanohelp"
+const SITE_NAME = "Milano Help"
 const SENDER_DOMAIN = "noreply.auth.milanohelp.it"
 const ROOT_DOMAIN = "auth.milanohelp.it"
 const FROM_DOMAIN = "noreply.auth.milanohelp.it" // Domain shown in From address (may be root or sender subdomain)
