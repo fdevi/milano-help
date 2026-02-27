@@ -90,7 +90,7 @@ const Login = () => {
               </div>
             </div>
             <div className="text-right">
-              <a href="#" className="text-sm text-primary hover:underline">Password dimenticata?</a>
+            <Link to="/forgot-password" className="text-sm text-primary hover:underline">Password dimenticata?</Link>
             </div>
             <Button variant="hero" type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
