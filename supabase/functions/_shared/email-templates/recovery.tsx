@@ -24,20 +24,21 @@ export const RecoveryEmail = ({
 }: RecoveryEmailProps) => (
   <Html lang="it" dir="ltr">
     <Head />
-    <Preview>Reimposta la tua password su Milano Help</Preview>
+    <Preview>Reimposta la tua password per {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Reimposta la password</Heading>
+        <Heading style={h1}>Reimposta la tua password</Heading>
         <Text style={text}>
-          Abbiamo ricevuto una richiesta per reimpostare la password del tuo account Milano Help.
-          Clicca il pulsante qui sotto per scegliere una nuova password.
+          Abbiamo ricevuto una richiesta per reimpostare la password del tuo
+          account su {siteName}. Clicca il pulsante qui sotto per scegliere
+          una nuova password.
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Reimposta password
+          Reimposta Password
         </Button>
         <Text style={footer}>
-          Se non hai richiesto il reset della password, puoi ignorare questa email.
-          La tua password non verrà modificata.
+          Se non hai richiesto il reset della password, puoi ignorare questa
+          email. La tua password non verrà modificata.
         </Text>
       </Container>
     </Body>
@@ -46,13 +47,12 @@ export const RecoveryEmail = ({
 
 export default RecoveryEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
   color: 'hsl(220, 20%, 14%)',
-  fontFamily: '"Plus Jakarta Sans", Arial, sans-serif',
   margin: '0 0 20px',
 }
 const text = {
@@ -65,9 +65,8 @@ const button = {
   backgroundColor: 'hsl(158, 64%, 36%)',
   color: '#ffffff',
   fontSize: '14px',
-  fontWeight: '600' as const,
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }

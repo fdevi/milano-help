@@ -29,12 +29,12 @@ export const EmailChangeEmail = ({
 }: EmailChangeEmailProps) => (
   <Html lang="it" dir="ltr">
     <Head />
-    <Preview>Conferma il cambio email su Milano Help</Preview>
+    <Preview>Conferma il cambio email per {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>Conferma il cambio email</Heading>
         <Text style={text}>
-          Hai richiesto di modificare il tuo indirizzo email su Milano Help da{' '}
+          Hai richiesto di cambiare il tuo indirizzo email su {siteName} da{' '}
           <Link href={`mailto:${email}`} style={link}>
             {email}
           </Link>{' '}
@@ -45,14 +45,14 @@ export const EmailChangeEmail = ({
           .
         </Text>
         <Text style={text}>
-          Clicca il pulsante qui sotto per confermare la modifica:
+          Clicca il pulsante qui sotto per confermare:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Conferma nuovo indirizzo
+          Conferma Cambio Email
         </Button>
         <Text style={footer}>
-          Se non hai richiesto questa modifica, metti in sicurezza il tuo account
-          immediatamente.
+          Se non hai richiesto questa modifica, metti subito in sicurezza il
+          tuo account.
         </Text>
       </Container>
     </Body>
@@ -61,13 +61,12 @@ export const EmailChangeEmail = ({
 
 export default EmailChangeEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
   color: 'hsl(220, 20%, 14%)',
-  fontFamily: '"Plus Jakarta Sans", Arial, sans-serif',
   margin: '0 0 20px',
 }
 const text = {
@@ -81,9 +80,8 @@ const button = {
   backgroundColor: 'hsl(158, 64%, 36%)',
   color: '#ffffff',
   fontSize: '14px',
-  fontWeight: '600' as const,
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }

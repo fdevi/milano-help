@@ -19,14 +19,14 @@ interface ReauthenticationEmailProps {
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
   <Html lang="it" dir="ltr">
     <Head />
-    <Preview>Il tuo codice di verifica per Milano Help</Preview>
+    <Preview>Il tuo codice di verifica</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>Codice di verifica</Heading>
         <Text style={text}>Usa il codice qui sotto per confermare la tua identità:</Text>
         <Text style={codeStyle}>{token}</Text>
         <Text style={footer}>
-          Questo codice scadrà a breve. Se non hai richiesto questo codice,
+          Questo codice scadrà a breve. Se non l'hai richiesto tu,
           puoi ignorare questa email.
         </Text>
       </Container>
@@ -36,13 +36,12 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
 export default ReauthenticationEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: '"DM Sans", Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
   color: 'hsl(220, 20%, 14%)',
-  fontFamily: '"Plus Jakarta Sans", Arial, sans-serif',
   margin: '0 0 20px',
 }
 const text = {
