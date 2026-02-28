@@ -253,6 +253,50 @@ export type Database = {
         }
         Relationships: []
       }
+      comuni: {
+        Row: {
+          attivo: boolean | null
+          cap: string[] | null
+          codice_istat: string | null
+          created_at: string | null
+          id: string
+          lat: number | null
+          lon: number | null
+          nome: string
+          provincia_id: string | null
+        }
+        Insert: {
+          attivo?: boolean | null
+          cap?: string[] | null
+          codice_istat?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lon?: number | null
+          nome: string
+          provincia_id?: string | null
+        }
+        Update: {
+          attivo?: boolean | null
+          cap?: string[] | null
+          codice_istat?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lon?: number | null
+          nome?: string
+          provincia_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comuni_provincia_id_fkey"
+            columns: ["provincia_id"]
+            isOneToOne: false
+            referencedRelation: "province"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversazioni: {
         Row: {
           id: string
@@ -849,6 +893,103 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      province: {
+        Row: {
+          codice_istat: string | null
+          created_at: string | null
+          id: string
+          nome: string
+          regione_id: string | null
+          sigla: string
+        }
+        Insert: {
+          codice_istat?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          regione_id?: string | null
+          sigla: string
+        }
+        Update: {
+          codice_istat?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          regione_id?: string | null
+          sigla?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "province_regione_id_fkey"
+            columns: ["regione_id"]
+            isOneToOne: false
+            referencedRelation: "regioni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quartieri: {
+        Row: {
+          area: string | null
+          attivo: boolean | null
+          comune_id: string | null
+          created_at: string | null
+          id: string
+          lat: number | null
+          lon: number | null
+          nome: string
+        }
+        Insert: {
+          area?: string | null
+          attivo?: boolean | null
+          comune_id?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lon?: number | null
+          nome: string
+        }
+        Update: {
+          area?: string | null
+          attivo?: boolean | null
+          comune_id?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lon?: number | null
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quartieri_comune_id_fkey"
+            columns: ["comune_id"]
+            isOneToOne: false
+            referencedRelation: "comuni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regioni: {
+        Row: {
+          codice_istat: string | null
+          created_at: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          codice_istat?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          codice_istat?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
