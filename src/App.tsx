@@ -43,7 +43,8 @@ import AdminEventi from "./pages/admin/AdminEventi";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
-import FAQ from './pages/FAQ';
+import Collabora from "./pages/Collabora";
+import FAQ from "./pages/FAQ";
 import Servizi from "./pages/Servizi";
 import ServizioPage from "./pages/ServizioPage";
 import NuovoServizio from "./pages/NuovoServizio";
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
             <Route path="/donazioni" element={<Donazioni />} />
             <Route path="/contattaci" element={<Contattaci />} />
+            <Route path="/collabora" element={<Collabora />} />
             <Route path="/faq" element={<FAQ />} />
             {/* Servizi & Prenotazioni */}
             <Route path="/servizi" element={<ProtectedRoute><Servizi /></ProtectedRoute>} />
