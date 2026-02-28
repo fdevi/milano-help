@@ -14,7 +14,7 @@ const mainItems = [
 ];
 
 const bottomItems = [
-  { title: "Impostazioni", url: "/impostazioni", icon: Settings },
+  { title: "Impostazioni", url: "/profilo", icon: Settings },
   { title: "Invita un amico", url: "/invita", icon: Mail },
   { title: "Collabora", url: "/collabora", icon: Handshake },
   { title: "Donazioni", url: "/donazioni", icon: Heart },

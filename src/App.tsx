@@ -20,6 +20,7 @@ import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUtenti from "./pages/admin/AdminUtenti";
+import AdminNewsletter from "./pages/admin/AdminNewsletter";
 import AdminCategorie from "./pages/admin/AdminCategorie";
 import AdminServizi from "./pages/admin/AdminServizi";
 import AdminPrenotazioni from "./pages/admin/AdminPrenotazioni";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/utenti" element={<AdminRoute><AdminUtenti /></AdminRoute>} />
+            <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
             <Route path="/admin/categorie" element={<AdminRoute><AdminCategorie /></AdminRoute>} />
             <Route path="/admin/servizi" element={<AdminRoute><AdminServizi /></AdminRoute>} />
             <Route path="/admin/prenotazioni" element={<AdminRoute><AdminPrenotazioni /></AdminRoute>} />
