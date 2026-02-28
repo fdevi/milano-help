@@ -379,7 +379,7 @@ useEffect(() => {
       if (p.postcode) updateForm("cap", p.postcode);
       if (p.district || p.street) {
         const rawQ = p.district || "";
-        const matched = matchQuartiere(rawQ) || matchQuartiere(p.street || "") || matchQuartiere(`${rawQ} ${p.street || ""}`);
+        const matched = matchQuartiere(rawQ, quartieri) || matchQuartiere(p.street || "", quartieri) || matchQuartiere(`${rawQ} ${p.street || ""}`, quartieri);
         const finalQ = matched || rawQ;
         if (finalQ) {
           setQuartiereQuery(finalQ);
@@ -395,7 +395,7 @@ useEffect(() => {
         if (addr.house_number) updateForm("civico", addr.house_number);
         if (addr.postcode) updateForm("cap", addr.postcode); 
         const rawQuartiere = addr.quarter || addr.neighbourhood || addr.suburb || "";
-        const matched = matchQuartiere(rawQuartiere) || matchQuartiere(addr.road || "") || matchQuartiere(`${rawQuartiere} ${addr.road || ""}`);
+        const matched = matchQuartiere(rawQuartiere, quartieri) || matchQuartiere(addr.road || "", quartieri) || matchQuartiere(`${rawQuartiere} ${addr.road || ""}`, quartieri);
         const finalQ = matched || rawQuartiere;
         if (finalQ) {
           setQuartiereQuery(finalQ);
@@ -406,7 +406,7 @@ useEffect(() => {
     }
     setShowAddressSuggestions(false);
     setAddressSuggestions([]);
-  }, []);
+  }, [quartieri]);
 
   const handleGeolocate = useCallback(() => {
     if (!navigator.geolocation) {
