@@ -700,6 +700,30 @@ export type Database = {
         }
         Relationships: []
       }
+      password_resets: {
+        Row: {
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          token: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       prenotazioni: {
         Row: {
           created_at: string
