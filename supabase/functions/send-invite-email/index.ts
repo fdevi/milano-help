@@ -17,10 +17,10 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { nome, email, oggetto, messaggio, tipo_richiesta } = body;
+    const { inviterName, inviterEmail, friendEmail, referralLink } = body;
 
-    if (!nome || !email || !oggetto || !messaggio) {
-      return new Response(JSON.stringify({ error: 'Campi mancanti' }), {
+    if (!inviterName || !friendEmail || !referralLink) {
+      return new Response(JSON.stringify({ error: 'Campi mancanti: inviterName, friendEmail, referralLink' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -35,7 +35,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const isInvito = tipo_richiesta === 'invito';
+    const html = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #10b981;">Unisciti a Milano Help</h2>
+  <p>Ciao! <strong>${inviterName}</strong> ti invita a far parte di Milano Help, la community del tuo quartiere.</p>
+  <p>Su Milano Help puoi:</p>
+  <ul>
+    <li>Pubblicare annunci e offerte</li>
+    <li>Partecipare a gruppi di discussione</li>
+    <li>Scoprire eventi nella tua zona</li>
+    <li>Connettersi con i tuoi vicini</li>
+  </ul>
+  <p>Connetti, aiuta e cresci insieme ai tuoi vicini.</p>
+  <p style="margin: 30px 0;">
+    <a href="${referralLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Registrati ora</a>
+  </p>
+  <p>Ti aspettiamo!</p>
+  <p>Il team di Milano Help</p>
+</div>
+`.trim();
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -45,23 +63,10 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'Milano Help <noreply@milanohelp.it>',
-        to: isInvito ? [email] : ['info@milanohelp.it'],
-        subject: isInvito ? oggetto : `[Milano Help] ${oggetto}`,
-        html: isInvito
-          ? `
-          <h2>Invito su Milano Help</h2>
-          <p>${messaggio.replace(/\n/g, '<br/>')}</p>
-          <p><small>Questo invito ti è stato inviato da ${nome} tramite Milano Help.</small></p>
-        `
-          : `
-          <h2>Nuovo messaggio dal form "Contattaci"</h2>
-          <p><strong>Nome:</strong> ${nome}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Oggetto:</strong> ${oggetto}</p>
-          <hr/>
-          <p>${messaggio.replace(/\n/g, '<br/>')}</p>
-        `,
-        reply_to: isInvito ? undefined : email,
+        to: [friendEmail],
+        subject: 'Sei stato invitato a Milano Help!',
+        html,
+        reply_to: inviterEmail || undefined,
       }),
     });
 
