@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar
+  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar, Mail
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import BadgeNotifiche from "./BadgeNotifiche";
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/admin/utenti", icon: Users, label: "Utenti" },
+  { to: "/admin/newsletter", icon: Mail, label: "Newsletter" },
   { to: "/admin/categorie", icon: Grid3X3, label: "Categorie" },
   { to: "/admin/servizi", icon: Briefcase, label: "Servizi" },
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
