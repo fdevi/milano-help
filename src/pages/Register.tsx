@@ -249,24 +249,31 @@ useEffect(() => {
       if (!mapRef.current) return;
 
       map = L.map(mapRef.current, { 
-        zoomControl: false, 
-        attributionControl: false 
+        zoomControl: true, 
+        attributionControl: false,
+        scrollWheelZoom: true,
       }).setView(mapCoords, 14);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       }).addTo(map);
 
-      // Crea un'icona personalizzata
+      // Marker personalizzato con pin grande e ombra
       const icon = L.divIcon({ 
-        className: "custom-marker", 
-        html: '📍',
-        iconSize: [24, 24], 
-        iconAnchor: [12, 24],
-        popupAnchor: [0, -24]
+        className: '', 
+        html: `<div style="position:relative;width:32px;height:42px;">
+          <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:14px;height:6px;background:rgba(0,0,0,0.25);border-radius:50%;filter:blur(2px);"></div>
+          <svg viewBox="0 0 32 42" width="32" height="42" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z" fill="hsl(158,64%,36%)" stroke="white" stroke-width="2"/>
+            <circle cx="16" cy="15" r="6" fill="white"/>
+          </svg>
+        </div>`,
+        iconSize: [32, 42], 
+        iconAnchor: [16, 42],
+        popupAnchor: [0, -42]
       });
 
-      marker = L.marker(mapCoords, { icon, draggable: true }).addTo(map);
+      marker = L.marker(mapCoords, { icon, draggable: true, autoPanOnFocus: true }).addTo(map);
       
       marker.on("dragend", () => {
         const pos = marker.getLatLng();
@@ -886,7 +893,7 @@ useEffect(() => {
                 <div className="border rounded-lg p-4 bg-muted/30">
                     <div className="flex flex-col gap-4 items-center md:flex-row md:items-start md:gap-4">
                       <div className="w-full md:w-[250px] md:shrink-0 flex flex-col items-center relative overflow-hidden rounded-lg">
-                        <div ref={mapRef} className="w-full md:w-[250px] h-[200px] rounded-lg overflow-hidden border relative z-10 isolate" />
+                        <div ref={mapRef} className="w-full md:w-[250px] h-[300px] rounded-lg overflow-hidden border relative z-10 isolate" />
                         <p className="text-[11px] text-muted-foreground mt-1.5">Trascina il marker per regolare la posizione</p>
                       </div>
                       <div className="w-full md:flex-1 text-center flex flex-col items-center justify-center min-h-[200px]">
