@@ -64,6 +64,35 @@ const Profilo = () => {
   });
 
   const [uploading, setUploading] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [passwordForEmail, setPasswordForEmail] = useState("");
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [updatingEmail, setUpdatingEmail] = useState(false);
+
+  const handleEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setUpdatingEmail(true);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: passwordForEmail,
+    });
+    if (signInError) {
+      toast({ title: "Errore", description: "Password non corretta", variant: "destructive" });
+      setUpdatingEmail(false);
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) {
+      toast({ title: "Errore", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Verifica richiesta", description: "Controlla la tua nuova casella email per confermare il cambio." });
+      setShowEmailForm(false);
+      setNewEmail("");
+      setPasswordForEmail("");
+    }
+    setUpdatingEmail(false);
+  };
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -274,6 +303,42 @@ const Profilo = () => {
                   <Button onClick={handleSaveData} disabled={saveMutation.isPending} className="gap-2">
                     {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Salva modifiche
                   </Button>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-heading font-semibold text-foreground flex items-center gap-2 mb-2">
+                    <Mail className="w-4 h-4 text-primary" /> Email di accesso
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Email attuale: <span className="font-mono text-foreground">{user?.email}</span>
+                  </p>
+
+                  {!showEmailForm ? (
+                    <Button variant="outline" size="sm" onClick={() => setShowEmailForm(true)}>
+                      Cambia email
+                    </Button>
+                  ) : (
+                    <form onSubmit={handleEmailChange} className="space-y-3 max-w-md">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-email">Nuova email</Label>
+                        <Input id="new-email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="password-confirm">Password (per confermare)</Label>
+                        <Input id="password-confirm" type="password" value={passwordForEmail} onChange={(e) => setPasswordForEmail(e.target.value)} required />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" disabled={updatingEmail}>
+                          {updatingEmail ? <><Loader2 className="w-4 h-4 animate-spin" /> Invio...</> : "Conferma cambio"}
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => { setShowEmailForm(false); setNewEmail(""); setPasswordForEmail(""); }}>
+                          Annulla
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </Card>
             </motion.div>
