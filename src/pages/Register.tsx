@@ -38,6 +38,7 @@ import { useFotoProfilo } from "@/hooks/useFotoProfilo";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useReverseGeocode } from "@/hooks/useReverseGeocode";
 import { useQuartieri } from "@/hooks/useQuartieri";
+import { matchQuartiere } from "@/hooks/useMatchQuartiere";
 
 interface FormData {
   email: string;
@@ -82,6 +83,7 @@ interface NominatimSearchResult {
   display_name: string;
   address?: {
     house_number?: string;
+    road?: string;
     postcode?: string;
     quarter?: string;
     neighbourhood?: string;
@@ -375,9 +377,14 @@ useEffect(() => {
       updateForm("indirizzo", indirizzoDisplay);
       if (p.housenumber) updateForm("civico", p.housenumber);
       if (p.postcode) updateForm("cap", p.postcode);
-      if (p.district) {
-        setQuartiereQuery(p.district);
-        updateForm("quartiere", p.district);
+      if (p.district || p.street) {
+        const rawQ = p.district || "";
+        const matched = matchQuartiere(rawQ) || matchQuartiere(p.street || "") || matchQuartiere(`${rawQ} ${p.street || ""}`);
+        const finalQ = matched || rawQ;
+        if (finalQ) {
+          setQuartiereQuery(finalQ);
+          updateForm("quartiere", finalQ);
+        }
       }
       if (p.city) updateForm("citta", p.city);
     } else {
@@ -387,12 +394,14 @@ useEffect(() => {
       if (addr) {
         if (addr.house_number) updateForm("civico", addr.house_number);
         if (addr.postcode) updateForm("cap", addr.postcode); 
-        const quartiere = addr.quarter || addr.neighbourhood || addr.suburb || "";
-        if (quartiere) {
-          setQuartiereQuery(quartiere);
-          updateForm("quartiere", quartiere);
+        const rawQuartiere = addr.quarter || addr.neighbourhood || addr.suburb || "";
+        const matched = matchQuartiere(rawQuartiere) || matchQuartiere(addr.road || "") || matchQuartiere(`${rawQuartiere} ${addr.road || ""}`);
+        const finalQ = matched || rawQuartiere;
+        if (finalQ) {
+          setQuartiereQuery(finalQ);
+          updateForm("quartiere", finalQ);
         }
-        if (addr.city) updateForm("citta", addr.city);       
+        if (addr.city) updateForm("citta", addr.city);
       }
     }
     setShowAddressSuggestions(false);
