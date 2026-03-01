@@ -1,6 +1,7 @@
 // Force rebuild - 2026-02-17
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NuovoEvento from "./pages/NuovoEvento";
+import ModificaAnnuncio from "./pages/ModificaAnnuncio";
 import ModificaEvento from "./pages/ModificaEvento";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
             <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
+            <Route path="/modifica-annuncio/:id" element={<ProtectedRoute><ModificaAnnuncio /></ProtectedRoute>} />
             <Route path="/donazioni" element={<Donazioni />} />
             <Route path="/contattaci" element={<Contattaci />} />
             <Route path="/collabora" element={<Collabora />} />
