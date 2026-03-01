@@ -29,14 +29,28 @@ const ForgotPassword = () => {
 
       if (dbError) throw dbError;
 
-      // 3. (Opzionale) Invia email via Edge Function (quando sarà attiva)
-      // Per ora, simula l'invio con console.log
+      // 3. Prepara il link di reset
       const resetLink = `${window.location.origin}/reset-password?token=${token}`;
-      console.log("🔗 Link di reset (debug):", resetLink);
+
+      // 4. Chiama la Edge Function per inviare l'email
+      const response = await fetch('/functions/v1/send-auth-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          type: 'reset',
+          data: { resetLink }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nell\'invio dell\'email');
+      }
 
       toast({
-        title: "Email inviata (debug)",
-        description: "Controlla la console per il link di reset.",
+        title: "Email inviata",
+        description: "Controlla la tua casella di posta per le istruzioni.",
       });
 
       setSubmitted(true);
@@ -67,9 +81,6 @@ const ForgotPassword = () => {
                 <Mail className="w-8 h-8 mx-auto mb-2" />
                 <p className="text-sm">
                   Se esiste un account associato a {email}, riceverai a breve un'email con le istruzioni.
-                </p>
-                <p className="text-xs mt-2 text-muted-foreground">
-                  (In modalità debug, il link è nella console del browser)
                 </p>
               </div>
               <Button asChild variant="outline" className="w-full">

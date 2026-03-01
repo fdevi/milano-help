@@ -55,6 +55,7 @@ import MieiPrenotazioni from "./pages/MieiPrenotazioni";
 import MieiServiziPrenotati from "./pages/MieiServiziPrenotati";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ConfirmEmail from "./pages/ConfirmEmail";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,7 @@ const App = () => (
             <Route path="/miei-servizi" element={<ProtectedRoute><MieiServizi /></ProtectedRoute>} />
             <Route path="/miei-prenotazioni" element={<ProtectedRoute><MieiPrenotazioni /></ProtectedRoute>} />
             <Route path="/miei-servizi-prenotati" element={<ProtectedRoute><MieiServiziPrenotati /></ProtectedRoute>} />
+            <Route path="/auth/confirm" element={<ConfirmEmail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
