@@ -92,31 +92,17 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      // 1. Aggiorna la password su Supabase
-      // Nota: per aggiornare la password senza essere loggati, dobbiamo usare il token di accesso? 
-      // In realtà Supabase non permette di cambiare password senza essere autenticati.
-      // Dobbiamo quindi fare il login con email e vecchia password? Ma non la conosciamo.
-      // Soluzione: usiamo il token per autorizzare l'utente. Possiamo fare:
-      // - Recuperare l'utente tramite email (ma serve auth admin)
-      // - Oppure usare il token per creare una sessione temporanea (non standard)
-      
-      // Approccio più semplice: dopo aver verificato il token, chiediamo all'utente di reimpostare
-      // e poi facciamo il login con la nuova password? Ma l'utente non è loggato.
-      
-      // In realtà, Supabase ha un metodo `supabase.auth.updateUser` che richiede una sessione.
-      // Per evitare complessità, possiamo creare una Edge Function con service role che aggiorna la password.
-      // Ma per ora, semplifichiamo: usiamo il token per identificare l'email e poi chiamiamo l'API di Supabase con service role.
-      
-      // Qui implementiamo la chiamata a una Edge Function (che creeremo dopo)
+      // Chiama la Edge Function per aggiornare la password
       const response = await fetch('/functions/v1/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Errore durante il reset');
+        throw new Error(data.error || 'Errore durante il reset');
       }
 
       // Elimina il token usato
