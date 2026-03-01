@@ -47,6 +47,7 @@ const MieiAnnunci = () => {
       .from("annunci")
       .select("*, categoria:categorie_annunci(label)")
       .eq("user_id", user.id)
+      .neq("stato", "eliminato")
       .order("created_at", { ascending: false })
       .then(({ data }) => setAnnunci((data as Annuncio[]) ?? []));
   };
@@ -60,7 +61,7 @@ const MieiAnnunci = () => {
     setDeleting(true);
     const { error } = await supabase
       .from("annunci")
-      .update({ stato: "eliminato" } as any)
+      .delete()
       .eq("id", deleteId);
     setDeleting(false);
     setDeleteId(null);
@@ -144,7 +145,7 @@ const MieiAnnunci = () => {
                       )}
                       {a.stato !== "eliminato" && (
                         <>
-                          <Link to={`/nuovo-annuncio?edit=${a.id}`}>
+                          <Link to={`/modifica-annuncio/${a.id}`}>
                             <Button size="icon" variant="ghost" className="h-8 w-8">
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
