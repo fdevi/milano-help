@@ -29,10 +29,10 @@ const AdminNewsletter = () => {
       .select("user_id, nome, cognome, email, created_at")
       .eq("newsletter", true)
       .order("created_at", { ascending: false })
-      .then(({ data, err }) => {
+      .then(({ data, error }) => {
         setLoading(false);
-        if (err) {
-          setError(err.message);
+        if (error) {
+          setError(error.message);
           return;
         }
         setIscritti((data as Iscritto[]) ?? []);
