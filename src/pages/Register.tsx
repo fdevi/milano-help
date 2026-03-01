@@ -544,6 +544,40 @@ useEffect(() => {
       }
     }
 
+    // Dopo che il profilo è stato aggiornato, invia l'email di conferma
+// Dopo che il profilo è stato aggiornato, invia l'email di conferma
+try {
+  const confirmationLink = `${window.location.origin}/auth/confirm?email=${form.email}`;
+  
+  const response = await fetch('/functions/v1/send-auth-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: form.email,
+      type: 'confirmation',
+      data: { confirmationLink }
+    }),
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Errore ${response.status}: ${errorData.error || response.statusText}`);
+  }
+  
+  console.log("✅ Email di conferma inviata a", form.email);
+  toast({
+    title: "Email inviata",
+    description: "Controlla la tua casella di posta per confermare l'account.",
+  });
+} catch (emailError) {
+  console.error("❌ Errore invio email di conferma:", emailError);
+  toast({
+    title: "Attenzione",
+    description: "Registrazione completata ma l'email di conferma non è stata inviata. Puoi richiederla dalla pagina di login.",
+    variant: "destructive",
+  });
+}
+
     setLoading(false);
     setRegistrationComplete(true);
   };
