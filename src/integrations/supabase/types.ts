@@ -384,6 +384,7 @@ export type Database = {
           stato: string | null
           titolo: string
           updated_at: string | null
+          visualizzazioni: number
         }
         Insert: {
           categoria?: string | null
@@ -403,6 +404,7 @@ export type Database = {
           stato?: string | null
           titolo: string
           updated_at?: string | null
+          visualizzazioni?: number
         }
         Update: {
           categoria?: string | null
@@ -422,6 +424,7 @@ export type Database = {
           stato?: string | null
           titolo?: string
           updated_at?: string | null
+          visualizzazioni?: number
         }
         Relationships: []
       }
@@ -1181,6 +1184,10 @@ export type Database = {
       }
       incrementa_visualizzazioni: {
         Args: { _annuncio_id: string }
+        Returns: undefined
+      }
+      incrementa_visualizzazioni_evento: {
+        Args: { _evento_id: string }
         Returns: undefined
       }
       is_group_admin: {

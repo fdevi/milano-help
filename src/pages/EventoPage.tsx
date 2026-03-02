@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,6 +109,20 @@ const EventoPage = () => {
     enabled: !!id,
   });
 
+  // Incrementa visualizzazioni (una sola volta per sessione)
+  useEffect(() => {
+    if (!evento?.id) return;
+    const key = `visto_evento_${evento.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const timer = setTimeout(() => {
+      supabase.rpc("incrementa_visualizzazioni_evento", { _evento_id: evento.id } as any).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["evento", id] });
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [evento?.id]);
+
   const toggleLike = async () => {
     if (!user) { navigate("/login"); return; }
     if (!evento) return;
@@ -119,6 +133,21 @@ const EventoPage = () => {
     } else {
       await (supabase as any).from("eventi_mi_piace").insert({ evento_id: evento.id, user_id: user.id });
       await (supabase as any).from("eventi").update({ mi_piace: likeCount + 1 }).eq("id", evento.id);
+
+      // Notifica al creatore dell'evento
+      if (evento.organizzatore_id !== user.id) {
+        const { data: profilo } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
+        const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
+        await supabase.from("notifiche").insert({
+          user_id: evento.organizzatore_id,
+          tipo: "like_evento",
+          titolo: "Mi piace al tuo evento",
+          messaggio: `A ${nomeUtente} piace il tuo evento "${evento.titolo}"`,
+          link: `/evento/${evento.id}`,
+          mittente_id: user.id,
+          riferimento_id: evento.id,
+        });
+      }
     }
     queryClient.invalidateQueries({ queryKey: ["evento_like", id] });
     queryClient.invalidateQueries({ queryKey: ["evento_like_count", id] });
@@ -130,16 +159,32 @@ const EventoPage = () => {
     if (!commentText.trim() || !evento) return;
 
     setSending(true);
+    const testoTroncato = commentText.trim();
     const { error } = await (supabase as any).from("eventi_commenti").insert({
       evento_id: evento.id,
       user_id: user.id,
-      testo: commentText.trim(),
+      testo: testoTroncato,
     });
     setSending(false);
 
     if (error) {
       toast({ title: "Errore", description: "Impossibile inviare il commento.", variant: "destructive" });
     } else {
+      // Notifica al creatore dell'evento
+      if (evento.organizzatore_id !== user.id) {
+        const { data: profilo } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
+        const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
+        const preview = testoTroncato.length > 50 ? testoTroncato.slice(0, 50) + "…" : testoTroncato;
+        await supabase.from("notifiche").insert({
+          user_id: evento.organizzatore_id,
+          tipo: "commento_evento",
+          titolo: "Nuovo commento sul tuo evento",
+          messaggio: `${nomeUtente} ha commentato il tuo evento "${evento.titolo}": "${preview}"`,
+          link: `/evento/${evento.id}`,
+          mittente_id: user.id,
+          riferimento_id: evento.id,
+        });
+      }
       setCommentText("");
       queryClient.invalidateQueries({ queryKey: ["evento_commenti", id] });
     }
@@ -231,6 +276,9 @@ const EventoPage = () => {
                   </button>
                   <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <MessageCircle className="w-5 h-5" /> {commenti.length} Commenti
+                  </span>
+                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Eye className="w-5 h-5" /> {(evento as any).visualizzazioni || 0} Visualizzazioni
                   </span>
                 </div>
               </div>
