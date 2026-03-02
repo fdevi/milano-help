@@ -486,6 +486,38 @@ export type Database = {
           },
         ]
       }
+      eventi_partecipanti: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          stato: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          stato?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          stato?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_partecipanti_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gruppi: {
         Row: {
           categoria: string | null
