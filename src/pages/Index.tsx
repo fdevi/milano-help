@@ -106,33 +106,35 @@ const EventCard = ({ evento }: { evento: any }) => {
   const dataFormatted = evento.data ? new Date(evento.data).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Data non specificata";
   
   return (
-    <Card className="p-4 hover:shadow-card-hover transition-shadow cursor-pointer">
-      <div className="flex items-start gap-3">
-        <div className="bg-primary/10 rounded-lg p-2 shrink-0">
-          <Calendar className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-            <Clock className="w-3 h-3" />
-            <span>{dataFormatted}</span>
-          </p>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            <span className="truncate">{evento.luogo || "Luogo non specificato"}</span>
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Avatar className="w-5 h-5">
-              <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-muted-foreground">{evento.organizzatore_nome || "Utente"}</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5">
-              {evento.gratuito ? "Gratuito" : evento.prezzo ? `€${evento.prezzo}` : "Gratuito"}
-            </Badge>
+    <Link to={`/evento/${evento.id}`}>
+      <Card className="p-4 hover:shadow-card-hover transition-shadow cursor-pointer">
+        <div className="flex items-start gap-3">
+          <div className="bg-primary/10 rounded-lg p-2 shrink-0">
+            <Calendar className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <Clock className="w-3 h-3" />
+              <span>{dataFormatted}</span>
+            </p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              <span className="truncate">{evento.luogo || "Luogo non specificato"}</span>
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <Avatar className="w-5 h-5">
+                <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
+              </Avatar>
+              <span className="text-xs text-muted-foreground">{evento.organizzatore_nome || "Utente"}</span>
+              <Badge variant="secondary" className="text-[10px] px-1.5">
+                {evento.gratuito ? "Gratuito" : evento.prezzo ? `€${evento.prezzo}` : "Gratuito"}
+              </Badge>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 };
 
@@ -162,7 +164,7 @@ const Index = () => {
     };
   }, []);
 
-  // Carica il conteggio degli annunci per ogni categoria
+  // Carica il conteggio degli annunci per ogni categoria + eventi
   useEffect(() => {
     const fetchCounts = async () => {
       if (!mountedRef.current) return;
@@ -172,12 +174,21 @@ const Index = () => {
       for (const cat of categorie) {
         if (!mountedRef.current) break;
         
-        const { count } = await supabase
-          .from("annunci")
-          .select("*", { count: "exact", head: true })
-          .eq("categoria_id", cat.id)
-          .eq("stato", "attivo");
-        if (mountedRef.current) counts[cat.nome] = count || 0;
+        if (cat.nome === "evento") {
+          // Count from eventi table instead of annunci
+          const { count } = await supabase
+            .from("eventi")
+            .select("*", { count: "exact", head: true })
+            .eq("stato", "attivo");
+          if (mountedRef.current) counts[cat.nome] = count || 0;
+        } else {
+          const { count } = await supabase
+            .from("annunci")
+            .select("*", { count: "exact", head: true })
+            .eq("categoria_id", cat.id)
+            .eq("stato", "attivo");
+          if (mountedRef.current) counts[cat.nome] = count || 0;
+        }
       }
       
       if (mountedRef.current) {
