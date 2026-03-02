@@ -58,6 +58,8 @@ const Profilo = () => {
   const quartiereRef = useRef<HTMLDivElement>(null);
   const [deleteAnnuncioId, setDeleteAnnuncioId] = useState<string | null>(null);
   const [deletingAnnuncio, setDeletingAnnuncio] = useState(false);
+  const [deleteEventoId, setDeleteEventoId] = useState<string | null>(null);
+  const [deletingEvento, setDeletingEvento] = useState(false);
 
   const [form, setForm] = useState({
     nome: "", cognome: "", username: "", telefono: "", quartiere: "",
@@ -125,6 +127,19 @@ const Profilo = () => {
     enabled: !!user,
   });
 
+  const { data: tuttiEventi, refetch: refetchEventi } = useQuery({
+    queryKey: ["profilo-eventi-tutti"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("eventi")
+        .select("*")
+        .eq("stato", "attivo")
+        .order("data", { ascending: true });
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
   const handleDeleteAnnuncio = async () => {
     if (!deleteAnnuncioId) return;
     setDeletingAnnuncio(true);
@@ -138,6 +153,20 @@ const Profilo = () => {
       refetchAnnunci();
       queryClient.invalidateQueries({ queryKey: ["annunci"] });
       queryClient.invalidateQueries({ queryKey: ["profile-stats", user?.id] });
+    }
+  };
+
+  const handleDeleteEvento = async () => {
+    if (!deleteEventoId) return;
+    setDeletingEvento(true);
+    const { error } = await supabase.from("eventi").delete().eq("id", deleteEventoId);
+    setDeletingEvento(false);
+    setDeleteEventoId(null);
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile eliminare l'evento.", variant: "destructive" });
+    } else {
+      toast({ title: "Evento eliminato" });
+      refetchEventi();
     }
   };
 
@@ -254,9 +283,10 @@ const Profilo = () => {
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="dati" className="w-full">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="dati" className="gap-1.5"><User className="w-4 h-4" /> I miei dati</TabsTrigger>
             <TabsTrigger value="annunci" className="gap-1.5"><FileText className="w-4 h-4" /> I miei annunci</TabsTrigger>
+            <TabsTrigger value="eventi" className="gap-1.5"><CalendarDays className="w-4 h-4" /> Eventi</TabsTrigger>
             <TabsTrigger value="preferenze" className="gap-1.5"><Shield className="w-4 h-4" /> Preferenze</TabsTrigger>
           </TabsList>
 
@@ -490,6 +520,53 @@ const Profilo = () => {
               </Card>
             </motion.div>
           </TabsContent>
+
+          {/* ── Tab: Eventi ── */}
+          <TabsContent value="eventi">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Card className="p-6 shadow-card space-y-4">
+                <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-primary" /> Eventi
+                </h3>
+                {!tuttiEventi || tuttiEventi.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nessun evento disponibile.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {tuttiEventi.map((ev: any) => (
+                      <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
+                        <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex-shrink-0">
+                          {ev.immagine ? (
+                            <img src={ev.immagine} alt={ev.titolo} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
+                              <CalendarDays className="w-5 h-5" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{ev.titolo}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(ev.data).toLocaleDateString("it-IT")} · {ev.luogo}
+                            {ev.gratuito ? " · Gratuito" : ev.prezzo != null ? ` · €${ev.prezzo}` : ""}
+                          </p>
+                        </div>
+                        {user?.id === ev.organizzatore_id && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/modifica-evento/${ev.id}`)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setDeleteEventoId(ev.id)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          </TabsContent>
         </Tabs>
 
         {/* Delete annuncio dialog */}
@@ -503,6 +580,22 @@ const Profilo = () => {
               <Button variant="outline" onClick={() => setDeleteAnnuncioId(null)}>Annulla</Button>
               <Button variant="destructive" onClick={handleDeleteAnnuncio} disabled={deletingAnnuncio}>
                 {deletingAnnuncio ? "Eliminazione..." : "Elimina"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete evento dialog */}
+        <Dialog open={!!deleteEventoId} onOpenChange={() => setDeleteEventoId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Elimina evento</DialogTitle>
+              <DialogDescription>Sei sicuro di voler eliminare questo evento? L'azione non è reversibile.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteEventoId(null)}>Annulla</Button>
+              <Button variant="destructive" onClick={handleDeleteEvento} disabled={deletingEvento}>
+                {deletingEvento ? "Eliminazione..." : "Elimina"}
               </Button>
             </DialogFooter>
           </DialogContent>
