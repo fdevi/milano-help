@@ -300,7 +300,7 @@ const CategoriaPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
                 >
-                  <Link to={`/eventi`}>
+                  <Link to={`/evento/${evento.id}`}>
                     <div className="group bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                       <div className="h-48 bg-muted flex items-center justify-center overflow-hidden">
                         {evento.immagine ? (
