@@ -101,8 +101,10 @@ const PannelloNotifiche = () => {
 
   const getIcon = (tipo?: string) => {
     switch (tipo) {
-      case "like_annuncio": return <Heart className="w-4 h-4 text-rose-500" />;
-      case "commento_annuncio": return <MessageSquare className="w-4 h-4 text-blue-500" />;
+      case "like_annuncio":
+      case "like_evento": return <Heart className="w-4 h-4 text-rose-500" />;
+      case "commento_annuncio":
+      case "commento_evento": return <MessageSquare className="w-4 h-4 text-blue-500" />;
       case "approvato": return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case "rifiutato": return <XCircle className="w-4 h-4 text-destructive" />;
       default: return <Bell className="w-4 h-4" />;
@@ -111,8 +113,10 @@ const PannelloNotifiche = () => {
 
   const getLabel = (tipo?: string) => {
     switch (tipo) {
-      case "like_annuncio": return "Mi piace";
-      case "commento_annuncio": return "Commento";
+      case "like_annuncio":
+      case "like_evento": return "Mi piace";
+      case "commento_annuncio":
+      case "commento_evento": return "Commento";
       case "approvato": return "Approvato";
       case "rifiutato": return "Rifiutato";
       default: return "Avviso";
