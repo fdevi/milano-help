@@ -105,6 +105,7 @@ const PannelloNotifiche = () => {
       case "like_evento": return <Heart className="w-4 h-4 text-rose-500" />;
       case "commento_annuncio":
       case "commento_evento": return <MessageSquare className="w-4 h-4 text-blue-500" />;
+      case "partecipazione_evento": return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case "approvato": return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case "rifiutato": return <XCircle className="w-4 h-4 text-destructive" />;
       default: return <Bell className="w-4 h-4" />;
@@ -117,6 +118,7 @@ const PannelloNotifiche = () => {
       case "like_evento": return "Mi piace";
       case "commento_annuncio":
       case "commento_evento": return "Commento";
+      case "partecipazione_evento": return "Partecipazione";
       case "approvato": return "Approvato";
       case "rifiutato": return "Rifiutato";
       default: return "Avviso";
