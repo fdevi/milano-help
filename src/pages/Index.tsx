@@ -100,23 +100,10 @@ const areas = [
   }
 ];
 
-// Funzione per formattare data evento (estrapolata dalla descrizione)
-const estraiDataEvento = (descrizione: string) => {
-  const match = descrizione?.match(/📅 Data: (.*?)\n/);
-  return match ? match[1] : "Data non specificata";
-};
-
-// Funzione per formattare luogo evento (estrapolato dalla descrizione)
-const estraiLuogoEvento = (descrizione: string) => {
-  const match = descrizione?.match(/📍 Luogo: (.*?)$/);
-  return match ? match[1] : "Luogo non specificato";
-};
-
-// Componente EventCard (per eventi dalla tabella annunci)
+// Componente EventCard (per eventi dalla tabella eventi)
 const EventCard = ({ evento }: { evento: any }) => {
-  const dataEvento = estraiDataEvento(evento.descrizione);
-  const luogoEvento = estraiLuogoEvento(evento.descrizione);
-  const orgInitials = evento.autore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?";
+  const orgInitials = evento.organizzatore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?";
+  const dataFormatted = evento.data ? new Date(evento.data).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Data non specificata";
   
   return (
     <Card className="p-4 hover:shadow-card-hover transition-shadow cursor-pointer">
@@ -125,24 +112,22 @@ const EventCard = ({ evento }: { evento: any }) => {
           <Calendar className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <Link to={`/annuncio/${evento.id}`} className="hover:underline">
-            <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
-          </Link>
+          <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Clock className="w-3 h-3" />
-            <span>{dataEvento}</span>
+            <span>{dataFormatted}</span>
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <MapPin className="w-3 h-3" />
-            <span className="truncate">{luogoEvento}</span>
+            <span className="truncate">{evento.luogo || "Luogo non specificato"}</span>
           </p>
           <div className="flex items-center gap-2 mt-2">
             <Avatar className="w-5 h-5">
               <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground">{evento.autore_nome || "Utente"}</span>
+            <span className="text-xs text-muted-foreground">{evento.organizzatore_nome || "Utente"}</span>
             <Badge variant="secondary" className="text-[10px] px-1.5">
-              {evento.prezzo === 0 ? "Gratuito" : evento.prezzo ? `€${evento.prezzo}` : "Gratuito"}
+              {evento.gratuito ? "Gratuito" : evento.prezzo ? `€${evento.prezzo}` : "Gratuito"}
             </Badge>
           </div>
         </div>
@@ -155,7 +140,6 @@ const Index = () => {
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [annunciCount, setAnnunciCount] = useState<Record<string, number>>({});
-  const [categoriaEventoId, setCategoriaEventoId] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
   // Carica le categorie con protezione unmount
@@ -176,22 +160,6 @@ const Index = () => {
     return () => {
       mountedRef.current = false;
     };
-  }, []);
-
-  // Carica l'ID della categoria "evento"
-  useEffect(() => {
-    const fetchCategoriaEvento = async () => {
-      const { data } = await supabase
-        .from("categorie_annunci")
-        .select("id")
-        .eq("nome", "evento")
-        .single();
-      
-      if (data) {
-        setCategoriaEventoId(data.id);
-      }
-    };
-    fetchCategoriaEvento();
   }, []);
 
   // Carica il conteggio degli annunci per ogni categoria
@@ -222,36 +190,21 @@ const Index = () => {
     }
   }, [categorie]);
 
-  // Carica eventi in evidenza (annunci della categoria "evento")
+  // Carica eventi attivi dalla tabella eventi
   const { data: eventi = [], isLoading: loadingEventi, error: errorEventi } = useQuery({
-    queryKey: ['index-eventi-attivi', categoriaEventoId],
+    queryKey: ['index-eventi-attivi'],
     queryFn: async () => {
-      if (!categoriaEventoId) return [];
-      
-      console.log("🔍 Index: inizio caricamento eventi attivi...");
-      
-      const { data, error } = await supabase
-        .from('annunci')
+      const { data, error } = await (supabase as any)
+        .from('eventi')
         .select('*')
-        .eq('categoria_id', categoriaEventoId)
         .eq('stato', 'attivo')
-        .order('created_at', { ascending: false })
+        .order('data', { ascending: true })
         .limit(6);
       
-      if (error) {
-        console.error("❌ Index: errore Supabase:", error);
-        throw error;
-      }
-      
-      console.log("📊 Index: eventi attivi dal DB:", data);
-      console.log("📊 Index: numero eventi attivi:", data?.length || 0);
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      // Carica i profili degli autori
-      const userIds = [...new Set(data.map(e => e.user_id))];
+      const userIds = [...new Set((data as any[]).map((e: any) => e.organizzatore_id))];
       const { data: profili } = await supabase
         .from('profiles')
         .select('user_id, nome, cognome')
@@ -259,16 +212,12 @@ const Index = () => {
 
       const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
 
-      const eventiConAutore = data.map(evento => ({
+      return (data as any[]).map((evento: any) => ({
         ...evento,
-        autore_nome: profiliMap.get(evento.user_id) ? 
-          `${profiliMap.get(evento.user_id)?.nome || ''} ${profiliMap.get(evento.user_id)?.cognome || ''}`.trim() || 'Utente' : 'Utente'
+        organizzatore_nome: profiliMap.get(evento.organizzatore_id) ? 
+          `${profiliMap.get(evento.organizzatore_id)?.nome || ''} ${profiliMap.get(evento.organizzatore_id)?.cognome || ''}`.trim() || 'Utente' : 'Utente'
       }));
-      
-      console.log("✅ Index: eventi con autore:", eventiConAutore);
-      return eventiConAutore;
     },
-    enabled: !!categoriaEventoId,
   });
 
   return (
@@ -362,7 +311,7 @@ const Index = () => {
                     transition={{ delay: index * 0.05 }}
                   >
                     {cat.nome === 'evento' ? (
-                      <Link to="/categoria/evento">
+                      <Link to="/eventi">
                         <Card className="p-5 hover:shadow-lg transition-all group hover:-translate-y-1 cursor-pointer">
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform">
@@ -439,7 +388,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground/60 mb-4">
                 {(errorEventi as Error)?.message || "Errore di connessione"}
               </p>
-              <Link to="/categoria/evento">
+              <Link to="/eventi">
                 <Button variant="outline">Vai agli eventi</Button>
               </Link>
             </Card>
@@ -447,7 +396,7 @@ const Index = () => {
             <Card className="p-12 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-muted-foreground mb-2">Nessun evento in programma</p>
-              <Link to="/categoria/evento">
+              <Link to="/eventi">
                 <Button variant="link">Scopri tutti gli eventi</Button>
               </Link>
             </Card>
@@ -459,7 +408,7 @@ const Index = () => {
                 ))}
               </div>
               <div className="text-center mt-8">
-                <Link to="/categoria/evento">
+                <Link to="/eventi">
                   <Button variant="outline" size="lg" className="gap-2">
                     Vedi tutti gli eventi <ArrowRight className="w-4 h-4" />
                   </Button>
