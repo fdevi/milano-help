@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Ban, ShieldCheck } from "lucide-react";
@@ -27,6 +28,7 @@ const AdminUtenti = () => {
   const [filterQuartiere, setFilterQuartiere] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
   const [search, setSearch] = useState("");
+  const [blockDialog, setBlockDialog] = useState<{ open: boolean; userId: string; block: boolean; name: string }>({ open: false, userId: "", block: true, name: "" });
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -47,20 +49,33 @@ const AdminUtenti = () => {
   useEffect(() => { fetchUsers(); fetchRoles(); }, []);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    const existing = roles[userId];
-    if (existing) {
-      await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", userId);
-    } else {
-      await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
+    try {
+      const existing = roles[userId];
+      let error;
+      if (existing) {
+        ({ error } = await supabase.from("user_roles").update({ role: newRole as any }).eq("user_id", userId));
+      } else {
+        ({ error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any }));
+      }
+      if (error) throw error;
+      toast({ title: "Ruolo aggiornato con successo" });
+      fetchRoles();
+    } catch (error: any) {
+      toast({ title: "Errore", description: error.message, variant: "destructive" });
     }
-    toast({ title: "Ruolo aggiornato" });
-    fetchRoles();
   };
 
-  const handleBlock = async (userId: string, block: boolean) => {
-    await supabase.from("profiles").update({ bloccato: block }).eq("user_id", userId);
-    toast({ title: block ? "Utente bloccato" : "Utente sbloccato" });
-    fetchUsers();
+  const confirmBlock = async () => {
+    const { userId, block } = blockDialog;
+    try {
+      const { error } = await supabase.from("profiles").update({ bloccato: block }).eq("user_id", userId);
+      if (error) throw error;
+      toast({ title: block ? "Utente bloccato" : "Utente sbloccato" });
+      fetchUsers();
+    } catch (error: any) {
+      toast({ title: "Errore", description: error.message, variant: "destructive" });
+    }
+    setBlockDialog({ open: false, userId: "", block: true, name: "" });
   };
 
   const filtered = users.filter((u) => {
@@ -68,11 +83,7 @@ const AdminUtenti = () => {
     if (filterTipo && u.tipo_account !== filterTipo) return false;
     if (search) {
       const s = search.toLowerCase();
-      if (
-        !(u.nome?.toLowerCase().includes(s) ||
-          u.cognome?.toLowerCase().includes(s) ||
-          u.email?.toLowerCase().includes(s))
-      ) return false;
+      if (!(u.nome?.toLowerCase().includes(s) || u.cognome?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s))) return false;
     }
     return true;
   });
@@ -143,7 +154,7 @@ const AdminUtenti = () => {
                       <Button
                         size="sm"
                         variant={u.bloccato ? "outline" : "destructive"}
-                        onClick={() => handleBlock(u.user_id, !u.bloccato)}
+                        onClick={() => setBlockDialog({ open: true, userId: u.user_id, block: !u.bloccato, name: `${u.nome ?? ""} ${u.cognome ?? ""}`.trim() || u.email || "utente" })}
                         className="gap-1"
                       >
                         {u.bloccato ? <ShieldCheck className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
@@ -162,6 +173,25 @@ const AdminUtenti = () => {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={blockDialog.open} onOpenChange={(open) => !open && setBlockDialog(prev => ({ ...prev, open: false }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{blockDialog.block ? "Bloccare" : "Sbloccare"} utente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {blockDialog.block
+                ? `Sei sicuro di voler bloccare "${blockDialog.name}"? L'utente non potrà più accedere alla piattaforma.`
+                : `Sei sicuro di voler sbloccare "${blockDialog.name}"? L'utente potrà accedere nuovamente.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBlock}>
+              {blockDialog.block ? "Blocca" : "Sblocca"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };
