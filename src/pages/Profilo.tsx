@@ -2,13 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
-  Loader2, User, Bell, Shield, Eye, Mail, Phone,
+  Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +24,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQuartieri } from "@/hooks/useQuartieri";
+import { Link, useNavigate } from "react-router-dom";
 
 // ── Profile fetching ──
 async function fetchProfile(userId: string) {
@@ -48,10 +51,13 @@ const Profilo = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   const { quartieri, aree } = useQuartieri();
   const [quartiereSearch, setQuartiereSearch] = useState("");
   const [showQuartiereSuggestions, setShowQuartiereSuggestions] = useState(false);
   const quartiereRef = useRef<HTMLDivElement>(null);
+  const [deleteAnnuncioId, setDeleteAnnuncioId] = useState<string | null>(null);
+  const [deletingAnnuncio, setDeletingAnnuncio] = useState(false);
 
   const [form, setForm] = useState({
     nome: "", cognome: "", username: "", telefono: "", quartiere: "",
@@ -105,6 +111,35 @@ const Profilo = () => {
     queryFn: () => fetchStats(user!.id),
     enabled: !!user,
   });
+
+  const { data: mieAnnunci, refetch: refetchAnnunci } = useQuery({
+    queryKey: ["profile-annunci", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("annunci")
+        .select("*, categoria:categorie_annunci(label)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const handleDeleteAnnuncio = async () => {
+    if (!deleteAnnuncioId) return;
+    setDeletingAnnuncio(true);
+    const { error } = await supabase.from("annunci").delete().eq("id", deleteAnnuncioId);
+    setDeletingAnnuncio(false);
+    setDeleteAnnuncioId(null);
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile eliminare l'annuncio.", variant: "destructive" });
+    } else {
+      toast({ title: "Annuncio eliminato" });
+      refetchAnnunci();
+      queryClient.invalidateQueries({ queryKey: ["annunci"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-stats", user?.id] });
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -217,10 +252,11 @@ const Profilo = () => {
           </Card>
         </motion.div>
 
-        {/* ── Tabs: solo I miei dati + Preferenze ── */}
+        {/* ── Tabs ── */}
         <Tabs defaultValue="dati" className="w-full">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="dati" className="gap-1.5"><User className="w-4 h-4" /> I miei dati</TabsTrigger>
+            <TabsTrigger value="annunci" className="gap-1.5"><FileText className="w-4 h-4" /> I miei annunci</TabsTrigger>
             <TabsTrigger value="preferenze" className="gap-1.5"><Shield className="w-4 h-4" /> Preferenze</TabsTrigger>
           </TabsList>
 
@@ -391,7 +427,86 @@ const Profilo = () => {
               </Card>
             </motion.div>
           </TabsContent>
+
+          {/* ── Tab: I miei annunci ── */}
+          <TabsContent value="annunci">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Card className="p-6 shadow-card space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" /> I miei annunci
+                  </h3>
+                  <Link to="/nuovo-annuncio">
+                    <Button size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nuovo</Button>
+                  </Link>
+                </div>
+
+                {!mieAnnunci || mieAnnunci.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Non hai ancora pubblicato annunci.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {mieAnnunci.map((a: any) => {
+                      const statoMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
+                        in_moderazione: { label: "In moderazione", variant: "secondary", icon: Clock },
+                        attivo: { label: "Attivo", variant: "default", icon: CheckCircle },
+                        rifiutato: { label: "Rifiutato", variant: "destructive", icon: XCircle },
+                        chiuso: { label: "Chiuso", variant: "outline", icon: AlertTriangle },
+                      };
+                      const config = statoMap[a.stato] ?? statoMap.chiuso;
+                      const StatusIcon = config.icon;
+                      const firstImg = a.immagini?.filter(Boolean)?.[0];
+                      return (
+                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
+                          <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex-shrink-0">
+                            {firstImg ? (
+                              <img src={firstImg} alt={a.titolo} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 text-[10px]">No img</div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link to={`/annuncio/${a.id}`} className="text-sm font-medium truncate block hover:text-primary transition-colors">{a.titolo}</Link>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(a.created_at).toLocaleDateString("it-IT")}
+                              {a.prezzo != null && ` · €${a.prezzo}`}
+                            </p>
+                          </div>
+                          <Badge variant={config.variant} className="gap-1 text-xs shrink-0">
+                            <StatusIcon className="w-3 h-3" /> {config.label}
+                          </Badge>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/modifica-annuncio/${a.id}`)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setDeleteAnnuncioId(a.id)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          </TabsContent>
         </Tabs>
+
+        {/* Delete annuncio dialog */}
+        <Dialog open={!!deleteAnnuncioId} onOpenChange={() => setDeleteAnnuncioId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Elimina annuncio</DialogTitle>
+              <DialogDescription>Sei sicuro di voler eliminare questo annuncio? L'azione non è reversibile.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteAnnuncioId(null)}>Annulla</Button>
+              <Button variant="destructive" onClick={handleDeleteAnnuncio} disabled={deletingAnnuncio}>
+                {deletingAnnuncio ? "Eliminazione..." : "Elimina"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AuthLayout>
   );
