@@ -1,8 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { icons, LucideIcon, ImageOff, SlidersHorizontal, X } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -17,9 +17,12 @@ import { useQuartieri } from "@/hooks/useQuartieri";
 
 type SortOption = "data_desc" | "prezzo_asc" | "prezzo_desc";
 
+const isEventCategory = (nome?: string) => nome === "evento";
+
 const CategoriaPage = () => {
   const { nome } = useParams<{ nome: string }>();
   const { quartieri } = useQuartieri();
+  const isEvento = isEventCategory(nome);
 
   const [sortBy, setSortBy] = useState<SortOption>("data_desc");
   const [selectedQuartieri, setSelectedQuartieri] = useState<string[]>([]);
@@ -42,7 +45,24 @@ const CategoriaPage = () => {
     enabled: !!nome,
   });
 
-  // Fetch annunci attivi per questa categoria
+  // Fetch eventi attivi (quando categoria = "evento")
+  const { data: eventi = [], isLoading: loadingEventi } = useQuery({
+    queryKey: ["eventi_categoria_attivi"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("eventi")
+        .select("*")
+        .eq("stato", "attivo")
+        .order("data", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isEvento,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+
+  // Fetch annunci attivi per questa categoria (quando NON è evento)
   const { data: annunci = [], isLoading: loadingAnnunci } = useQuery({
     queryKey: ["annunci_categoria", categoria?.id],
     queryFn: async () => {
@@ -55,13 +75,17 @@ const CategoriaPage = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!categoria?.id,
+    enabled: !!categoria?.id && !isEvento,
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
 
-  // Filtra e ordina
+  const isLoading = isEvento ? loadingEventi : loadingAnnunci;
+  const itemCount = isEvento ? eventi.length : annunci.length;
+
+  // Filtra e ordina annunci (solo per non-eventi)
   const filteredAnnunci = useMemo(() => {
+    if (isEvento) return [];
     let result = [...annunci];
 
     if (selectedQuartieri.length > 0) {
@@ -86,7 +110,7 @@ const CategoriaPage = () => {
     }
 
     return result;
-  }, [annunci, selectedQuartieri, prezzoMin, prezzoMax, sortBy]);
+  }, [annunci, selectedQuartieri, prezzoMin, prezzoMax, sortBy, isEvento]);
 
   const Icon = categoria
     ? (icons as Record<string, LucideIcon>)[categoria.icona] || icons.Circle
@@ -143,63 +167,64 @@ const CategoriaPage = () => {
             <div>
               <h1 className="font-heading text-3xl font-extrabold text-foreground">{categoria.label}</h1>
               <p className="text-muted-foreground">
-                {loadingAnnunci ? "Caricamento..." : `${annunci.length} annunci attivi`}
+                {isLoading ? "Caricamento..." : isEvento ? `${eventi.length} eventi attivi` : `${annunci.length} annunci attivi`}
               </p>
             </div>
           </motion.div>
         ) : null}
 
-        {/* Filters toolbar */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Ordina per" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="data_desc">Più recenti</SelectItem>
-              <SelectItem value="prezzo_asc">Prezzo crescente</SelectItem>
-              <SelectItem value="prezzo_desc">Prezzo decrescente</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Filters toolbar - only for annunci */}
+        {!isEvento && (
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Ordina per" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="data_desc">Più recenti</SelectItem>
+                <SelectItem value="prezzo_asc">Prezzo crescente</SelectItem>
+                <SelectItem value="prezzo_desc">Prezzo decrescente</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <SlidersHorizontal className="w-4 h-4 mr-1" />
-            Filtri
-            {hasActiveFilters && (
-              <Badge variant="secondary" className="ml-2 text-xs">
-                {selectedQuartieri.length + (prezzoMin ? 1 : 0) + (prezzoMax ? 1 : 0)}
-              </Badge>
-            )}
-          </Button>
-
-          {hasActiveFilters && (
             <Button
-              variant="ghost"
+              variant={showFilters ? "default" : "outline"}
               size="sm"
-              onClick={() => {
-                setSelectedQuartieri([]);
-                setPrezzoMin("");
-                setPrezzoMax("");
-              }}
+              onClick={() => setShowFilters(!showFilters)}
             >
-              <X className="w-4 h-4 mr-1" /> Rimuovi filtri
+              <SlidersHorizontal className="w-4 h-4 mr-1" />
+              Filtri
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {selectedQuartieri.length + (prezzoMin ? 1 : 0) + (prezzoMax ? 1 : 0)}
+                </Badge>
+              )}
             </Button>
-          )}
-        </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedQuartieri([]);
+                  setPrezzoMin("");
+                  setPrezzoMax("");
+                }}
+              >
+                <X className="w-4 h-4 mr-1" /> Rimuovi filtri
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Filters panel */}
-        {showFilters && (
+        {!isEvento && showFilters && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="bg-card border rounded-xl p-4 mb-6 space-y-4"
           >
-            {/* Prezzo */}
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Fascia di prezzo</label>
               <div className="flex gap-3 items-center">
@@ -220,8 +245,6 @@ const CategoriaPage = () => {
                 />
               </div>
             </div>
-
-            {/* Quartieri */}
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Quartiere</label>
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
@@ -241,7 +264,7 @@ const CategoriaPage = () => {
         )}
 
         {/* Grid */}
-        {loadingAnnunci ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card rounded-xl border overflow-hidden">
@@ -254,6 +277,69 @@ const CategoriaPage = () => {
               </div>
             ))}
           </div>
+        ) : isEvento ? (
+          /* Eventi grid */
+          eventi.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-heading text-xl font-bold text-foreground mb-2">
+                Nessun evento in programma
+              </h3>
+              <p className="text-muted-foreground">
+                Non ci sono ancora eventi attivi. Torna più tardi!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {eventi.map((evento, i) => (
+                <motion.div
+                  key={evento.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                >
+                  <Link to={`/eventi`}>
+                    <div className="group bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="h-48 bg-muted flex items-center justify-center overflow-hidden">
+                        {evento.immagine ? (
+                          <img
+                            src={evento.immagine}
+                            alt={evento.titolo}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <Calendar className="w-12 h-12 text-muted-foreground/40" />
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-heading font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                          {evento.titolo}
+                        </h3>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{format(new Date(evento.data), "d MMMM yyyy, HH:mm", { locale: it })}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>{evento.luogo}</span>
+                          </div>
+                        </div>
+                        {evento.gratuito ? (
+                          <Badge variant="secondary" className="mt-2">Gratuito</Badge>
+                        ) : evento.prezzo != null ? (
+                          <p className="text-lg font-bold text-primary mt-2">€{Number(evento.prezzo).toFixed(2)}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )
         ) : filteredAnnunci.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
@@ -280,8 +366,7 @@ const CategoriaPage = () => {
                   transition={{ delay: i * 0.03 }}
                 >
                   <Link to={`/annuncio/${annuncio.id}`}>
-                    <div className="group bg-card rounded-xl border overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300">
-                      {/* Image */}
+                    <div className="group bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
                       <div className="h-48 bg-muted flex items-center justify-center overflow-hidden">
                         {firstImage ? (
                           <img
@@ -294,7 +379,6 @@ const CategoriaPage = () => {
                           <Icon className="w-12 h-12 text-muted-foreground/40" />
                         )}
                       </div>
-                      {/* Content */}
                       <div className="p-4">
                         <h3 className="font-heading font-bold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">
                           {annuncio.titolo}
