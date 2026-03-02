@@ -67,24 +67,48 @@ const AdminEventi = () => {
   });
 
   const approva = async (id: string) => {
+    const evento = eventi.find((e: any) => e.id === id);
     const { error } = await (supabase as any)
       .from("eventi")
       .update({ stato: "attivo" })
       .eq("id", id);
     if (error) { sonnerToast.error(`Errore: ${error.message}`); return; }
     await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "evento_approvato", dettagli: `Evento ${id} approvato` });
+    if (evento?.organizzatore_id) {
+      await supabase.from("notifiche").insert({
+        user_id: evento.organizzatore_id,
+        tipo: "evento_approvato",
+        titolo: "Evento approvato",
+        messaggio: `Il tuo evento "${evento.titolo}" è stato approvato`,
+        link: `/eventi/${evento.id}`,
+        riferimento_id: evento.id,
+        mittente_id: user?.id,
+      });
+    }
     sonnerToast.success("Evento approvato");
     queryClient.invalidateQueries({ queryKey: ["admin-eventi"] });
   };
 
   const rifiuta = async () => {
     if (!rifiutoModal || !motivoRifiuto.trim()) return;
+    const evento = eventi.find((e: any) => e.id === rifiutoModal);
     const { error } = await (supabase as any)
       .from("eventi")
       .update({ stato: "rifiutato", motivo_rifiuto: motivoRifiuto })
       .eq("id", rifiutoModal);
     if (error) { sonnerToast.error(`Errore: ${error.message}`); return; }
     await supabase.from("activity_logs").insert({ user_id: user?.id, azione: "evento_rifiutato", dettagli: `Evento ${rifiutoModal} rifiutato: ${motivoRifiuto}` });
+    if (evento?.organizzatore_id) {
+      await supabase.from("notifiche").insert({
+        user_id: evento.organizzatore_id,
+        tipo: "evento_rifiutato",
+        titolo: "Evento rifiutato",
+        messaggio: `Il tuo evento "${evento.titolo}" è stato rifiutato. Motivo: ${motivoRifiuto}`,
+        link: `/miei-eventi`,
+        riferimento_id: evento.id,
+        mittente_id: user?.id,
+      });
+    }
     sonnerToast.success("Evento rifiutato");
     setRifiutoModal(null);
     setMotivoRifiuto("");
