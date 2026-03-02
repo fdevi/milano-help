@@ -376,6 +376,7 @@ export type Database = {
           immagine: string | null
           luogo: string
           max_partecipanti: number | null
+          mi_piace: number
           motivo_rifiuto: string | null
           organizzatore_id: string
           partecipanti: number | null
@@ -394,6 +395,7 @@ export type Database = {
           immagine?: string | null
           luogo: string
           max_partecipanti?: number | null
+          mi_piace?: number
           motivo_rifiuto?: string | null
           organizzatore_id: string
           partecipanti?: number | null
@@ -412,6 +414,7 @@ export type Database = {
           immagine?: string | null
           luogo?: string
           max_partecipanti?: number | null
+          mi_piace?: number
           motivo_rifiuto?: string | null
           organizzatore_id?: string
           partecipanti?: number | null
@@ -421,6 +424,64 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      eventi_commenti: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          testo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          testo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          testo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_commenti_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eventi_mi_piace: {
+        Row: {
+          created_at: string
+          evento_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_mi_piace_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventi"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gruppi: {
         Row: {

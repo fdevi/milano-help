@@ -41,6 +41,7 @@ import GruppoDetail from "./pages/GruppoDetail";
 import Sezioni from "./pages/Sezioni";
 import Profilo from "./pages/Profilo";
 import Eventi from "./pages/Eventi";
+import EventoPage from "./pages/EventoPage";
 import AdminEventi from "./pages/admin/AdminEventi";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
@@ -102,6 +103,7 @@ const App = () => (
             <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
             <Route path="/eventi" element={<Navigate to="/categoria/evento" replace />} />
+            <Route path="/evento/:id" element={<EventoPage />} />
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
             <Route path="/modifica-evento/:id" element={<ProtectedRoute><ModificaEvento /></ProtectedRoute>} />
