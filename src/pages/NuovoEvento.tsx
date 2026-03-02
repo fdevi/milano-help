@@ -29,7 +29,6 @@ const NuovoEvento = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
-  const [categoriaEventoId, setCategoriaEventoId] = useState<string>("");
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [form, setForm] = useState({
@@ -57,17 +56,6 @@ const NuovoEvento = () => {
 
   const userQuartiere = userProfile?.quartiere || "";
 
-  useEffect(() => {
-    const fetchCategoriaEvento = async () => {
-      const { data } = await supabase
-        .from("categorie_annunci")
-        .select("id")
-        .eq("nome", "evento")
-        .single();
-      if (data) setCategoriaEventoId(data.id);
-    };
-    fetchCategoriaEvento();
-  }, []);
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -87,23 +75,21 @@ const NuovoEvento = () => {
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const uploadImages = async (annuncioId: string): Promise<string[]> => {
-    const urls: string[] = [];
-    for (const file of images) {
-      const ext = file.name.split(".").pop();
-      const path = `${user!.id}/${annuncioId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("annunci-images").upload(path, file);
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("annunci-images").getPublicUrl(path);
-      urls.push(urlData.publicUrl);
-    }
-    return urls;
+  const uploadImage = async (eventoId: string): Promise<string | null> => {
+    if (images.length === 0) return null;
+    const file = images[0];
+    const ext = file.name.split(".").pop();
+    const path = `${user!.id}/${eventoId}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("annunci-images").upload(path, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("annunci-images").getPublicUrl(path);
+    return urlData.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!form.titolo || !date || !form.luogo || !categoriaEventoId) {
+    if (!form.titolo || !date || !form.luogo) {
       toast({ title: "Campi obbligatori", description: "Compila tutti i campi richiesti.", variant: "destructive" });
       return;
     }
@@ -118,31 +104,32 @@ const NuovoEvento = () => {
 
     setLoading(true);
     try {
-      const dataFormattata = date ? format(date, "dd/MM/yyyy HH:mm", { locale: it }) : "";
-      const descrizioneCompleta = `${form.descrizione}\n\n📅 Data: ${dataFormattata}\n📍 Luogo: ${form.luogo}`;
-
-      const { data: annuncio, error } = await supabase.from("annunci").insert({
+      const { data: evento, error } = await supabase.from("eventi").insert({
         titolo: form.titolo,
-        descrizione: descrizioneCompleta,
-        categoria_id: categoriaEventoId,
-        quartiere: userQuartiere,
-        user_id: user.id,
+        descrizione: form.descrizione || null,
+        data: date.toISOString(),
+        luogo: form.luogo,
+        organizzatore_id: user.id,
         stato: "in_moderazione",
-        prezzo: form.gratuito ? 0 : parseFloat(form.prezzo) || null,
+        gratuito: form.gratuito,
+        prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,
+        categoria: "evento",
       }).select("id").single();
 
       if (error) throw error;
 
       if (images.length > 0) {
-        const urls = await uploadImages(annuncio.id);
-        await supabase.from("annunci").update({ immagini: urls }).eq("id", annuncio.id);
+        const imageUrl = await uploadImage(evento.id);
+        if (imageUrl) {
+          await supabase.from("eventi").update({ immagine: imageUrl }).eq("id", evento.id);
+        }
       }
 
       toast({
         title: "Evento creato!",
         description: "Il tuo evento è stato inviato e sarà visibile dopo l'approvazione.",
       });
-      navigate("/categoria/evento");
+      navigate("/miei-eventi");
     } catch (error: any) {
       toast({ title: "Errore", description: error.message || "Impossibile creare l'evento.", variant: "destructive" });
     } finally {
