@@ -139,12 +139,12 @@ const Home = () => {
         .order('created_at', { ascending: false })
         .limit(30);
 
-      const { data: eventi } = await (supabase as any)
-        .from('eventi').select('*').order('created_at', { ascending: false }).limit(30);
+      const { data: eventi } = await supabase
+        .from('eventi').select('*').eq('stato', 'attivo').order('created_at', { ascending: false }).limit(30);
 
       const userIds = [
         ...(annunci?.map(a => a.user_id) || []),
-        ...((eventi as any[])?.map((e: any) => e.organizzatore_id) || [])
+        ...(eventi?.map(e => e.organizzatore_id) || [])
       ].filter(Boolean);
 
       let profiliMap = new Map();
@@ -163,7 +163,7 @@ const Home = () => {
             autore, categoria: a.categorie_annunci, link: `/annuncio/${a.id}`
           };
         }) || []),
-        ...((eventi as any[])?.map((e: any) => {
+        ...(eventi?.map(e => {
           const autore = profiliMap.get(e.organizzatore_id) || { nome: 'Utente', cognome: '' };
           return {
             id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
@@ -190,7 +190,7 @@ const Home = () => {
   const { data: allEventi = [], isLoading: loadingEventi } = useQuery({
     queryKey: ['home-all-eventi'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('eventi')
         .select('*')
         .eq('stato', 'attivo')
@@ -199,11 +199,11 @@ const Home = () => {
       if (error) throw error;
       if (!data || data.length === 0) return [];
 
-      const orgIds = [...new Set((data as any[]).map((e: any) => e.organizzatore_id))];
+      const orgIds = [...new Set(data.map(e => e.organizzatore_id))];
       const { data: profili } = await supabase.from('profiles').select('user_id, nome, cognome, avatar_url').in('user_id', orgIds);
       const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
 
-      return (data as any[]).map((evento: any) => {
+      return data.map(evento => {
         const profilo = profiliMap.get(evento.organizzatore_id);
         return {
           ...evento,
