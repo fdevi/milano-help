@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
@@ -15,10 +15,13 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
   CalendarDays, MapPin, Users, Clock, Heart, MessageCircle, Share2,
-  Loader2, Calendar, Ticket, FileText, ImageIcon,
+  Loader2, Calendar, Ticket, FileText, ImageIcon, Pencil, Trash2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // ── Helpers ──
 
@@ -45,45 +48,6 @@ async function fetchMyAnnunci(userId: string) {
   if (error) throw error;
   return data || [];
 }
-
-// ── Componente EventCard ──
-
-const EventCard = ({ event }: { event: any }) => {
-  const orgInitials = event.organizzatore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?";
-  return (
-    <Card className="p-4 hover:shadow-card-hover transition-shadow cursor-pointer">
-      <div className="flex items-start gap-3">
-        <div className="bg-primary/10 rounded-lg p-2 shrink-0">
-          <Calendar className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <Link to={`/eventi`} className="hover:underline">
-            <h4 className="font-medium text-foreground truncate">{event.titolo}</h4>
-          </Link>
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-            <Clock className="w-3 h-3" />
-            <span>{formatEventDate(event.data)}</span>
-          </p>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            <span className="truncate">{event.luogo}</span>
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Avatar className="w-5 h-5">
-              <AvatarImage src={event.organizzatore_avatar || undefined} />
-              <AvatarFallback className="text-[8px]">{orgInitials}</AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-muted-foreground">{event.organizzatore_nome || "Utente"}</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5">
-              {event.gratuito ? "Gratuito" : `€${event.prezzo}`}
-            </Badge>
-          </div>
-        </div>
-        <Badge variant="outline" className="shrink-0">{event.partecipanti || 0} partecipanti</Badge>
-      </div>
-    </Card>
-  );
-};
 
 // ── Componente PostCard ──
 
@@ -157,20 +121,25 @@ const PostCard = ({ post }: { post: PostData }) => {
 
 const Home = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("feed");
+  const [deleteAnnuncioId, setDeleteAnnuncioId] = useState<string | null>(null);
+  const [deleteEventoId, setDeleteEventoId] = useState<string | null>(null);
 
-  // Feed cronologico (da Profilo.tsx)
+  // Feed cronologico
   const { data: feedData = [], isLoading: feedLoading } = useQuery({
     queryKey: ['home-feed', user?.id],
     queryFn: async () => {
-      const { data: annunci, error: errAnnunci } = await supabase
+      const { data: annunci } = await supabase
         .from('annunci')
         .select(`*, categorie_annunci (nome, label)`)
         .eq('stato', 'attivo')
         .order('created_at', { ascending: false })
         .limit(30);
 
-      const { data: eventi, error: errEventi } = await (supabase as any)
+      const { data: eventi } = await (supabase as any)
         .from('eventi').select('*').order('created_at', { ascending: false }).limit(30);
 
       const userIds = [
@@ -182,14 +151,12 @@ const Home = () => {
       if (userIds.length > 0) {
         const uniqueIds = [...new Set(userIds)];
         const { data: profili } = await supabase.from('profiles').select('user_id, nome, cognome, avatar_url').in('user_id', uniqueIds);
-        console.log("🖼️ Home Feed: profili caricati con avatar_url:", profili?.map(p => ({ user_id: p.user_id, nome: p.nome, avatar_url: p.avatar_url })));
         profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
       }
 
       const items = [
         ...(annunci?.map(a => {
           const autore = profiliMap.get(a.user_id) || { nome: 'Utente', cognome: '' };
-          console.log("🖼️ Home Feed: annuncio", a.id, "autore:", autore);
           return {
             id: a.id, tipo: 'annuncio' as const, titolo: a.titolo, descrizione: a.descrizione,
             prezzo: a.prezzo, immagini: a.immagini, created_at: a.created_at,
@@ -198,7 +165,6 @@ const Home = () => {
         }) || []),
         ...((eventi as any[])?.map((e: any) => {
           const autore = profiliMap.get(e.organizzatore_id) || { nome: 'Utente', cognome: '' };
-          console.log("🖼️ Home Feed: evento", e.id, "autore:", autore);
           return {
             id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
             data: e.data, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
@@ -213,66 +179,67 @@ const Home = () => {
     enabled: !!user,
   });
 
-  // I miei annunci
+  // I miei annunci (SOLO annunci dell'utente)
   const { data: myAnnunci = [], isLoading: annunciLoading } = useQuery({
     queryKey: ["home-my-annunci", user?.id],
     queryFn: () => fetchMyAnnunci(user!.id),
     enabled: !!user,
   });
 
-  // Eventi prossimi (dalla tabella eventi)
-  const { data: eventiInEvidenza = [], isLoading: loadingEventi } = useQuery({
-    queryKey: ['home-eventi'],
+  // TUTTI gli eventi (per tab Eventi)
+  const { data: allEventi = [], isLoading: loadingEventi } = useQuery({
+    queryKey: ['home-all-eventi'],
     queryFn: async () => {
-      console.log("🔍 Home: inizio caricamento eventi...");
-      
       const { data, error } = await (supabase as any)
         .from('eventi')
         .select('*')
-        .order('data', { ascending: true })
-        .limit(10);
-      
-      if (error) {
-        console.error("❌ Home: errore caricamento eventi:", error);
-        throw error;
-      }
-      
-      console.log("📊 Home: eventi dal DB (tabella eventi):", data);
-      console.log("📊 Home: numero eventi:", data?.length || 0);
+        .eq('stato', 'attivo')
+        .order('data', { ascending: true });
 
-      if (!data || data.length === 0) {
-        console.log("⚠️ Home: nessun evento trovato nel DB");
-        return [];
-      }
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      const eventiConOrganizzatore = await Promise.all(
-        (data as any[]).map(async (evento: any) => {
-          const { data: profilo } = await supabase
-            .from('profiles')
-            .select('nome, cognome, avatar_url')
-            .eq('user_id', evento.organizzatore_id)
-            .single();
-          
-          return { 
-            ...evento, 
-            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente',
-            organizzatore_avatar: profilo?.avatar_url || null,
-          };
-        })
-      );
-      
-      console.log("✅ Home: eventi con organizzatore:", eventiConOrganizzatore);
-      return eventiConOrganizzatore;
+      const orgIds = [...new Set((data as any[]).map((e: any) => e.organizzatore_id))];
+      const { data: profili } = await supabase.from('profiles').select('user_id, nome, cognome, avatar_url').in('user_id', orgIds);
+      const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
+
+      return (data as any[]).map((evento: any) => {
+        const profilo = profiliMap.get(evento.organizzatore_id);
+        return {
+          ...evento,
+          organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente',
+          organizzatore_avatar: profilo?.avatar_url || null,
+        };
+      });
     },
-    // Nessun enabled: !!user, così gli eventi si caricano anche per utenti non loggati
   });
 
-  console.log("📊 Home: eventiInEvidenza dopo query:", eventiInEvidenza);
+  // Handlers eliminazione
+  const handleDeleteAnnuncio = async () => {
+    if (!deleteAnnuncioId) return;
+    const { error } = await supabase.from("annunci").delete().eq("id", deleteAnnuncioId);
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile eliminare l'annuncio", variant: "destructive" });
+    } else {
+      toast({ title: "Annuncio eliminato" });
+      queryClient.invalidateQueries({ queryKey: ["home-my-annunci"] });
+      queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+    }
+    setDeleteAnnuncioId(null);
+  };
 
-  // Lista eventi da mostrare nel tab
-  const eventiVisualizzati = eventiInEvidenza;
-
-  console.log("📊 Home: eventiVisualizzati:", eventiVisualizzati);
+  const handleDeleteEvento = async () => {
+    if (!deleteEventoId) return;
+    const { error } = await supabase.from("eventi").delete().eq("id", deleteEventoId);
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile eliminare l'evento", variant: "destructive" });
+    } else {
+      toast({ title: "Evento eliminato" });
+      queryClient.invalidateQueries({ queryKey: ["home-all-eventi"] });
+      queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+    }
+    setDeleteEventoId(null);
+  };
 
   return (
     <AuthLayout>
@@ -362,9 +329,13 @@ const Home = () => {
             )}
           </TabsContent>
 
-          {/* ── Tab: I miei annunci ── */}
+          {/* ── Tab: I miei annunci (SOLO annunci dell'utente, con modifica/elimina) ── */}
           <TabsContent value="annunci" className="mt-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-heading font-bold">I miei annunci</h2>
+                <Link to="/nuovo-annuncio"><Button size="sm">Nuovo annuncio</Button></Link>
+              </div>
               {annunciLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (
@@ -388,8 +359,8 @@ const Home = () => {
                     const timeAgo = formatDistanceToNow(new Date(a.created_at), { addSuffix: true, locale: it });
                     return (
                       <motion.div key={a.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.3) }}>
-                        <Link to={`/annuncio/${a.id}`}>
-                          <Card className="overflow-hidden shadow-card hover:shadow-card-hover transition-shadow cursor-pointer group">
+                        <Card className="overflow-hidden shadow-card hover:shadow-card-hover transition-shadow group">
+                          <Link to={`/annuncio/${a.id}`}>
                             <div className="relative h-40 bg-muted">
                               {cover ? (
                                 <img src={cover} alt={a.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -398,16 +369,26 @@ const Home = () => {
                               )}
                               <Badge variant={s.variant} className="absolute top-2 right-2 text-xs">{s.label}</Badge>
                             </div>
-                            <div className="p-3">
+                          </Link>
+                          <div className="p-3">
+                            <Link to={`/annuncio/${a.id}`}>
                               <h3 className="font-heading font-bold text-sm text-foreground truncate">{a.titolo}</h3>
-                              <div className="flex items-center justify-between mt-1.5 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {a.quartiere || "Milano"}</span>
-                                <span>{timeAgo}</span>
-                              </div>
-                              {a.prezzo != null && a.prezzo > 0 && <p className="mt-2 text-sm font-bold text-primary">€{a.prezzo.toFixed(2)}</p>}
+                            </Link>
+                            <div className="flex items-center justify-between mt-1.5 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {a.quartiere || "Milano"}</span>
+                              <span>{timeAgo}</span>
                             </div>
-                          </Card>
-                        </Link>
+                            {a.prezzo != null && a.prezzo > 0 && <p className="mt-2 text-sm font-bold text-primary">€{a.prezzo.toFixed(2)}</p>}
+                            <div className="flex items-center gap-1 mt-2 pt-2 border-t">
+                              <Button size="sm" variant="ghost" className="flex-1 text-xs" onClick={() => navigate(`/modifica-annuncio/${a.id}`)}>
+                                <Pencil className="w-3.5 h-3.5 mr-1" /> Modifica
+                              </Button>
+                              <Button size="sm" variant="ghost" className="flex-1 text-xs text-destructive hover:text-destructive" onClick={() => setDeleteAnnuncioId(a.id)}>
+                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Elimina
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
                       </motion.div>
                     );
                   })}
@@ -416,11 +397,11 @@ const Home = () => {
             </motion.div>
           </TabsContent>
 
-          {/* ── Tab: Eventi ── */}
+          {/* ── Tab: Eventi (TUTTI gli eventi attivi, modifica/elimina solo per i propri) ── */}
           <TabsContent value="eventi" className="mt-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-heading font-bold">Prossimi eventi</h2>
+                <h2 className="text-lg font-heading font-bold">Tutti gli eventi</h2>
                 <div className="flex gap-2">
                   <Link to="/nuovo-evento"><Button size="sm">Crea evento</Button></Link>
                   <Link to="/eventi"><Button variant="ghost" size="sm">Vedi tutti</Button></Link>
@@ -428,19 +409,59 @@ const Home = () => {
               </div>
               {loadingEventi ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-              ) : eventiVisualizzati.length === 0 ? (
+              ) : allEventi.length === 0 ? (
                 <Card className="p-8 text-center">
                   <CalendarDays className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="text-muted-foreground">Nessun evento in programma</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {loadingEventi ? "Caricamento..." : `Trovati ${eventiInEvidenza.length} eventi nel DB`}
-                  </p>
                   <Link to="/nuovo-evento"><Button variant="link" className="mt-2">Crea il primo evento</Button></Link>
                 </Card>
               ) : (
-              <div className="space-y-3">
-                  {eventiVisualizzati.map((evento) => (
-                    <EventCard key={evento.id} event={evento} />
+                <div className="space-y-3">
+                  {allEventi.map((evento: any) => (
+                    <Card key={evento.id} className="p-4 hover:shadow-card-hover transition-shadow">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-primary/10 rounded-lg p-2 shrink-0">
+                          <Calendar className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <Link to={`/eventi`} className="hover:underline">
+                            <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
+                          </Link>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatEventDate(evento.data)}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate">{evento.luogo}</span>
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Avatar className="w-5 h-5">
+                              <AvatarImage src={evento.organizzatore_avatar || undefined} />
+                              <AvatarFallback className="text-[8px]">
+                                {evento.organizzatore_nome?.split(" ").map((w: string) => w[0]).join("").toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-muted-foreground">{evento.organizzatore_nome || "Utente"}</span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5">
+                              {evento.gratuito ? "Gratuito" : `€${evento.prezzo}`}
+                            </Badge>
+                          </div>
+                          {/* Modifica/Elimina solo se è l'evento dell'utente loggato */}
+                          {user?.id === evento.organizzatore_id && (
+                            <div className="flex items-center gap-1 mt-2 pt-2 border-t">
+                              <Button size="sm" variant="ghost" className="text-xs" onClick={() => navigate(`/modifica-evento/${evento.id}`)}>
+                                <Pencil className="w-3.5 h-3.5 mr-1" /> Modifica
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-xs text-destructive hover:text-destructive" onClick={() => setDeleteEventoId(evento.id)}>
+                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Elimina
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="shrink-0">{evento.partecipanti || 0} partecipanti</Badge>
+                      </div>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -448,6 +469,34 @@ const Home = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog conferma eliminazione annuncio */}
+      <Dialog open={!!deleteAnnuncioId} onOpenChange={(open) => !open && setDeleteAnnuncioId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminare l'annuncio?</DialogTitle>
+            <DialogDescription>Questa azione è irreversibile. L'annuncio verrà eliminato definitivamente.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAnnuncioId(null)}>Annulla</Button>
+            <Button variant="destructive" onClick={handleDeleteAnnuncio}>Elimina</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog conferma eliminazione evento */}
+      <Dialog open={!!deleteEventoId} onOpenChange={(open) => !open && setDeleteEventoId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminare l'evento?</DialogTitle>
+            <DialogDescription>Questa azione è irreversibile. L'evento verrà eliminato definitivamente.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteEventoId(null)}>Annulla</Button>
+            <Button variant="destructive" onClick={handleDeleteEvento}>Elimina</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AuthLayout>
   );
 };
