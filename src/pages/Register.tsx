@@ -544,25 +544,33 @@ useEffect(() => {
       }
     }
 
-    // Dopo che il profilo e la foto sono stati salvati, invia l'email
-try {
-  const confirmationLink = `${window.location.origin}/auth/confirm?email=${form.email}`;
-  await fetch('/functions/v1/send-auth-email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: form.email,
-      type: 'confirmation',
-      data: { confirmationLink }
-    }),
-  });
-  console.log("✅ Email inviata");
-} catch (error) {
-  console.error("❌ Errore email:", error);
-}
+          // 4. Invia email di conferma
+          try {
+            const confirmationLink = `${window.location.origin}/auth/confirm?email=${form.email}`;
+            
+            console.log("📤 Tentativo invio email a:", form.email);
+            
+            const { data: fnData, error: fnError } = await supabase.functions.invoke('send-auth-email', {
+              body: {
+                to: trimmedEmail,
+                type: 'confirmation',
+                data: { confirmationLink }
+              },
+            });
+    
+            if (fnError) {
+              console.error("❌ Errore Edge Function:", fnError);
+            } else {
+              console.log("✅ Email di conferma inviata a", trimmedEmail, fnData);
+            }
+          } catch (emailError) {
+            console.error("❌ Errore invio email:", emailError);
+          }
+
     setLoading(false);
     setRegistrationComplete(true);
   };
+  
 
   const stepTitles = [
     "Credenziali di accesso",
