@@ -33,20 +33,16 @@ const ForgotPassword = () => {
       const resetLink = `${window.location.origin}/reset-password?token=${token}`;
 
       // 4. Chiama la Edge Function per inviare l'email
-      const response = await fetch('/functions/v1/send-auth-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('send-auth-email', {
+        body: {
           to: email,
           type: 'reset',
           data: { resetLink }
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore nell\'invio dell\'email');
-      }
+      if (fnError) throw new Error(fnError.message || 'Errore nell\'invio dell\'email');
+
 
       toast({
         title: "Email inviata",
