@@ -93,20 +93,11 @@ const ResetPassword = () => {
     setLoading(true);
     try {
       // Chiama la Edge Function per aggiornare la password
-      const response = await fetch('/functions/v1/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword: password }),
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('reset-password', {
+        body: { token, newPassword: password },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Errore durante il reset');
-      }
-
-      // Elimina il token usato
-      await supabase.from('password_resets').delete().eq('token', token);
+      if (fnError) throw new Error(fnError.message || 'Errore durante il reset');
 
       toast({
         title: "Password aggiornata",
