@@ -74,7 +74,6 @@ const Login = () => {
     setLoading(false);
     navigate("/home");
   };
-  };
 
   return (
     <div className="min-h-screen bg-background">
