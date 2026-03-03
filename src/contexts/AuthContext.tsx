@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Profile is complete if nome and cognome are filled
     const complete = !!(data?.nome?.trim() && data?.cognome?.trim());
+    console.log("[AuthContext] checkProfile result:", { nome: data?.nome, cognome: data?.cognome, complete, error });
     setProfileComplete(complete);
   };
 
@@ -68,13 +69,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
+        console.log("[AuthContext] onAuthStateChange:", _event, "user:", newSession?.user?.id);
         setSession(newSession);
         if (newSession?.user) {
           setTimeout(() => {
-            checkProfile(newSession.user.id);
+            checkProfile(newSession.user.id).then(() => {
+              console.log("[AuthContext] checkProfile done, setting loading=false");
+              setLoading(false);
+            });
           }, 0);
         } else {
           setProfileComplete(null);
+          setLoading(false);
         }
       }
     );
