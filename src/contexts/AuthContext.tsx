@@ -40,10 +40,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     if (!error && data?.email_verificata === false) {
-      // For OAuth users, email is already verified — check provider
       const { data: { user } } = await supabase.auth.getUser();
-      const isOAuth = user?.app_metadata?.provider !== "email";
-      if (!isOAuth) {
+      const provider = user?.app_metadata?.provider;
+      const isOAuth = provider && provider !== "email";
+      console.log("[AuthContext] email_verificata check:", { email_verificata: data?.email_verificata, provider, isOAuth });
+      if (isOAuth) {
+        // OAuth users have verified email — update DB and continue
+        await supabase.from("profiles").update({ email_verificata: true }).eq("user_id", userId);
+      } else {
         await supabase.auth.signOut();
         setSession(null);
         setProfileComplete(null);
