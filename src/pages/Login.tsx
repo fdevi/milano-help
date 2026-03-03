@@ -38,10 +38,10 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+    
     if (error) {
+      setLoading(false);
       const msg = error.message === "Invalid login credentials"
         ? "Email o password non corretti"
         : error.message === "Email not confirmed"
@@ -50,7 +50,30 @@ const Login = () => {
       toast({ title: "Errore di accesso", description: msg, variant: "destructive" });
       return;
     }
+
+    // Check if user is blocked
+    if (authData?.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("bloccato")
+        .eq("user_id", authData.user.id)
+        .single();
+      
+      if (profile?.bloccato) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast({ 
+          title: "Account bloccato", 
+          description: "Il tuo account è stato sospeso. Contatta l'assistenza per maggiori informazioni.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+    }
+
+    setLoading(false);
     navigate("/home");
+  };
   };
 
   return (
