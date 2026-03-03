@@ -1,8 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, profileComplete } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -14,6 +15,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to complete profile if incomplete (but not if already on that page)
+  if (profileComplete === false && location.pathname !== "/completa-profilo") {
+    return <Navigate to="/completa-profilo" replace />;
   }
 
   return <>{children}</>;
