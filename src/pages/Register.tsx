@@ -544,9 +544,37 @@ useEffect(() => {
       }
     }
 
+          // 4. Invia email di conferma
+          try {
+            const confirmationLink = `${window.location.origin}/auth/confirm?email=${form.email}`;
+            
+            console.log("📤 Tentativo invio email a:", form.email);
+            
+            const response = await fetch('/functions/v1/send-auth-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: form.email,
+                type: 'confirmation',
+                data: { confirmationLink }
+              }),
+            });
+    
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              console.error("❌ Errore Edge Function:", response.status, errorData);
+            } else {
+              const result = await response.json();
+              console.log("✅ Email di conferma inviata a", form.email, result);
+            }
+          } catch (emailError) {
+            console.error("❌ Errore invio email:", emailError);
+          }
+
     setLoading(false);
     setRegistrationComplete(true);
   };
+  
 
   const stepTitles = [
     "Credenziali di accesso",
