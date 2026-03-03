@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface AuthContextType {
   session: Session | null;
@@ -94,7 +95,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, profileComplete, signOut }}>
-      {children}
+      <ProfileRedirectGuard>{children}</ProfileRedirectGuard>
     </AuthContext.Provider>
   );
+};
+
+// Global guard: redirects to /completa-profilo from ANY page if profile is incomplete
+const EXCLUDED_PATHS = ["/completa-profilo", "/login", "/registrati", "/privacy", "/termini", "/auth/confirm", "/confirm-email-change", "/reset-password", "/forgot-password"];
+
+const ProfileRedirectGuard = ({ children }: { children: ReactNode }) => {
+  const { user, loading, profileComplete } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+    
+    const isExcluded = EXCLUDED_PATHS.some(p => location.pathname.startsWith(p));
+    if (isExcluded) return;
+
+    console.log("[ProfileRedirectGuard]", { path: location.pathname, profileComplete, userId: user.id });
+
+    if (profileComplete === false) {
+      console.log("[ProfileRedirectGuard] Redirecting to /completa-profilo");
+      navigate("/completa-profilo", { replace: true });
+    }
+  }, [user, loading, profileComplete, location.pathname, navigate]);
+
+  return <>{children}</>;
 };
