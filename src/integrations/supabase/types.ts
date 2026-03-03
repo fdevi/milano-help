@@ -365,6 +365,36 @@ export type Database = {
           },
         ]
       }
+      email_changes: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          new_email: string
+          old_email: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          new_email: string
+          old_email: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          new_email?: string
+          old_email?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       eventi: {
         Row: {
           categoria: string | null
