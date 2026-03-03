@@ -3,14 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 const ConfirmEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState("");
 
@@ -25,26 +23,28 @@ const ConfirmEmail = () => {
       }
 
       try {
-        // Verifica se l'utente esiste (opzionale, per dare feedback)
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('email_verificata')
-          .eq('email', email)
-          .single();
 
-        if (userError || !userData) {
+        // Verify email using secure RPC function
+        const { data: verified, error: updateError } = await supabase
+          .rpc('verify_email_by_address', { _email: email });
+
+        if (updateError) {
+          console.error("Errore verifica email:", updateError);
           setStatus('error');
-          setMessage("Utente non trovato. Forse l'account è già stato confermato o non esiste.");
+          setMessage("Si è verificato un errore durante la conferma dell'email.");
           return;
         }
 
-        // Nota: Supabase gestisce automaticamente la conferma dell'email quando l'utente clicca il link.
-        // Questa pagina serve solo come feedback visivo.
-        
+        if (!verified) {
+          setStatus('success');
+          setMessage("La tua email è già stata confermata. Puoi accedere al tuo account.");
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
         setStatus('success');
         setMessage("Email confermata con successo! Ora puoi accedere al tuo account.");
         
-        // Opzionale: reindirizza al login dopo 3 secondi
         setTimeout(() => {
           navigate('/login');
         }, 3000);
