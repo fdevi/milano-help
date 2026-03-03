@@ -53,8 +53,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes (keep callback synchronous)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
+        // Set session immediately to avoid race conditions with ProtectedRoute
+        setSession(newSession);
+
         if (newSession?.user) {
-          // Defer blocked check without making callback async
+          // Defer blocked/email check — sign out if needed
           setTimeout(() => {
             supabase
               .from("profiles")
@@ -68,13 +71,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 } else if (!error && data?.email_verificata === false) {
                   supabase.auth.signOut();
                   setSession(null);
-                } else {
-                  setSession(newSession);
                 }
               });
           }, 0);
-        } else {
-          setSession(newSession);
         }
       }
     );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Heart, Eye, EyeOff, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { lovable } from "@/integrations/lovable/index";
 
 const Login = () => {
@@ -19,6 +20,12 @@ const Login = () => {
   const [appleLoading, setAppleLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // If already logged in, redirect to home
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user) navigate("/home", { replace: true });
+  }, [user, navigate]);
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
