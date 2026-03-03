@@ -58,6 +58,7 @@ import MieiServiziPrenotati from "./pages/MieiServiziPrenotati";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ConfirmEmail from "./pages/ConfirmEmail";
+import ConfirmEmailChange from "./pages/ConfirmEmailChange";
 
 const queryClient = new QueryClient();
 
@@ -121,6 +122,7 @@ const App = () => (
             <Route path="/miei-prenotazioni" element={<ProtectedRoute><MieiPrenotazioni /></ProtectedRoute>} />
             <Route path="/miei-servizi-prenotati" element={<ProtectedRoute><MieiServiziPrenotati /></ProtectedRoute>} />
             <Route path="/auth/confirm" element={<ConfirmEmail />} />
+            <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
