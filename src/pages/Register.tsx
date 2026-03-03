@@ -514,29 +514,22 @@ useEffect(() => {
         console.error("Profile update error:", profileError);
       }
 
-      // 3. Upload foto profilo se presente
+      // 3. Upload foto profilo via edge function (no session needed)
       if (form.fotoProfilo) {
         try {
-          const ext = form.fotoProfilo.name.split(".").pop();
-          const filePath = `${signUpData.user.id}/avatar.${ext}`;
-          const { error: uploadError } = await supabase.storage
-            .from("avatars")
-            .upload(filePath, form.fotoProfilo, { upsert: true });
+          const formDataUpload = new FormData();
+          formDataUpload.append("file", form.fotoProfilo);
+          formDataUpload.append("user_id", signUpData.user.id);
+
+          const { data: uploadResult, error: uploadError } = await supabase.functions.invoke(
+            "upload-avatar",
+            { body: formDataUpload }
+          );
 
           if (uploadError) {
             console.error("🖼️ Register: Avatar upload error:", uploadError);
           } else {
-            const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-            console.log("🖼️ Register: Avatar URL generato:", urlData.publicUrl);
-            const { error: avatarError } = await supabase
-              .from("profiles")
-              .update({ avatar_url: urlData.publicUrl })
-              .eq("user_id", signUpData.user.id);
-            if (avatarError) {
-              console.error("🖼️ Register: Avatar URL update error:", avatarError);
-            } else {
-              console.log("🖼️ Register: avatar_url salvato nel profilo con successo");
-            }
+            console.log("🖼️ Register: Avatar caricato con successo:", uploadResult?.url);
           }
         } catch (err) {
           console.error("Avatar upload exception:", err);
