@@ -550,22 +550,18 @@ useEffect(() => {
             
             console.log("📤 Tentativo invio email a:", form.email);
             
-            const response = await fetch('/functions/v1/send-auth-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: form.email,
+            const { data: fnData, error: fnError } = await supabase.functions.invoke('send-auth-email', {
+              body: {
+                to: trimmedEmail,
                 type: 'confirmation',
                 data: { confirmationLink }
-              }),
+              },
             });
     
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              console.error("❌ Errore Edge Function:", response.status, errorData);
+            if (fnError) {
+              console.error("❌ Errore Edge Function:", fnError);
             } else {
-              const result = await response.json();
-              console.log("✅ Email di conferma inviata a", form.email, result);
+              console.log("✅ Email di conferma inviata a", trimmedEmail, fnData);
             }
           } catch (emailError) {
             console.error("❌ Errore invio email:", emailError);
