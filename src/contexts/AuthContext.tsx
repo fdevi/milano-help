@@ -26,14 +26,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get initial session first (synchronous pattern)
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (initialSession?.user) {
-        // Check blocked status asynchronously
+        // Check blocked and email verification status
         supabase
           .from("profiles")
-          .select("bloccato")
+          .select("bloccato, email_verificata")
           .eq("user_id", initialSession.user.id)
           .single()
           .then(({ data, error }) => {
             if (!error && data?.bloccato === true) {
+              supabase.auth.signOut();
+              setSession(null);
+            } else if (!error && data?.email_verificata === false) {
               supabase.auth.signOut();
               setSession(null);
             } else {
@@ -55,11 +58,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setTimeout(() => {
             supabase
               .from("profiles")
-              .select("bloccato")
+              .select("bloccato, email_verificata")
               .eq("user_id", newSession.user.id)
               .single()
               .then(({ data, error }) => {
                 if (!error && data?.bloccato === true) {
+                  supabase.auth.signOut();
+                  setSession(null);
+                } else if (!error && data?.email_verificata === false) {
                   supabase.auth.signOut();
                   setSession(null);
                 } else {
