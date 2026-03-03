@@ -1234,6 +1234,7 @@ export type Database = {
         Args: { _gruppo_id: string; _user_id: string }
         Returns: boolean
       }
+      verify_email_by_address: { Args: { _email: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

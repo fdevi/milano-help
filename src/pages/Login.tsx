@@ -51,14 +51,25 @@ const Login = () => {
       return;
     }
 
-    // Check if user is blocked
+    // Check if user is blocked or email not verified
     if (authData?.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("bloccato")
+        .select("bloccato, email_verificata")
         .eq("user_id", authData.user.id)
         .single();
       
+      if (profile?.email_verificata === false) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        toast({ 
+          title: "Email non verificata", 
+          description: "Devi confermare la tua email prima di accedere. Controlla la tua casella di posta.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+
       if (profile?.bloccato) {
         await supabase.auth.signOut();
         setLoading(false);

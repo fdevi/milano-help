@@ -3,7 +3,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const FROM_EMAIL = 'Milano Help <noreply@milanohelp.it>'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+}
+
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   try {
     const { to, type, data } = await req.json()
     
@@ -117,23 +126,28 @@ serve(async (req) => {
     if (!res.ok) {
       console.error('❌ Errore Resend:', responseData);
       
-      // Controlla se è un errore di "suppressed" (bloccato)
       if (responseData.error?.message?.includes('suppressed') || 
           responseData.error?.message?.includes('bounce')) {
         console.log('⚠️ Questa email è stata soppressa (bounce/spam)');
         return new Response(JSON.stringify({ 
           error: 'Email soppressa dal provider', 
           details: responseData 
-        }), { status: 400 });
+        }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       
-      return new Response(JSON.stringify({ error: 'Errore nell\'invio dell\'email', details: responseData }), { status: 500 })
+      return new Response(JSON.stringify({ error: 'Errore nell\'invio dell\'email', details: responseData }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
     }
 
     console.log('✅ Email inviata con successo! ID:', responseData.id);
-    return new Response(JSON.stringify({ success: true, id: responseData.id }), { status: 200 })
+    return new Response(JSON.stringify({ success: true, id: responseData.id }), { 
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    })
   } catch (error) {
     console.error('❌ Errore generico:', error)
-    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500 })
+    return new Response(JSON.stringify({ error: (error as Error).message }), { 
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    })
   }
 })
