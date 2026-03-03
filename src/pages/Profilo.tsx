@@ -205,7 +205,18 @@ const Profilo = () => {
     },
   });
 
-  const handleSaveData = () => saveMutation.mutate(form);
+  const handleSaveData = () => {
+    const cleanedForm: Record<string, unknown> = { ...form };
+    // Convert empty strings to null for nullable fields
+    if (cleanedForm.data_nascita === "") cleanedForm.data_nascita = null;
+    if (cleanedForm.sesso === "") cleanedForm.sesso = null;
+    if (cleanedForm.quartiere === "") cleanedForm.quartiere = null;
+    if (cleanedForm.indirizzo === "") cleanedForm.indirizzo = null;
+    if (cleanedForm.civico === "") cleanedForm.civico = null;
+    if (cleanedForm.cap === "") cleanedForm.cap = null;
+    if (cleanedForm.citta === "") cleanedForm.citta = null;
+    saveMutation.mutate(cleanedForm);
+  };
   const handleSavePrefs = () => saveMutation.mutate(prefs);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
