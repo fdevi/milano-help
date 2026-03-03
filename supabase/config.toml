@@ -1,7 +1,7 @@
 project_id = "oiljiebciwtjlrtqicty"
 
 [functions]
-  [functions.auth-email-hook]
+  [functions.send-auth-email]
     verify_jwt = false
   [functions.send-invite-email]
     verify_jwt = false

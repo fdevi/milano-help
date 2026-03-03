@@ -134,6 +134,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: true, id: responseData.id }), { status: 200 })
   } catch (error) {
     console.error('❌ Errore generico:', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500 })
   }
 })
