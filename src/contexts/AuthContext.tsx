@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -23,23 +23,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const checkBlocked = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("bloccato")
+        .eq("user_id", userId)
+        .single();
+      return data?.bloccato === true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
-    // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
+      async (_event, newSession) => {
+        if (newSession?.user) {
+          const blocked = await checkBlocked(newSession.user.id);
+          if (blocked) {
+            await supabase.auth.signOut();
+            setSession(null);
+            setLoading(false);
+            return;
+          }
+        }
+        setSession(newSession);
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
+      if (existingSession?.user) {
+        const blocked = await checkBlocked(existingSession.user.id);
+        if (blocked) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+      }
+      setSession(existingSession);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [checkBlocked]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
