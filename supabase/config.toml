@@ -11,3 +11,5 @@ project_id = "oiljiebciwtjlrtqicty"
     verify_jwt = false
   [functions.reset-password]
     verify_jwt = false
+  [functions.confirm-email-change]
+    verify_jwt = false

@@ -81,6 +81,8 @@ const Profilo = () => {
     e.preventDefault();
     if (!user) return;
     setUpdatingEmail(true);
+    
+    // Verifica password
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: user.email!,
       password: passwordForEmail,
@@ -90,14 +92,41 @@ const Profilo = () => {
       setUpdatingEmail(false);
       return;
     }
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
-    if (error) {
-      toast({ title: "Errore", description: error.message, variant: "destructive" });
-    } else {
+
+    try {
+      // Genera token e salva nel DB
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 ora
+
+      const { error: insertError } = await supabase.from('email_changes').insert({
+        user_id: user.id,
+        old_email: user.email!,
+        new_email: newEmail,
+        token,
+        expires_at: expiresAt,
+      });
+
+      if (insertError) throw insertError;
+
+      // Invia email di conferma al NUOVO indirizzo
+      const confirmLink = `${window.location.origin}/confirm-email-change?token=${token}`;
+      
+      const { error: fnError } = await supabase.functions.invoke('send-auth-email', {
+        body: {
+          to: newEmail,
+          type: 'email_change',
+          data: { confirmLink, newEmail },
+        },
+      });
+
+      if (fnError) throw fnError;
+
       toast({ title: "Verifica richiesta", description: "Controlla la tua nuova casella email per confermare il cambio." });
       setShowEmailForm(false);
       setNewEmail("");
       setPasswordForEmail("");
+    } catch (err: any) {
+      toast({ title: "Errore", description: err.message || "Errore durante il cambio email", variant: "destructive" });
     }
     setUpdatingEmail(false);
   };
