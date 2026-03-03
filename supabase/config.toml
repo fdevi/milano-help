@@ -7,3 +7,5 @@ project_id = "oiljiebciwtjlrtqicty"
     verify_jwt = false
   [functions.send-contact-email]
     verify_jwt = false
+  [functions.upload-avatar]
+    verify_jwt = false
