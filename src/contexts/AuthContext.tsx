@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   session: Session | null;
@@ -23,52 +22,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkBlocked = useCallback(async (userId: string): Promise<boolean> => {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("bloccato")
-        .eq("user_id", userId)
-        .single();
-      return data?.bloccato === true;
-    } catch {
-      return false;
-    }
-  }, []);
-
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        if (newSession?.user) {
-          const blocked = await checkBlocked(newSession.user.id);
-          if (blocked) {
-            await supabase.auth.signOut();
-            setSession(null);
+    // Get initial session first (synchronous pattern)
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (initialSession?.user) {
+        // Check blocked status asynchronously
+        supabase
+          .from("profiles")
+          .select("bloccato")
+          .eq("user_id", initialSession.user.id)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data?.bloccato === true) {
+              supabase.auth.signOut();
+              setSession(null);
+            } else {
+              setSession(initialSession);
+            }
             setLoading(false);
-            return;
-          }
-        }
-        setSession(newSession);
+          });
+      } else {
+        setSession(initialSession);
         setLoading(false);
+      }
+    });
+
+    // Listen for auth changes (keep callback synchronous)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        if (newSession?.user) {
+          // Defer blocked check without making callback async
+          setTimeout(() => {
+            supabase
+              .from("profiles")
+              .select("bloccato")
+              .eq("user_id", newSession.user.id)
+              .single()
+              .then(({ data, error }) => {
+                if (!error && data?.bloccato === true) {
+                  supabase.auth.signOut();
+                  setSession(null);
+                } else {
+                  setSession(newSession);
+                }
+              });
+          }, 0);
+        } else {
+          setSession(newSession);
+        }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
-      if (existingSession?.user) {
-        const blocked = await checkBlocked(existingSession.user.id);
-        if (blocked) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setLoading(false);
-          return;
-        }
-      }
-      setSession(existingSession);
-      setLoading(false);
-    });
-
     return () => subscription.unsubscribe();
-  }, [checkBlocked]);
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
