@@ -6,6 +6,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  profileComplete: boolean | null;
   signOut: () => Promise<void>;
 }
 
@@ -13,6 +14,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   loading: true,
+  profileComplete: null,
   signOut: async () => {},
 });
 
@@ -21,59 +23,58 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+
+  const checkProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("bloccato, email_verificata, nome, cognome")
+      .eq("user_id", userId)
+      .single();
+
+    if (!error && data?.bloccato === true) {
+      await supabase.auth.signOut();
+      setSession(null);
+      setProfileComplete(null);
+      return;
+    }
+    if (!error && data?.email_verificata === false) {
+      // For OAuth users, email is already verified — check provider
+      const { data: { user } } = await supabase.auth.getUser();
+      const isOAuth = user?.app_metadata?.provider !== "email";
+      if (!isOAuth) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setProfileComplete(null);
+        return;
+      }
+    }
+
+    // Profile is complete if nome and cognome are filled
+    const complete = !!(data?.nome?.trim() && data?.cognome?.trim());
+    setProfileComplete(complete);
+  };
 
   useEffect(() => {
-    // Get initial session first (synchronous pattern)
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (initialSession?.user) {
-        // Check blocked and email verification status
-        supabase
-          .from("profiles")
-          .select("bloccato, email_verificata")
-          .eq("user_id", initialSession.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (!error && data?.bloccato === true) {
-              supabase.auth.signOut();
-              setSession(null);
-            } else if (!error && data?.email_verificata === false) {
-              supabase.auth.signOut();
-              setSession(null);
-            } else {
-              setSession(initialSession);
-            }
-            setLoading(false);
-          });
+        setSession(initialSession);
+        checkProfile(initialSession.user.id).then(() => setLoading(false));
       } else {
         setSession(initialSession);
         setLoading(false);
       }
     });
 
-    // Listen for auth changes (keep callback synchronous)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
-        // Set session immediately to avoid race conditions with ProtectedRoute
         setSession(newSession);
-
         if (newSession?.user) {
-          // Defer blocked/email check — sign out if needed
           setTimeout(() => {
-            supabase
-              .from("profiles")
-              .select("bloccato, email_verificata")
-              .eq("user_id", newSession.user.id)
-              .single()
-              .then(({ data, error }) => {
-                if (!error && data?.bloccato === true) {
-                  supabase.auth.signOut();
-                  setSession(null);
-                } else if (!error && data?.email_verificata === false) {
-                  supabase.auth.signOut();
-                  setSession(null);
-                }
-              });
+            checkProfile(newSession.user.id);
           }, 0);
+        } else {
+          setProfileComplete(null);
         }
       }
     );
@@ -86,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, profileComplete, signOut }}>
       {children}
     </AuthContext.Provider>
   );
