@@ -9,8 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Clock, CheckCircle, XCircle, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { Plus, Clock, CheckCircle, XCircle, AlertTriangle, Pencil, Trash2, CalendarClock, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { differenceInDays, format } from "date-fns";
+import { it } from "date-fns/locale";
 
 interface Annuncio {
   id: string;
@@ -21,6 +23,8 @@ interface Annuncio {
   created_at: string;
   prezzo: number | null;
   immagini: string[] | null;
+  data_scadenza: string | null;
+  proroghe_effettuate: number;
   categoria?: { label: string } | null;
 }
 
@@ -40,6 +44,8 @@ const MieiAnnunci = () => {
   const [rifiutoDetail, setRifiutoDetail] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [prorogaId, setProrogaId] = useState<string | null>(null);
+  const [prorogando, setProrogando] = useState(false);
 
   const fetchAnnunci = () => {
     if (!user) return;
@@ -49,7 +55,7 @@ const MieiAnnunci = () => {
       .eq("user_id", user.id)
       .neq("stato", "eliminato")
       .order("created_at", { ascending: false })
-      .then(({ data }) => setAnnunci((data as Annuncio[]) ?? []));
+      .then(({ data }) => setAnnunci((data as unknown as Annuncio[]) ?? []));
   };
 
   useEffect(() => {
@@ -72,6 +78,42 @@ const MieiAnnunci = () => {
       fetchAnnunci();
       queryClient.invalidateQueries({ queryKey: ["annunci"] });
     }
+  };
+
+  const handleProroga = async () => {
+    if (!prorogaId) return;
+    setProrogando(true);
+    const annuncio = annunci.find(a => a.id === prorogaId);
+    if (!annuncio?.data_scadenza) {
+      setProrogando(false);
+      setProrogaId(null);
+      return;
+    }
+    const newDate = new Date(annuncio.data_scadenza);
+    newDate.setDate(newDate.getDate() + 30);
+    
+    const { error } = await supabase
+      .from("annunci")
+      .update({
+        data_scadenza: newDate.toISOString(),
+        proroghe_effettuate: (annuncio.proroghe_effettuate || 0) + 1,
+      })
+      .eq("id", prorogaId);
+    
+    setProrogando(false);
+    setProrogaId(null);
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile prorogare l'annuncio.", variant: "destructive" });
+    } else {
+      toast({ title: "Annuncio prorogato", description: "La scadenza è stata estesa di 30 giorni." });
+      fetchAnnunci();
+    }
+  };
+
+  const getExpiryInfo = (a: Annuncio) => {
+    if (!a.data_scadenza || a.stato !== "attivo") return null;
+    const daysLeft = differenceInDays(new Date(a.data_scadenza), new Date());
+    return { daysLeft, date: a.data_scadenza };
   };
 
   return (
@@ -99,9 +141,10 @@ const MieiAnnunci = () => {
               const config = statoConfig[a.stato] ?? statoConfig.chiuso;
               const Icon = config.icon;
               const firstImg = a.immagini?.filter(Boolean)?.[0];
+              const expiry = getExpiryInfo(a);
               return (
                 <Card key={a.id} className="hover:shadow-card-hover transition-shadow">
-                  <CardContent className="p-4 flex items-center gap-4">
+                  <CardContent className="p-4 flex items-start gap-4">
                     {/* Image preview */}
                     <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                       {firstImg ? (
@@ -130,6 +173,38 @@ const MieiAnnunci = () => {
                       </p>
                       {a.stato === "in_moderazione" && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">⏳ In attesa di approvazione</p>
+                      )}
+                      {/* Expiry info */}
+                      {expiry && (
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarClock className="w-3 h-3" />
+                            Scade: {format(new Date(expiry.date), "dd MMM yyyy", { locale: it })}
+                          </div>
+                          {expiry.daysLeft <= 7 ? (
+                            <Badge variant="destructive" className="text-xs">
+                              {expiry.daysLeft <= 0 ? "Scaduto" : `Scade tra ${expiry.daysLeft} giorni`}
+                            </Badge>
+                          ) : expiry.daysLeft <= 14 ? (
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                              Scade tra {expiry.daysLeft} giorni
+                            </Badge>
+                          ) : null}
+                          {expiry.daysLeft <= 7 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-xs gap-1"
+                              onClick={() => setProrogaId(a.id)}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              Proroga 30gg
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {a.stato === "chiuso" && a.data_scadenza && new Date(a.data_scadenza) < new Date() && (
+                        <p className="text-xs text-destructive mt-1">Annuncio scaduto</p>
                       )}
                     </div>
 
@@ -186,6 +261,24 @@ const MieiAnnunci = () => {
             <Button variant="outline" onClick={() => setDeleteId(null)}>Annulla</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? "Eliminazione..." : "Elimina"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Proroga confirmation dialog */}
+      <Dialog open={!!prorogaId} onOpenChange={() => setProrogaId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Proroga annuncio</DialogTitle>
+            <DialogDescription>
+              Vuoi prorogare la scadenza di questo annuncio di 30 giorni?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProrogaId(null)}>Annulla</Button>
+            <Button onClick={handleProroga} disabled={prorogando}>
+              {prorogando ? "Proroga in corso..." : "Conferma proroga"}
             </Button>
           </DialogFooter>
         </DialogContent>
