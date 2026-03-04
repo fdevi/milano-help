@@ -41,34 +41,52 @@ Deno.serve(async (req) => {
       await supabase.from("notifiche").insert(notifications);
     }
 
-    // 2. Find ads expiring in 7 days (between 6 and 7 days from now)
+    // 2. Find ads expiring in ~7 days (between 5 and 8 days from now, wider window)
     const now = new Date();
-    const in6days = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
-    const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const in5days = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+    const in8days = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000);
+
+    console.log(`[check-annunci-scadenza] Checking for ads expiring between ${in5days.toISOString()} and ${in8days.toISOString()}`);
 
     const { data: expiring } = await supabase
       .from("annunci")
       .select("id, titolo, user_id")
       .eq("stato", "attivo")
-      .gte("data_scadenza", in6days.toISOString())
-      .lt("data_scadenza", in7days.toISOString());
+      .gte("data_scadenza", in5days.toISOString())
+      .lt("data_scadenza", in8days.toISOString());
 
     console.log(`[check-annunci-scadenza] Found ${expiring?.length || 0} ads expiring in ~7 days`);
 
-    if (expiring && expiring.length > 0) {
-      // Create in-app notifications
-      const notifications = expiring.map((a) => ({
+    // Filter out ads that already received an expiry notification
+    let expiringToNotify = expiring || [];
+    if (expiringToNotify.length > 0) {
+      const adIds = expiringToNotify.map((a) => a.id);
+      const { data: alreadyNotified } = await supabase
+        .from("notifiche")
+        .select("riferimento_id")
+        .eq("tipo", "annuncio_in_scadenza")
+        .in("riferimento_id", adIds);
+
+      const notifiedIds = new Set((alreadyNotified || []).map((n) => n.riferimento_id));
+      expiringToNotify = expiringToNotify.filter((a) => !notifiedIds.has(a.id));
+      console.log(`[check-annunci-scadenza] After dedup: ${expiringToNotify.length} ads to notify (${notifiedIds.size} already notified)`);
+    }
+
+    if (expiringToNotify.length > 0) {
+      // Create in-app notifications with riferimento_id for dedup
+      const notifications = expiringToNotify.map((a) => ({
         user_id: a.user_id,
         tipo: "annuncio_in_scadenza",
         titolo: "Annuncio in scadenza",
-        messaggio: `Il tuo annuncio "${a.titolo}" scadrà tra 7 giorni. Puoi prorogarlo dalla sezione "I miei annunci".`,
+        messaggio: `Il tuo annuncio "${a.titolo}" scadrà tra circa 7 giorni. Puoi prorogarlo dalla sezione "I miei annunci".`,
         link: "/miei-annunci",
+        riferimento_id: a.id,
       }));
       await supabase.from("notifiche").insert(notifications);
 
       // Send emails if Resend is configured
       if (resendApiKey) {
-        const userIds = [...new Set(expiring.map((a) => a.user_id))];
+        const userIds = [...new Set(expiringToNotify.map((a) => a.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, email, nome")
@@ -76,7 +94,7 @@ Deno.serve(async (req) => {
 
         const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
 
-        for (const a of expiring) {
+        for (const a of expiringToNotify) {
           const profile = profileMap.get(a.user_id);
           if (!profile?.email) {
             console.warn(`[check-annunci-scadenza] No email for user ${a.user_id}, skipping ad "${a.titolo}"`);
