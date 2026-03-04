@@ -145,10 +145,50 @@ const AdminAnnunci = () => {
     const { error } = await supabase.from("annunci").update(update).eq("id", id);
     if (error) {
       toast({ title: "Errore", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Stato aggiornato", description: `Annuncio impostato come "${newStato}"` });
-      fetchAnnunci();
+      return;
     }
+
+    // Find the annuncio and its author profile for notifications
+    const annuncio = annunci.find(a => a.id === id);
+    const profile = annuncio ? profilesMap[annuncio.user_id] : null;
+
+    if (annuncio && (newStato === "attivo" || newStato === "rifiutato")) {
+      // In-app notification
+      const notifica = {
+        user_id: annuncio.user_id,
+        tipo: newStato === "attivo" ? "annuncio_approvato" : "annuncio_rifiutato",
+        titolo: newStato === "attivo" ? "Annuncio approvato" : "Annuncio rifiutato",
+        messaggio: newStato === "attivo"
+          ? `Il tuo annuncio "${annuncio.titolo}" è stato approvato ed è ora visibile su Milano Help.`
+          : `Il tuo annuncio "${annuncio.titolo}" è stato rifiutato.${motivo ? ` Motivo: ${motivo}` : ""}`,
+        link: newStato === "attivo" ? `/annuncio/${annuncio.id}` : "/miei-annunci",
+      };
+      await supabase.from("notifiche").insert(notifica);
+
+      // Send email via edge function
+      if (profile?.email) {
+        try {
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          await fetch(`https://${projectId}.supabase.co/functions/v1/notify-annuncio-status`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: profile.email,
+              nome: profile.nome || "utente",
+              titolo: annuncio.titolo,
+              annuncioId: annuncio.id,
+              stato: newStato,
+              motivo: motivo || null,
+            }),
+          });
+        } catch (emailErr) {
+          console.error("Failed to send notification email:", emailErr);
+        }
+      }
+    }
+
+    toast({ title: "Stato aggiornato", description: `Annuncio impostato come "${newStato}"` });
+    fetchAnnunci();
   };
 
   const handleDelete = async () => {
