@@ -150,7 +150,19 @@ const AdminAnnunci = () => {
 
     // Find the annuncio and its author profile for notifications
     const annuncio = annunci.find(a => a.id === id);
-    const profile = annuncio ? profilesMap[annuncio.user_id] : null;
+    let profile = annuncio ? profilesMap[annuncio.user_id] : null;
+
+    // Fallback: fetch profile directly if not in map
+    if (annuncio && !profile) {
+      const { data: fallbackProfile } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome, email, username")
+        .eq("user_id", annuncio.user_id)
+        .maybeSingle();
+      if (fallbackProfile) profile = fallbackProfile;
+    }
+
+    console.log("changeStato notification debug:", { annuncioId: id, newStato, userId: annuncio?.user_id, profileEmail: profile?.email, hasProfile: !!profile });
 
     if (annuncio && (newStato === "attivo" || newStato === "rifiutato")) {
       // In-app notification
@@ -166,21 +178,25 @@ const AdminAnnunci = () => {
       await supabase.from("notifiche").insert(notifica);
 
       // Send email via edge function
-      if (profile?.email) {
+      const recipientEmail = profile?.email;
+      console.log("Email notification check:", { recipientEmail, willSend: !!recipientEmail });
+      if (recipientEmail) {
         try {
-          const { error: emailErr } = await supabase.functions.invoke("notify-annuncio-status", {
+          console.log("Invoking notify-annuncio-status edge function...");
+          const { data: emailData, error: emailErr } = await supabase.functions.invoke("notify-annuncio-status", {
             body: {
-              email: profile.email,
-              nome: profile.nome || "utente",
+              email: recipientEmail,
+              nome: profile?.nome || "utente",
               titolo: annuncio.titolo,
               annuncioId: annuncio.id,
               stato: newStato,
               motivo: motivo || null,
             },
           });
+          console.log("Edge function response:", { emailData, emailErr });
           if (emailErr) console.error("Failed to send notification email:", emailErr);
         } catch (emailErr) {
-          console.error("Failed to send notification email:", emailErr);
+          console.error("Failed to send notification email (catch):", emailErr);
         }
       }
     }
