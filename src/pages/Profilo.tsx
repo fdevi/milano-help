@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
-  Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle,
+  Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle, CalendarClock, RefreshCw,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import AuthLayout from "@/components/AuthLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQuartieri } from "@/hooks/useQuartieri";
@@ -60,6 +60,8 @@ const Profilo = () => {
   const [deletingAnnuncio, setDeletingAnnuncio] = useState(false);
   const [deleteEventoId, setDeleteEventoId] = useState<string | null>(null);
   const [deletingEvento, setDeletingEvento] = useState(false);
+  const [prorogaAnnuncioId, setProrogaAnnuncioId] = useState<string | null>(null);
+  const [prorogandoAnnuncio, setProrogandoAnnuncio] = useState(false);
 
   const [form, setForm] = useState({
     nome: "", cognome: "", username: "", telefono: "", quartiere: "",
@@ -182,6 +184,27 @@ const Profilo = () => {
       refetchAnnunci();
       queryClient.invalidateQueries({ queryKey: ["annunci"] });
       queryClient.invalidateQueries({ queryKey: ["profile-stats", user?.id] });
+    }
+  };
+
+  const handleProrogaAnnuncio = async () => {
+    if (!prorogaAnnuncioId || !mieAnnunci) return;
+    setProrogandoAnnuncio(true);
+    const annuncio = mieAnnunci.find((a: any) => a.id === prorogaAnnuncioId);
+    if (!annuncio?.data_scadenza) { setProrogandoAnnuncio(false); setProrogaAnnuncioId(null); return; }
+    const newDate = new Date(annuncio.data_scadenza);
+    newDate.setDate(newDate.getDate() + 30);
+    const { error } = await supabase.from("annunci").update({
+      data_scadenza: newDate.toISOString(),
+      proroghe_effettuate: (annuncio.proroghe_effettuate || 0) + 1,
+    }).eq("id", prorogaAnnuncioId);
+    setProrogandoAnnuncio(false);
+    setProrogaAnnuncioId(null);
+    if (error) {
+      toast({ title: "Errore", description: "Impossibile prorogare l'annuncio.", variant: "destructive" });
+    } else {
+      toast({ title: "Annuncio prorogato", description: "La scadenza è stata estesa di 30 giorni." });
+      refetchAnnunci();
     }
   };
 
@@ -540,6 +563,35 @@ const Profilo = () => {
                               {new Date(a.created_at).toLocaleDateString("it-IT")}
                               {a.prezzo != null && ` · €${a.prezzo}`}
                             </p>
+                            {/* Expiry info */}
+                            {a.stato === "attivo" && a.data_scadenza && (() => {
+                              const daysLeft = differenceInDays(new Date(a.data_scadenza), new Date());
+                              return (
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <CalendarClock className="w-3 h-3" />
+                                    Scade: {format(new Date(a.data_scadenza), "dd MMM yyyy", { locale: it })}
+                                  </span>
+                                  {daysLeft <= 7 ? (
+                                    <Badge variant="destructive" className="text-xs">
+                                      {daysLeft <= 0 ? "Scaduto" : `Scade tra ${daysLeft} giorni`}
+                                    </Badge>
+                                  ) : daysLeft <= 14 ? (
+                                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                      Scade tra {daysLeft} giorni
+                                    </Badge>
+                                  ) : null}
+                                  {daysLeft <= 7 && (
+                                    <Button size="sm" variant="outline" className="h-5 text-[10px] gap-1 px-1.5" onClick={() => setProrogaAnnuncioId(a.id)}>
+                                      <RefreshCw className="w-3 h-3" /> Proroga 30gg
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            {a.stato === "chiuso" && a.data_scadenza && new Date(a.data_scadenza) < new Date() && (
+                              <p className="text-xs text-destructive mt-1">Annuncio scaduto</p>
+                            )}
                           </div>
                           <Badge variant={config.variant} className="gap-1 text-xs shrink-0">
                             <StatusIcon className="w-3 h-3" /> {config.label}
@@ -620,6 +672,22 @@ const Profilo = () => {
               <Button variant="outline" onClick={() => setDeleteAnnuncioId(null)}>Annulla</Button>
               <Button variant="destructive" onClick={handleDeleteAnnuncio} disabled={deletingAnnuncio}>
                 {deletingAnnuncio ? "Eliminazione..." : "Elimina"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Proroga annuncio dialog */}
+        <Dialog open={!!prorogaAnnuncioId} onOpenChange={() => setProrogaAnnuncioId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Proroga annuncio</DialogTitle>
+              <DialogDescription>Vuoi prorogare la scadenza di questo annuncio di 30 giorni?</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setProrogaAnnuncioId(null)}>Annulla</Button>
+              <Button onClick={handleProrogaAnnuncio} disabled={prorogandoAnnuncio}>
+                {prorogandoAnnuncio ? "Proroga in corso..." : "Conferma proroga"}
               </Button>
             </DialogFooter>
           </DialogContent>
