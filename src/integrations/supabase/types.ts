@@ -949,12 +949,17 @@ export type Database = {
           email_verificata: boolean | null
           id: string
           indirizzo: string | null
+          lat: number | null
+          lon: number | null
           mostra_email: boolean | null
           mostra_telefono: boolean | null
           newsletter: boolean | null
           nome: string | null
+          nome_attivita: string | null
           notifiche_email: boolean | null
           notifiche_push: boolean | null
+          partita_iva: string | null
+          privacy_consensi: Json | null
           profilo_pubblico: boolean | null
           quartiere: string | null
           sesso: string | null
@@ -977,12 +982,17 @@ export type Database = {
           email_verificata?: boolean | null
           id?: string
           indirizzo?: string | null
+          lat?: number | null
+          lon?: number | null
           mostra_email?: boolean | null
           mostra_telefono?: boolean | null
           newsletter?: boolean | null
           nome?: string | null
+          nome_attivita?: string | null
           notifiche_email?: boolean | null
           notifiche_push?: boolean | null
+          partita_iva?: string | null
+          privacy_consensi?: Json | null
           profilo_pubblico?: boolean | null
           quartiere?: string | null
           sesso?: string | null
@@ -1005,12 +1015,17 @@ export type Database = {
           email_verificata?: boolean | null
           id?: string
           indirizzo?: string | null
+          lat?: number | null
+          lon?: number | null
           mostra_email?: boolean | null
           mostra_telefono?: boolean | null
           newsletter?: boolean | null
           nome?: string | null
+          nome_attivita?: string | null
           notifiche_email?: boolean | null
           notifiche_push?: boolean | null
+          partita_iva?: string | null
+          privacy_consensi?: Json | null
           profilo_pubblico?: boolean | null
           quartiere?: string | null
           sesso?: string | null
