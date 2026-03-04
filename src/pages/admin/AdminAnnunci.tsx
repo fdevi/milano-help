@@ -168,19 +168,17 @@ const AdminAnnunci = () => {
       // Send email via edge function
       if (profile?.email) {
         try {
-          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          await fetch(`https://${projectId}.supabase.co/functions/v1/notify-annuncio-status`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          const { error: emailErr } = await supabase.functions.invoke("notify-annuncio-status", {
+            body: {
               email: profile.email,
               nome: profile.nome || "utente",
               titolo: annuncio.titolo,
               annuncioId: annuncio.id,
               stato: newStato,
               motivo: motivo || null,
-            }),
+            },
           });
+          if (emailErr) console.error("Failed to send notification email:", emailErr);
         } catch (emailErr) {
           console.error("Failed to send notification email:", emailErr);
         }
