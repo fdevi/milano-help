@@ -109,6 +109,26 @@ const AdminModAnnunci = () => {
         riferimento_id: id,
         mittente_id: user?.id,
       } as any);
+
+      // Send email via edge function
+      const recipientEmail = annuncio.profilo?.email;
+      if (recipientEmail) {
+        try {
+          const { error: emailErr } = await supabase.functions.invoke("notify-annuncio-status", {
+            body: {
+              email: recipientEmail,
+              nome: annuncio.profilo?.nome || "utente",
+              titolo: annuncio.titolo,
+              annuncioId: annuncio.id,
+              stato: "attivo",
+              motivo: null,
+            },
+          });
+          if (emailErr) console.error("Failed to send notification email:", emailErr);
+        } catch (emailErr) {
+          console.error("Failed to send notification email (catch):", emailErr);
+        }
+      }
     }
     toast.success("Annuncio approvato");
     fetchAnnunci();
@@ -134,6 +154,26 @@ const AdminModAnnunci = () => {
         riferimento_id: rifiutoModal,
         mittente_id: user?.id,
       } as any);
+
+      // Send email via edge function
+      const recipientEmail = annuncio.profilo?.email;
+      if (recipientEmail) {
+        try {
+          const { error: emailErr } = await supabase.functions.invoke("notify-annuncio-status", {
+            body: {
+              email: recipientEmail,
+              nome: annuncio.profilo?.nome || "utente",
+              titolo: annuncio.titolo,
+              annuncioId: annuncio.id,
+              stato: "rifiutato",
+              motivo: motivoRifiuto,
+            },
+          });
+          if (emailErr) console.error("Failed to send notification email:", emailErr);
+        } catch (emailErr) {
+          console.error("Failed to send notification email (catch):", emailErr);
+        }
+      }
     }
     toast.success("Annuncio rifiutato");
     setRifiutoModal(null);
