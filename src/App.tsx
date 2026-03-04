@@ -43,6 +43,7 @@ import Profilo from "./pages/Profilo";
 import Eventi from "./pages/Eventi";
 import EventoPage from "./pages/EventoPage";
 import AdminEventi from "./pages/admin/AdminEventi";
+import AdminAnnunci from "./pages/admin/AdminAnnunci";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/admin/moderazione/segnalazioni" element={<AdminRoute><AdminSegnalazioni /></AdminRoute>} />
             <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
             <Route path="/admin/eventi" element={<AdminRoute><AdminEventi /></AdminRoute>} />
+            <Route path="/admin/annunci" element={<AdminRoute><AdminAnnunci /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
