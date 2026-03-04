@@ -23,6 +23,8 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
 
+type ProfileInfo = { nome: string | null; cognome: string | null; email: string | null; username: string | null };
+
 type Annuncio = {
   id: string;
   titolo: string;
@@ -36,7 +38,6 @@ type Annuncio = {
   user_id: string;
   mostra_email: boolean;
   mostra_telefono: boolean;
-  profiles: { nome: string | null; cognome: string | null; email: string | null; username: string | null } | null;
   categorie_annunci: { label: string } | null;
 };
 
@@ -54,6 +55,7 @@ const statoBadge = (stato: string) => {
 
 const AdminAnnunci = () => {
   const [annunci, setAnnunci] = useState<Annuncio[]>([]);
+  const [profilesMap, setProfilesMap] = useState<Record<string, ProfileInfo>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filtroStato, setFiltroStato] = useState("tutti");
@@ -80,11 +82,28 @@ const AdminAnnunci = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("annunci")
-      .select("*, profiles!annunci_user_id_fkey(nome, cognome, email, username), categorie_annunci(label)")
+      .select("*, categorie_annunci(label)")
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setAnnunci(data as unknown as Annuncio[]);
+      const annunciData = data as unknown as Annuncio[];
+      setAnnunci(annunciData);
+
+      // Fetch profiles separately for all unique user_ids
+      const userIds = [...new Set(annunciData.map((a) => a.user_id))];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, nome, cognome, email, username")
+          .in("user_id", userIds);
+        const map: Record<string, ProfileInfo> = {};
+        if (profiles) {
+          for (const p of profiles) {
+            map[p.user_id] = p;
+          }
+        }
+        setProfilesMap(map);
+      }
     }
     setLoading(false);
   };
@@ -146,21 +165,25 @@ const AdminAnnunci = () => {
     setMotivoRifiuto("");
   };
 
+  const getProfile = (a: Annuncio) => profilesMap[a.user_id] || null;
+
   const filtered = annunci.filter((a) => {
     if (filtroStato !== "tutti" && a.stato !== filtroStato) return false;
     if (filtroCategoria !== "tutte" && a.categoria_id !== filtroCategoria) return false;
     if (search) {
       const s = search.toLowerCase();
-      const autore = `${a.profiles?.nome || ""} ${a.profiles?.cognome || ""} ${a.profiles?.email || ""}`.toLowerCase();
+      const p = getProfile(a);
+      const autore = `${p?.nome || ""} ${p?.cognome || ""} ${p?.email || ""}`.toLowerCase();
       if (!a.titolo.toLowerCase().includes(s) && !autore.includes(s)) return false;
     }
     return true;
   });
 
   const authorName = (a: Annuncio) => {
-    if (a.profiles?.nome || a.profiles?.cognome)
-      return `${a.profiles.nome || ""} ${a.profiles.cognome || ""}`.trim();
-    return a.profiles?.username || a.profiles?.email || "—";
+    const p = getProfile(a);
+    if (!p) return null;
+    if (p.nome || p.cognome) return `${p.nome || ""} ${p.cognome || ""}`.trim();
+    return p.username || p.email || "—";
   };
 
   return (
@@ -228,7 +251,9 @@ const AdminAnnunci = () => {
                 filtered.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-medium max-w-[200px] truncate">{a.titolo}</TableCell>
-                    <TableCell className="text-sm">{authorName(a)}</TableCell>
+                    <TableCell className="text-sm">
+                      {authorName(a) || <Badge variant="destructive">Utente cancellato</Badge>}
+                    </TableCell>
                     <TableCell className="text-sm">{a.categorie_annunci?.label || "—"}</TableCell>
                     <TableCell className="text-sm">{format(new Date(a.created_at), "dd MMM yyyy", { locale: it })}</TableCell>
                     <TableCell>{statoBadge(a.stato)}</TableCell>
@@ -295,7 +320,7 @@ const AdminAnnunci = () => {
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Autore:</span> {authorName(detailAnnuncio)}</div>
+                <div><span className="text-muted-foreground">Autore:</span> {authorName(detailAnnuncio) || <Badge variant="destructive">Utente cancellato</Badge>}</div>
                 <div><span className="text-muted-foreground">Categoria:</span> {detailAnnuncio.categorie_annunci?.label || "—"}</div>
                 <div><span className="text-muted-foreground">Prezzo:</span> {detailAnnuncio.prezzo != null ? `€${detailAnnuncio.prezzo}` : "—"}</div>
                 <div><span className="text-muted-foreground">Stato:</span> {statoBadge(detailAnnuncio.stato)}</div>
