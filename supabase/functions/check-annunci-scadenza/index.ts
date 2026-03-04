@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       .select("id, titolo, user_id");
 
     if (expError) console.error("Error expiring ads:", expError.message);
-    console.log(`Expired ${expired?.length || 0} ads`);
+    console.log(`[check-annunci-scadenza] Expired ${expired?.length || 0} ads`);
 
     // Create notifications for expired ads
     if (expired && expired.length > 0) {
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       .gte("data_scadenza", in6days.toISOString())
       .lt("data_scadenza", in7days.toISOString());
 
-    console.log(`Found ${expiring?.length || 0} ads expiring in ~7 days`);
+    console.log(`[check-annunci-scadenza] Found ${expiring?.length || 0} ads expiring in ~7 days`);
 
     if (expiring && expiring.length > 0) {
       // Create in-app notifications
@@ -78,10 +78,14 @@ Deno.serve(async (req) => {
 
         for (const a of expiring) {
           const profile = profileMap.get(a.user_id);
-          if (!profile?.email) continue;
+          if (!profile?.email) {
+            console.warn(`[check-annunci-scadenza] No email for user ${a.user_id}, skipping ad "${a.titolo}"`);
+            continue;
+          }
+          console.log(`[check-annunci-scadenza] Sending expiry email to ${profile.email} for ad "${a.titolo}"`);
 
           try {
-            await fetch("https://api.resend.com/emails", {
+            const emailRes = await fetch("https://api.resend.com/emails", {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${resendApiKey}`,
@@ -105,8 +109,14 @@ Deno.serve(async (req) => {
                 `,
               }),
             });
+            const emailData = await emailRes.json();
+            if (!emailRes.ok) {
+              console.error(`[check-annunci-scadenza] Resend error for ${profile.email}:`, JSON.stringify(emailData));
+            } else {
+              console.log(`[check-annunci-scadenza] Email sent successfully to ${profile.email}, id: ${emailData.id}`);
+            }
           } catch (emailErr) {
-            console.error(`Failed to send email to ${profile.email}:`, emailErr);
+            console.error(`[check-annunci-scadenza] Exception sending email to ${profile.email}:`, emailErr);
           }
         }
       }
