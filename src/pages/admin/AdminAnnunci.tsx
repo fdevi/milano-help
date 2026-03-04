@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Eye, Pencil, PauseCircle, Search, Trash2, CheckCircle, XCircle, RotateCcw } from "lucide-react";
-import { format } from "date-fns";
+import { Eye, Pencil, PauseCircle, Search, Trash2, CheckCircle, XCircle, RotateCcw, CalendarPlus } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -38,6 +38,8 @@ type Annuncio = {
   user_id: string;
   mostra_email: boolean;
   mostra_telefono: boolean;
+  data_scadenza: string | null;
+  proroghe_effettuate: number;
   categorie_annunci: { label: string } | null;
 };
 
@@ -51,6 +53,22 @@ const statoBadge = (stato: string) => {
   };
   const s = map[stato] || { label: stato, variant: "outline" as const };
   return <Badge variant={s.variant}>{s.label}</Badge>;
+};
+
+const scadenzaBadge = (dataScadenza: string | null, stato: string) => {
+  if (!dataScadenza || stato !== "attivo") return <span className="text-muted-foreground">—</span>;
+  const daysLeft = differenceInDays(new Date(dataScadenza), new Date());
+  const dateStr = format(new Date(dataScadenza), "dd/MM/yy", { locale: it });
+  if (daysLeft <= 0) {
+    return <Badge variant="destructive">{dateStr} (scaduto)</Badge>;
+  }
+  if (daysLeft <= 7) {
+    return <Badge variant="destructive">{dateStr} ({daysLeft}gg)</Badge>;
+  }
+  if (daysLeft <= 14) {
+    return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-300">{dateStr} ({daysLeft}gg)</Badge>;
+  }
+  return <span className="text-sm">{dateStr} <span className="text-muted-foreground">({daysLeft}gg)</span></span>;
 };
 
 const AdminAnnunci = () => {
@@ -78,6 +96,10 @@ const AdminAnnunci = () => {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [motivoRifiuto, setMotivoRifiuto] = useState("");
 
+  // Extend expiry dialog
+  const [extendId, setExtendId] = useState<string | null>(null);
+  const [extendDays, setExtendDays] = useState("30");
+
   const fetchAnnunci = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -89,7 +111,6 @@ const AdminAnnunci = () => {
       const annunciData = data as unknown as Annuncio[];
       setAnnunci(annunciData);
 
-      // Fetch profiles separately for all unique user_ids
       const userIds = [...new Set(annunciData.map((a) => a.user_id))];
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -165,6 +186,29 @@ const AdminAnnunci = () => {
     setMotivoRifiuto("");
   };
 
+  const handleExtendExpiry = async () => {
+    if (!extendId) return;
+    const annuncio = annunci.find(a => a.id === extendId);
+    if (!annuncio) return;
+
+    const baseDate = annuncio.data_scadenza ? new Date(annuncio.data_scadenza) : new Date();
+    baseDate.setDate(baseDate.getDate() + parseInt(extendDays));
+
+    const { error } = await supabase.from("annunci").update({
+      data_scadenza: baseDate.toISOString(),
+      proroghe_effettuate: (annuncio.proroghe_effettuate || 0) + 1,
+    }).eq("id", extendId);
+
+    if (error) {
+      toast({ title: "Errore", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Scadenza aggiornata", description: `Aggiornata di ${extendDays} giorni` });
+      fetchAnnunci();
+    }
+    setExtendId(null);
+    setExtendDays("30");
+  };
+
   const getProfile = (a: Annuncio) => profilesMap[a.user_id] || null;
 
   const filtered = annunci.filter((a) => {
@@ -230,7 +274,7 @@ const AdminAnnunci = () => {
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border bg-card">
+        <div className="rounded-lg border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -238,24 +282,30 @@ const AdminAnnunci = () => {
                 <TableHead>Autore</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Data</TableHead>
+                <TableHead>Scadenza</TableHead>
                 <TableHead>Stato</TableHead>
                 <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Caricamento...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Caricamento...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nessun annuncio trovato</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nessun annuncio trovato</TableCell></TableRow>
               ) : (
                 filtered.map((a) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} className={
+                    a.stato === "attivo" && a.data_scadenza && differenceInDays(new Date(a.data_scadenza), new Date()) <= 7
+                      ? "bg-amber-50/50 dark:bg-amber-950/10"
+                      : ""
+                  }>
                     <TableCell className="font-medium max-w-[200px] truncate">{a.titolo}</TableCell>
                     <TableCell className="text-sm">
                       {authorName(a) || <Badge variant="destructive">Utente cancellato</Badge>}
                     </TableCell>
                     <TableCell className="text-sm">{a.categorie_annunci?.label || "—"}</TableCell>
                     <TableCell className="text-sm">{format(new Date(a.created_at), "dd MMM yyyy", { locale: it })}</TableCell>
+                    <TableCell className="text-sm">{scadenzaBadge(a.data_scadenza, a.stato)}</TableCell>
                     <TableCell>{statoBadge(a.stato)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
@@ -270,6 +320,11 @@ const AdminAnnunci = () => {
                         }}>
                           <Pencil className="w-4 h-4" />
                         </Button>
+                        {a.stato === "attivo" && (
+                          <Button size="icon" variant="ghost" title="Modifica scadenza" onClick={() => { setExtendId(a.id); setExtendDays("30"); }}>
+                            <CalendarPlus className="w-4 h-4" />
+                          </Button>
+                        )}
                         {a.stato === "in_moderazione" && (
                           <>
                             <Button size="icon" variant="ghost" title="Approva" onClick={() => changeStato(a.id, "attivo")} className="text-green-600 hover:text-green-700">
@@ -326,6 +381,8 @@ const AdminAnnunci = () => {
                 <div><span className="text-muted-foreground">Stato:</span> {statoBadge(detailAnnuncio.stato)}</div>
                 <div><span className="text-muted-foreground">Quartiere:</span> {detailAnnuncio.quartiere || "—"}</div>
                 <div><span className="text-muted-foreground">Data:</span> {format(new Date(detailAnnuncio.created_at), "dd/MM/yyyy HH:mm", { locale: it })}</div>
+                <div><span className="text-muted-foreground">Scadenza:</span> {detailAnnuncio.data_scadenza ? format(new Date(detailAnnuncio.data_scadenza), "dd/MM/yyyy", { locale: it }) : "—"}</div>
+                <div><span className="text-muted-foreground">Proroghe:</span> {detailAnnuncio.proroghe_effettuate || 0}</div>
               </div>
               <div>
                 <span className="text-muted-foreground text-sm">Descrizione:</span>
@@ -380,6 +437,24 @@ const AdminAnnunci = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setRejectId(null)}>Annulla</Button>
             <Button variant="destructive" onClick={handleReject} disabled={!motivoRifiuto.trim()}>Rifiuta</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Extend Expiry Dialog */}
+      <Dialog open={!!extendId} onOpenChange={() => setExtendId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifica scadenza</DialogTitle>
+            <DialogDescription>Inserisci il numero di giorni da aggiungere alla scadenza attuale</DialogDescription>
+          </DialogHeader>
+          <div>
+            <label className="text-sm font-medium">Giorni da aggiungere</label>
+            <Input type="number" value={extendDays} onChange={(e) => setExtendDays(e.target.value)} min="1" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtendId(null)}>Annulla</Button>
+            <Button onClick={handleExtendExpiry}>Conferma</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

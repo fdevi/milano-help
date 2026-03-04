@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           categoria_id: string | null
           created_at: string
+          data_scadenza: string | null
           descrizione: string | null
           id: string
           immagini: string[] | null
@@ -52,6 +53,7 @@ export type Database = {
           mostra_telefono: boolean
           motivo_rifiuto: string | null
           prezzo: number | null
+          proroghe_effettuate: number
           quartiere: string | null
           stato: string
           titolo: string
@@ -62,6 +64,7 @@ export type Database = {
         Insert: {
           categoria_id?: string | null
           created_at?: string
+          data_scadenza?: string | null
           descrizione?: string | null
           id?: string
           immagini?: string[] | null
@@ -72,6 +75,7 @@ export type Database = {
           mostra_telefono?: boolean
           motivo_rifiuto?: string | null
           prezzo?: number | null
+          proroghe_effettuate?: number
           quartiere?: string | null
           stato?: string
           titolo: string
@@ -82,6 +86,7 @@ export type Database = {
         Update: {
           categoria_id?: string | null
           created_at?: string
+          data_scadenza?: string | null
           descrizione?: string | null
           id?: string
           immagini?: string[] | null
@@ -92,6 +97,7 @@ export type Database = {
           mostra_telefono?: boolean
           motivo_rifiuto?: string | null
           prezzo?: number | null
+          proroghe_effettuate?: number
           quartiere?: string | null
           stato?: string
           titolo?: string
