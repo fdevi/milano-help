@@ -61,12 +61,14 @@ import ResetPassword from "./pages/ResetPassword";
 import ConfirmEmail from "./pages/ConfirmEmail";
 import ConfirmEmailChange from "./pages/ConfirmEmailChange";
 import CompletaProfilo from "./pages/CompletaProfilo";
+import OneSignalInit from "./components/OneSignalInit";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <OneSignalInit />
       <Toaster />
       <Sonner />
       <BrowserRouter>
