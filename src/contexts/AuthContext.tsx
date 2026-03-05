@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (initialSession?.user) {
         setSession(initialSession);
+        try { (window as any).OneSignal?.login(initialSession.user.id); } catch (e) { /* ignore */ }
         checkProfile(initialSession.user.id).then(() => setLoading(false));
       } else {
         setSession(initialSession);
@@ -83,9 +84,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setLoading(false);
             });
           }, 0);
+          // OneSignal login
+          try { (window as any).OneSignal?.login(newSession.user.id); } catch (e) { /* ignore */ }
         } else {
           setProfileComplete(null);
           setLoading(false);
+          // OneSignal logout
+          try { (window as any).OneSignal?.logout(); } catch (e) { /* ignore */ }
         }
       }
     );
@@ -94,6 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
+    try { (window as any).OneSignal?.logout(); } catch (e) { /* ignore */ }
     await supabase.auth.signOut();
   };
 
