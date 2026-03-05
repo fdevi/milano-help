@@ -525,6 +525,32 @@ export type Database = {
           },
         ]
       }
+      eventi_commenti_piace: {
+        Row: {
+          commento_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          commento_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          commento_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_commenti_piace_commento_id_fkey"
+            columns: ["commento_id"]
+            isOneToOne: false
+            referencedRelation: "eventi_commenti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventi_mi_piace: {
         Row: {
           created_at: string
