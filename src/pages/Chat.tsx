@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import ChatList from "@/components/chat/ChatList";
 import ChatDetail from "@/components/chat/ChatDetail";
+import type { ChatMessage, ChatUserProfile } from "@/components/chat/ChatDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -99,13 +100,26 @@ const Chat = () => {
       if (allOtherUserIds.length === 0) return [];
       const { data } = await supabase
         .from("profiles")
-        .select("user_id, nome, cognome, quartiere")
+        .select("user_id, nome, cognome, quartiere, avatar_url")
         .in("user_id", allOtherUserIds);
       return data || [];
     },
     enabled: allOtherUserIds.length > 0,
   });
   const profileMap = Object.fromEntries((otherProfiles as any[]).map((p) => [p.user_id, p]));
+
+  // Also include current user profile for messages
+  const { data: myProfile } = useQuery({
+    queryKey: ["my_chat_profile", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url").eq("user_id", user!.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const allProfilesMap: Record<string, ChatUserProfile> = { ...profileMap };
+  if (myProfile) allProfilesMap[myProfile.user_id] = myProfile as ChatUserProfile;
 
   // Unread counts for old conversations
   const { data: unreadCounts = {} } = useQuery({
@@ -205,14 +219,28 @@ const Chat = () => {
     enabled: !!conversationId && isPrivateConv !== undefined,
   });
 
+  // Fetch profiles of message senders
+  const msgSenderIds = [...new Set((messages as any[]).map((m) => m.mittente_id))];
+  const { data: msgSenderProfiles = [] } = useQuery({
+    queryKey: ["msg_sender_profiles", msgSenderIds.join(",")],
+    queryFn: async () => {
+      if (msgSenderIds.length === 0) return [];
+      const { data } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url").in("user_id", msgSenderIds);
+      return data || [];
+    },
+    enabled: msgSenderIds.length > 0,
+  });
+
+  // Merge all profiles
+  const mergedProfiles: Record<string, ChatUserProfile> = { ...allProfilesMap };
+  (msgSenderProfiles as any[]).forEach((p) => { mergedProfiles[p.user_id] = p; });
+
   // Mark messages as read
   useEffect(() => {
     if (!conversationId || !user) return;
 
     const markRead = async () => {
       if (isPrivateConv) {
-        // Upsert messaggi_privati_letti for private conversations
-        console.log("📖 Marking private conversation as read:", conversationId);
         const { error } = await supabase
           .from("messaggi_privati_letti")
           .upsert(
@@ -224,8 +252,6 @@ const Chat = () => {
             { onConflict: "conversazione_id,user_id" }
           );
         if (error) {
-          console.error("❌ Error upserting messaggi_privati_letti:", error);
-          // Fallback: try insert then update
           const { data: existing } = await supabase
             .from("messaggi_privati_letti")
             .select("id")
@@ -250,7 +276,6 @@ const Chat = () => {
         }
         queryClient.invalidateQueries({ queryKey: ["unread_per_conv_private"] });
       } else {
-        // Old system: update messaggi.letto
         await supabase
           .from("messaggi")
           .update({ letto: true })
@@ -282,17 +307,18 @@ const Chat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, conversationId]);
 
-  const mockMessages: MockMessage[] = (messages as any[]).map((m) => ({
+  const chatMessages: ChatMessage[] = (messages as any[]).map((m) => ({
     id: m.id,
     mittenteId: m.mittente_id,
     testo: m.testo,
     createdAt: m.created_at,
     letto: m.letto ?? false,
+    parentId: m.parent_id || null,
   }));
 
   const activeConversation = conversationId ? chatConversations.find((c) => c.id === conversationId) : null;
 
-  const handleSend = async (text: string) => {
+  const handleSend = async (text: string, parentId?: string | null) => {
     if (!conversationId || !user) return;
 
     if (isPrivateConv) {
@@ -300,12 +326,30 @@ const Chat = () => {
         conversazione_id: conversationId,
         mittente_id: user.id,
         testo: text,
-      });
+        parent_id: parentId || null,
+      } as any);
       await supabase.from("conversazioni_private").update({
         ultimo_messaggio: text,
         ultimo_aggiornamento: new Date().toISOString(),
         ultimo_mittente_id: user.id,
       }).eq("id", conversationId);
+
+      // Notify the other user
+      if (activeConversation) {
+        const otherUserId = activeConversation.otherUser.id;
+        if (otherUserId && otherUserId !== user.id) {
+          const myName = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
+          await supabase.from("notifiche").insert({
+            user_id: otherUserId,
+            tipo: "messaggio_privato",
+            titolo: "Nuovo messaggio",
+            messaggio: `${myName}: ${text.slice(0, 50)}${text.length > 50 ? "…" : ""}`,
+            link: `/chat/${conversationId}`,
+            mittente_id: user.id,
+          } as any);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversazioni_private"] });
     } else {
@@ -409,9 +453,11 @@ const Chat = () => {
           <div className="flex-1 flex flex-col">
             {activeConversation ? (
               <ChatDetail
-                conversation={activeConversation}
-                messages={mockMessages}
+                conversationName={`${activeConversation.otherUser.nome} ${activeConversation.otherUser.cognome}`}
+                conversationSubtitle={activeConversation.otherUser.quartiere}
+                messages={chatMessages}
                 currentUserId={user?.id || ""}
+                profiles={mergedProfiles}
                 onSend={handleSend}
                 onBack={isMobile ? () => navigate("/chat") : undefined}
               />
