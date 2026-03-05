@@ -722,6 +722,32 @@ export type Database = {
           },
         ]
       }
+      gruppi_messaggi_piace: {
+        Row: {
+          created_at: string
+          messaggio_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          messaggio_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          messaggio_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gruppi_messaggi_piace_messaggio_id_fkey"
+            columns: ["messaggio_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi_messaggi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impostazioni: {
         Row: {
           chiave: string
@@ -906,6 +932,32 @@ export type Database = {
           {
             foreignKeyName: "messaggi_privati_letti_ultimo_messaggio_letto_id_fkey"
             columns: ["ultimo_messaggio_letto_id"]
+            isOneToOne: false
+            referencedRelation: "messaggi_privati"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaggi_privati_piace: {
+        Row: {
+          created_at: string
+          messaggio_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          messaggio_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          messaggio_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaggi_privati_piace_messaggio_id_fkey"
+            columns: ["messaggio_id"]
             isOneToOne: false
             referencedRelation: "messaggi_privati"
             referencedColumns: ["id"]
