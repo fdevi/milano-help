@@ -22,6 +22,8 @@ import {
   Loader2, Calendar, Ticket, FileText, ImageIcon, Pencil, Trash2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import EventStatusBadge from "@/components/EventStatusBadge";
+import { format } from "date-fns";
 
 // ── Helpers ──
 
@@ -167,7 +169,7 @@ const Home = () => {
           const autore = profiliMap.get(e.organizzatore_id) || { nome: 'Utente', cognome: '' };
           return {
             id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
-            data: e.data, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
+            data: e.data, fine: e.fine, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
             partecipanti: e.partecipanti, created_at: e.created_at,
             autore, link: `/eventi`
           };
@@ -313,7 +315,13 @@ const Home = () => {
                           </span>
                           {item.tipo === 'evento' && (
                             <>
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatEventDate(item.data)}</span>
+                              <EventStatusBadge dataInizio={item.data} dataFine={item.fine} />
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {item.fine
+                                  ? `Dal ${format(new Date(item.data), "d MMM", { locale: it })} al ${format(new Date(item.fine), "d MMM yyyy", { locale: it })}`
+                                  : formatEventDate(item.data)}
+                              </span>
                               <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{item.luogo}</span>
                             </>
                           )}
@@ -427,9 +435,14 @@ const Home = () => {
                           <Link to={`/eventi`} className="hover:underline">
                             <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
                           </Link>
+                          <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} className="mb-1" />
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                             <Clock className="w-3 h-3" />
-                            <span>{formatEventDate(evento.data)}</span>
+                            <span>
+                              {evento.fine
+                                ? `Dal ${format(new Date(evento.data), "d MMM", { locale: it })} al ${format(new Date(evento.fine), "d MMM yyyy", { locale: it })}`
+                                : formatEventDate(evento.data)}
+                            </span>
                           </p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <MapPin className="w-3 h-3" />

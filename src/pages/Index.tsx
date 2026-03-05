@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import EventStatusBadge from "@/components/EventStatusBadge";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 // Mappa delle icone per ogni categoria
 const iconMap: Record<string, any> = {
@@ -113,10 +116,17 @@ const EventCard = ({ evento }: { evento: any }) => {
             <Calendar className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
+              <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} />
+            </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
               <Clock className="w-3 h-3" />
-              <span>{dataFormatted}</span>
+              <span>
+                {evento.fine
+                  ? `Dal ${format(new Date(evento.data), "d MMM", { locale: it })} al ${format(new Date(evento.fine), "d MMM yyyy", { locale: it })}`
+                  : dataFormatted}
+              </span>
             </p>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <MapPin className="w-3 h-3" />
