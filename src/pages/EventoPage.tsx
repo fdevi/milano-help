@@ -114,6 +114,31 @@ const EventoPage = () => {
     enabled: !!id,
   });
 
+  const commentScrollRef = useRef<HTMLDivElement>(null);
+
+  // Realtime subscription for comments
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`commenti-evento-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "eventi_commenti", filter: `evento_id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["evento_commenti", id] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
+
+  // Auto-scroll comments
+  useEffect(() => {
+    if (commentScrollRef.current) {
+      commentScrollRef.current.scrollTop = commentScrollRef.current.scrollHeight;
+    }
+  }, [commenti.length]);
+
   // Fetch participation status
   const { data: userPartecipazione } = useQuery({
     queryKey: ["evento_partecipazione", id, user?.id],
@@ -205,10 +230,12 @@ const EventoPage = () => {
     if (error) {
       toast({ title: "Errore", description: "Impossibile inviare il commento.", variant: "destructive" });
     } else {
+      const { data: profilo } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
+      const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
+      const preview = testoTroncato.length > 50 ? testoTroncato.slice(0, 50) + "…" : testoTroncato;
+
+      // Notify evento author
       if (evento.organizzatore_id !== user.id) {
-        const { data: profilo } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
-        const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
-        const preview = testoTroncato.length > 50 ? testoTroncato.slice(0, 50) + "…" : testoTroncato;
         await supabase.from("notifiche").insert({
           user_id: evento.organizzatore_id,
           tipo: "commento_evento",
@@ -219,6 +246,23 @@ const EventoPage = () => {
           riferimento_id: evento.id,
         });
       }
+
+      // Notify parent comment author (if replying)
+      if (replyTo?.id) {
+        const parentComment = commenti.find((c: any) => c.id === replyTo.id);
+        if (parentComment && parentComment.user_id !== user.id) {
+          await supabase.from("notifiche").insert({
+            user_id: parentComment.user_id,
+            tipo: "risposta_commento",
+            titolo: "Risposta al tuo commento",
+            messaggio: `${nomeUtente} ha risposto al tuo commento: "${preview}"`,
+            link: `/evento/${evento.id}`,
+            mittente_id: user.id,
+            riferimento_id: evento.id,
+          });
+        }
+      }
+
       setCommentText("");
       setReplyTo(null);
       setShowEmoji(false);
@@ -419,13 +463,6 @@ const EventoPage = () => {
                 </h2>
 
                 {(() => {
-                  const topLevel = commenti.filter((c: any) => !c.parent_id);
-                  const repliesByParent: Record<string, any[]> = {};
-                  commenti.filter((c: any) => c.parent_id).forEach((r: any) => {
-                    if (!repliesByParent[r.parent_id]) repliesByParent[r.parent_id] = [];
-                    repliesByParent[r.parent_id].push(r);
-                  });
-
                   const handleReplyClick = (c: any) => {
                     const nome = c.profilo ? `${c.profilo.nome || ""} ${c.profilo.cognome ? c.profilo.cognome[0] + "." : ""}`.trim() || "Utente" : "Utente";
                     setReplyTo({ id: c.id, nome, testo: c.testo });
@@ -444,29 +481,32 @@ const EventoPage = () => {
                     commentTextareaRef.current?.focus();
                   };
 
-                  const renderComment = (c: any, isReply = false) => {
+                  const renderComment = (c: any) => {
                     const nome = c.profilo ? `${c.profilo.nome || ""} ${c.profilo.cognome || ""}`.trim() || "Utente" : "Utente";
-                    const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                    const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U";
                     const parentComment = c.parent_id ? commenti.find((p: any) => p.id === c.parent_id) : null;
+                    const parentNome = parentComment?.profilo ? `${parentComment.profilo.nome || "Utente"} ${parentComment.profilo.cognome || ""}`.trim() : "Utente";
 
                     return (
-                      <div key={c.id} className={`flex gap-3 ${isReply ? "ml-8 pl-3 border-l-2 border-muted" : ""}`}>
+                      <div key={c.id} className="flex gap-3">
                         <Avatar className="w-8 h-8 shrink-0">
                           {c.profilo?.avatar_url && <AvatarImage src={c.profilo.avatar_url} />}
-                          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
+                          {/* Reply preview (WhatsApp style) */}
+                          {parentComment && (
+                            <div className="bg-muted/60 rounded-lg px-3 py-1.5 mb-1 text-xs border-l-3 border-primary/50">
+                              <span className="font-semibold text-primary">{parentNome}</span>
+                              <p className="text-muted-foreground truncate">{parentComment.testo?.slice(0, 80)}{parentComment.testo?.length > 80 ? "…" : ""}</p>
+                            </div>
+                          )}
                           <div className="flex items-baseline gap-2">
-                            <span className="text-sm font-medium text-foreground">{nome}</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-sm font-semibold text-foreground">{nome}</span>
+                            <span className="text-[11px] text-muted-foreground">
                               {format(new Date(c.created_at), "d MMM yyyy, HH:mm", { locale: it })}
                             </span>
                           </div>
-                          {parentComment && (
-                            <div className="bg-muted/50 rounded px-2 py-1 mb-1 text-xs text-muted-foreground border-l-2 border-primary/30">
-                              <span className="font-medium">{parentComment.profilo?.nome || "Utente"}</span>: {parentComment.testo?.slice(0, 60)}{parentComment.testo?.length > 60 ? "…" : ""}
-                            </div>
-                          )}
                           <p className="text-sm text-foreground/80 mt-0.5">{c.testo}</p>
                           {user && (
                             <div className="flex items-center gap-3 mt-1">
@@ -536,13 +576,8 @@ const EventoPage = () => {
                       {commenti.length === 0 ? (
                         <p className="text-muted-foreground text-sm">Nessun commento ancora. Sii il primo!</p>
                       ) : (
-                        <div className="space-y-4">
-                          {topLevel.map((c: any) => (
-                            <div key={c.id}>
-                              {renderComment(c)}
-                              {repliesByParent[c.id]?.map((r: any) => renderComment(r, true))}
-                            </div>
-                          ))}
+                        <div ref={commentScrollRef} className="space-y-4 max-h-[500px] overflow-y-auto">
+                          {commenti.map((c: any) => renderComment(c))}
                         </div>
                       )}
                     </>
