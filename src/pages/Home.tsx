@@ -24,6 +24,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { format } from "date-fns";
+import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";
 
 // ── Helpers ──
 
@@ -297,7 +298,7 @@ const Home = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-medium text-foreground truncate">{item.titolo}</h4>
+                          <h4 className="font-medium text-foreground line-clamp-2">{item.titolo}</h4>
                           <span className="text-xs text-muted-foreground shrink-0">
                             {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: it })}
                           </span>
@@ -319,10 +320,10 @@ const Home = () => {
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {item.fine
-                                  ? `Dal ${format(new Date(item.data), "d MMM", { locale: it })} al ${format(new Date(item.fine), "d MMM yyyy", { locale: it })}`
+                                  ? formatDateRangeCompact(new Date(item.data), new Date(item.fine))
                                   : formatEventDate(item.data)}
                               </span>
-                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{item.luogo}</span>
+                              <span className="flex items-center gap-1 truncate"><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{abbreviaIndirizzo(item.luogo)}</span></span>
                             </>
                           )}
                           {item.tipo === 'annuncio' && item.prezzo > 0 && (
@@ -433,20 +434,20 @@ const Home = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <Link to={`/eventi`} className="hover:underline">
-                            <h4 className="font-medium text-foreground truncate">{evento.titolo}</h4>
+                            <h4 className="font-medium text-foreground line-clamp-2">{evento.titolo}</h4>
                           </Link>
                           <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} className="mb-1" />
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-3 h-3 shrink-0" />
                             <span>
                               {evento.fine
-                                ? `Dal ${format(new Date(evento.data), "d MMM", { locale: it })} al ${format(new Date(evento.fine), "d MMM yyyy", { locale: it })}`
+                                ? formatDateRangeCompact(new Date(evento.data), new Date(evento.fine))
                                 : formatEventDate(evento.data)}
                             </span>
                           </p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            <span className="truncate">{evento.luogo}</span>
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{abbreviaIndirizzo(evento.luogo)}</span>
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <Avatar className="w-5 h-5">
