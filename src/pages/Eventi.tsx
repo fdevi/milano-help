@@ -127,7 +127,11 @@ const EventCard = ({ event, isParticipating, onDelete }: {
         <div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
             <Clock className="w-3 h-3" />
-            <span>{formatEventDate(event.data)}</span>
+            <span>
+              {event.fine
+                ? `Dal ${formatEventDate(event.data)} al ${formatEventDate(event.fine)}`
+                : formatEventDate(event.data)}
+            </span>
           </div>
           <h3 className="font-heading font-bold text-foreground group-hover:text-primary transition-colors">{event.titolo}</h3>
         </div>

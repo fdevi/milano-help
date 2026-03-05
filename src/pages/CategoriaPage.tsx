@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import EventStatusBadge from "@/components/EventStatusBadge";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -318,10 +319,17 @@ const CategoriaPage = () => {
                         <h3 className="font-heading font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                           {evento.titolo}
                         </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} />
+                        </div>
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
-                            <span>{format(new Date(evento.data), "d MMMM yyyy, HH:mm", { locale: it })}</span>
+                            <span>
+                              {evento.fine
+                                ? `Dal ${format(new Date(evento.data), "d MMM", { locale: it })} al ${format(new Date(evento.fine), "d MMM yyyy", { locale: it })}`
+                                : format(new Date(evento.data), "d MMMM yyyy, HH:mm", { locale: it })}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5" />
