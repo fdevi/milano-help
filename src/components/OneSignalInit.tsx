@@ -13,12 +13,17 @@ const OneSignalInit = () => {
       const w = window as any;
       w.OneSignalDeferred = w.OneSignalDeferred || [];
       w.OneSignalDeferred.push(async (OneSignal: any) => {
-        await OneSignal.init({
-          appId: ONESIGNAL_APP_ID,
-          notifyButton: { enable: true },
-        });
-        w.oneSignalReady = true;
-        console.log("[OneSignal] SDK inizializzato e pronto");
+        try {
+          await OneSignal.init({
+            appId: ONESIGNAL_APP_ID,
+            serviceWorkerPath: "/OneSignalSDKWorker.js",
+            notifyButton: { enable: true },
+          });
+          w.oneSignalReady = true;
+          console.log("[OneSignal] SDK inizializzato e pronto ✅");
+        } catch (err) {
+          console.error("[OneSignal] Errore durante init:", err);
+        }
       });
     };
     script.onerror = () => {
