@@ -686,6 +686,7 @@ export type Database = {
           gruppo_id: string
           id: string
           mittente_id: string
+          parent_id: string | null
           testo: string
         }
         Insert: {
@@ -693,6 +694,7 @@ export type Database = {
           gruppo_id: string
           id?: string
           mittente_id: string
+          parent_id?: string | null
           testo: string
         }
         Update: {
@@ -700,6 +702,7 @@ export type Database = {
           gruppo_id?: string
           id?: string
           mittente_id?: string
+          parent_id?: string | null
           testo?: string
         }
         Relationships: [
@@ -708,6 +711,13 @@ export type Database = {
             columns: ["gruppo_id"]
             isOneToOne: false
             referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gruppi_messaggi_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi_messaggi"
             referencedColumns: ["id"]
           },
         ]
@@ -820,6 +830,7 @@ export type Database = {
           letto: boolean | null
           letto_at: string | null
           mittente_id: string | null
+          parent_id: string | null
           testo: string
         }
         Insert: {
@@ -829,6 +840,7 @@ export type Database = {
           letto?: boolean | null
           letto_at?: string | null
           mittente_id?: string | null
+          parent_id?: string | null
           testo: string
         }
         Update: {
@@ -838,6 +850,7 @@ export type Database = {
           letto?: boolean | null
           letto_at?: string | null
           mittente_id?: string | null
+          parent_id?: string | null
           testo?: string
         }
         Relationships: [
@@ -846,6 +859,13 @@ export type Database = {
             columns: ["conversazione_id"]
             isOneToOne: false
             referencedRelation: "conversazioni_private"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaggi_privati_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "messaggi_privati"
             referencedColumns: ["id"]
           },
         ]
