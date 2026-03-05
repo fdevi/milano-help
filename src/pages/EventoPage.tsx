@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye, Link as LinkIcon, Mail, Share2, Check, HelpCircle } from "lucide-react";
@@ -343,6 +344,7 @@ const EventoPage = () => {
                   <Badge variant="secondary" className="gap-1">
                     <Calendar className="w-3 h-3" /> Evento
                   </Badge>
+                  <EventStatusBadge dataInizio={evento.data} dataFine={(evento as any).fine} />
                   {evento.gratuito ? (
                     <Badge className="bg-primary text-primary-foreground">Gratuito</Badge>
                   ) : evento.prezzo != null ? (
@@ -358,6 +360,11 @@ const EventoPage = () => {
                   <p className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
                     {format(new Date(evento.data), "EEEE d MMMM yyyy, HH:mm", { locale: it })}
+                    {(evento as any).fine && (
+                      <span className="text-muted-foreground">
+                        → {format(new Date((evento as any).fine), "d MMM yyyy, HH:mm", { locale: it })}
+                      </span>
+                    )}
                   </p>
                   <p className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" /> {evento.luogo}

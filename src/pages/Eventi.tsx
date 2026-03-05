@@ -1,4 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
+import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -110,6 +111,10 @@ const EventCard = ({ event, isParticipating, onDelete }: {
         <Badge className={`absolute top-3 right-3 ${event.gratuito ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
           {event.gratuito ? "Gratuito" : `€${event.prezzo}`}
         </Badge>
+        {/* Status badge */}
+        <div className="absolute bottom-3 left-3">
+          <EventStatusBadge dataInizio={event.data} dataFine={event.fine} />
+        </div>
         {isParticipating && (
           <Badge className="absolute bottom-3 right-3 bg-primary/90 text-primary-foreground text-xs">
             Partecipi
