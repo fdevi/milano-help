@@ -334,21 +334,7 @@ const Chat = () => {
         ultimo_mittente_id: user.id,
       }).eq("id", conversationId);
 
-      // Notify the other user
-      if (activeConversation) {
-        const otherUserId = activeConversation.otherUser.id;
-        if (otherUserId && otherUserId !== user.id) {
-          const myName = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
-          await supabase.from("notifiche").insert({
-            user_id: otherUserId,
-            tipo: "messaggio_privato",
-            titolo: "Nuovo messaggio",
-            messaggio: `${myName}: ${text.slice(0, 50)}${text.length > 50 ? "…" : ""}`,
-            link: `/chat/${conversationId}`,
-            mittente_id: user.id,
-          } as any);
-        }
-      }
+      // Notification is handled by DB trigger (notify_messaggio_privato)
 
       queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversazioni_private"] });
