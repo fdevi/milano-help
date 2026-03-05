@@ -7,11 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
 import DropdownChat from "@/components/DropdownChat";
 import { useQuery } from "@tanstack/react-query";
+import { Menu, X } from "lucide-react";
 
 const Navbar = () => {
   const { user } = useAuth();
   const { isAdmin } = useAdminCheck();
-  
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: profile } = useQuery({
@@ -33,33 +33,20 @@ const Navbar = () => {
     window.location.href = '/';
   };
 
+  const displayName = profile?.nome
+    ? `${profile.nome}${profile.cognome ? ` ${profile.cognome}` : ''}`
+    : user?.email?.split('@')[0] || 'Utente';
+
   return (
-    <nav style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: 'white',
-      borderBottom: '1px solid #e5e7eb',
-      padding: '0.75rem 1rem',
-      zIndex: 50
-    }}>
-      <div style={{
-        maxWidth: '1280px',
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <Link to="/" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: '#10b981' }}>
+    <nav className="fixed top-0 left-0 right-0 bg-background border-b border-border px-4 py-3 z-50">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="font-bold text-xl text-primary shrink-0">
           Milano Help
         </Link>
 
-        <div style={{ display: 'none', gap: '1.5rem', alignItems: 'center' }}>
-          <Link to="/how-it-works">Come Funziona</Link>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-2">
           {user ? (
             <>
               <Link to="/home">
@@ -75,18 +62,13 @@ const Navbar = () => {
               <PannelloNotifiche />
               {isAdmin && (
                 <Link to="/admin">
-                  <Button variant="outline" size="sm" className="text-primary border-primary">
-                    Admin
-                  </Button>
+                  <Button variant="outline" size="sm" className="text-primary border-primary">Admin</Button>
                 </Link>
               )}
-              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                Ciao, {profile?.nome || user.email?.split('@')[0] || 'Utente'}
-                {profile?.cognome ? ` ${profile.cognome}` : ''}
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                Ciao, {displayName}
               </span>
-              <Button onClick={handleLogout} variant="outline" size="sm">
-                Esci
-              </Button>
+              <Button onClick={handleLogout} variant="outline" size="sm">Esci</Button>
             </>
           ) : (
             <>
@@ -98,42 +80,45 @@ const Navbar = () => {
               </Link>
             </>
           )}
+        </div>
 
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            ☰
+        {/* Mobile: icons + hamburger */}
+        <div className="flex md:hidden items-center gap-1">
+          {user && (
+            <>
+              <DropdownChat />
+              <PannelloNotifiche />
+            </>
+          )}
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
+      {/* Mobile menu */}
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          backgroundColor: 'white',
-          borderBottom: '1px solid #e5e7eb',
-          padding: '1rem'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <Link to="/how-it-works">Come Funziona</Link>
-            <Link to="/gruppi">Gruppi</Link>
-            {user && (
+        <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border shadow-lg">
+          <div className="flex flex-col p-4 gap-1">
+            {user ? (
               <>
-                <Link to="/home">Dashboard</Link>
-                <Link to="/miei-annunci">I miei annunci</Link>
-                <Link to="/chat">Chat</Link>
-                {isAdmin && <Link to="/admin" style={{ color: '#10b981', fontWeight: 'bold' }}>Admin Panel</Link>}
+                <span className="text-sm font-medium text-muted-foreground px-3 py-2">
+                  Ciao, {displayName}
+                </span>
+                <Link to="/home" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Dashboard</Link>
+                <Link to="/miei-annunci" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">I miei annunci</Link>
+                <Link to="/gruppi" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Gruppi</Link>
+                <Link to="/chat" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Chat</Link>
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm text-primary font-semibold">Admin Panel</Link>
+                )}
+                <button onClick={() => { setIsOpen(false); handleLogout(); }} className="px-3 py-2 rounded-md hover:bg-muted text-sm text-left text-destructive">Esci</button>
               </>
-            )}
-            {!user && (
+            ) : (
               <>
-                <Link to="/login">Accedi</Link>
-                <Link to="/registrati">Registrati</Link>
+                <Link to="/how-it-works" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Come Funziona</Link>
+                <Link to="/login" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Accedi</Link>
+                <Link to="/registrati" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm font-semibold text-primary">Registrati</Link>
               </>
             )}
           </div>
