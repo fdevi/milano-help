@@ -25,6 +25,7 @@ import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQuartieri } from "@/hooks/useQuartieri";
 import { Link, useNavigate } from "react-router-dom";
+import EventStatusBadge from "@/components/EventStatusBadge";
 
 // ── Profile fetching ──
 async function fetchProfile(userId: string) {
@@ -636,9 +637,14 @@ const Profilo = () => {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{ev.titolo}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{ev.titolo}</p>
+                            <EventStatusBadge dataInizio={ev.data} dataFine={ev.fine} />
+                          </div>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(ev.data).toLocaleDateString("it-IT")} · {ev.luogo}
+                            {ev.fine
+                              ? `Dal ${format(new Date(ev.data), "d MMM", { locale: it })} al ${format(new Date(ev.fine), "d MMM yyyy", { locale: it })}`
+                              : new Date(ev.data).toLocaleDateString("it-IT")} · {ev.luogo}
                             {ev.gratuito ? " · Gratuito" : ev.prezzo != null ? ` · €${ev.prezzo}` : ""}
                           </p>
                         </div>
