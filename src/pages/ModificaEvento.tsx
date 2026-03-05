@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -38,6 +38,7 @@ const ModificaEvento = () => {
   const [loading, setLoading] = useState(false);
   const [loadingEvento, setLoadingEvento] = useState(true);
   const [date, setDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [form, setForm] = useState({
     titolo: "",
     descrizione: "",
@@ -88,6 +89,7 @@ const ModificaEvento = () => {
         max_partecipanti: data.max_partecipanti?.toString() || "",
       });
       setDate(new Date(data.data));
+      if (data.fine) setEndDate(new Date(data.fine));
       setLoadingEvento(false);
     };
 
@@ -119,6 +121,7 @@ const ModificaEvento = () => {
           max_partecipanti: form.max_partecipanti
             ? parseInt(form.max_partecipanti)
             : null,
+          fine: endDate ? endDate.toISOString() : null,
         };
 
       // If not admin, send back to moderation after edit
@@ -243,6 +246,38 @@ const ModificaEvento = () => {
                       }
                     }}
                   />
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Data e ora fine (opzionale) */}
+          <div>
+            <Label>Data e ora fine (opzionale)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Se non specificata, l'evento termina alle 23:59 dello stesso giorno.</p>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PPP HH:mm", { locale: it }) : "Nessuna data di fine"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                <div className="p-3 border-t flex gap-2 items-center">
+                  <Input type="time" value={endDate ? format(endDate, "HH:mm") : ""} onChange={(e) => {
+                    if (endDate) {
+                      const [hours, minutes] = e.target.value.split(":");
+                      const newDate = new Date(endDate);
+                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      setEndDate(newDate);
+                    }
+                  }} />
+                  {endDate && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setEndDate(undefined)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
