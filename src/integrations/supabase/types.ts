@@ -407,9 +407,12 @@ export type Database = {
           created_at: string | null
           data: string
           descrizione: string | null
+          fine: string | null
           gratuito: boolean | null
           id: string
           immagine: string | null
+          lat: number | null
+          lon: number | null
           luogo: string
           max_partecipanti: number | null
           mi_piace: number
@@ -427,9 +430,12 @@ export type Database = {
           created_at?: string | null
           data: string
           descrizione?: string | null
+          fine?: string | null
           gratuito?: boolean | null
           id?: string
           immagine?: string | null
+          lat?: number | null
+          lon?: number | null
           luogo: string
           max_partecipanti?: number | null
           mi_piace?: number
@@ -447,9 +453,12 @@ export type Database = {
           created_at?: string | null
           data?: string
           descrizione?: string | null
+          fine?: string | null
           gratuito?: boolean | null
           id?: string
           immagine?: string | null
+          lat?: number | null
+          lon?: number | null
           luogo?: string
           max_partecipanti?: number | null
           mi_piace?: number
