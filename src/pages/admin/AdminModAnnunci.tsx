@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, X, Eye, MoreHorizontal, Trash2, PauseCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -109,6 +110,7 @@ const AdminModAnnunci = () => {
         riferimento_id: id,
         mittente_id: user?.id,
       } as any);
+      sendPushNotification(annuncio.user_id, "Annuncio approvato", `Il tuo annuncio "${annuncio.titolo}" è stato approvato`, `/annuncio/${id}`);
 
       // Send email via edge function
       const recipientEmail = annuncio.profilo?.email;
@@ -154,6 +156,7 @@ const AdminModAnnunci = () => {
         riferimento_id: rifiutoModal,
         mittente_id: user?.id,
       } as any);
+      sendPushNotification(annuncio.user_id, "Annuncio rifiutato", `Il tuo annuncio "${annuncio.titolo}" è stato rifiutato. Motivo: ${motivoRifiuto}`, `/annuncio/${rifiutoModal}`);
 
       // Send email via edge function
       const recipientEmail = annuncio.profilo?.email;

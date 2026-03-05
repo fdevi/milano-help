@@ -5,6 +5,7 @@ import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Fl
 import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -128,6 +129,7 @@ const AnnuncioPage = () => {
           riferimento_id: annuncio.id,
           mittente_id: user.id,
         } as any);
+        sendPushNotification(annuncio.user_id, "Nuovo Mi Piace", `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`, `/annuncio/${annuncio.id}`);
       }
     }
     queryClient.invalidateQueries({ queryKey: ["annuncio_like", id] });
