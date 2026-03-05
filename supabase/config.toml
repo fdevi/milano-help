@@ -17,3 +17,5 @@ project_id = "oiljiebciwtjlrtqicty"
     verify_jwt = false
   [functions.notify-annuncio-status]
     verify_jwt = false
+  [functions.send-push-notification]
+    verify_jwt = false
