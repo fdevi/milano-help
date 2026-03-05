@@ -17,7 +17,11 @@ const OneSignalInit = () => {
           appId: ONESIGNAL_APP_ID,
           notifyButton: { enable: true },
         });
+        console.log("[OneSignal] SDK inizializzato correttamente:", OneSignal);
       });
+    };
+    script.onerror = () => {
+      console.error("[OneSignal] Errore nel caricamento dell'SDK");
     };
     document.head.appendChild(script);
 
