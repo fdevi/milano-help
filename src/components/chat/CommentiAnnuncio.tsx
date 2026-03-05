@@ -1,12 +1,12 @@
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Heart, Trash2, MessageSquare, Reply, X, Smile } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import EmojiPicker from "emoji-picker-react";
@@ -25,7 +25,9 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Fetch all comments flat, ordered chronologically
   const { data: commenti = [], isLoading } = useQuery({
     queryKey: ["commenti", annuncioId],
     queryFn: async () => {
@@ -46,7 +48,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
       if (userIds.length === 0) return [];
       const { data } = await supabase
         .from("profiles")
-        .select("user_id, nome, cognome")
+        .select("user_id, nome, cognome, avatar_url")
         .in("user_id", userIds);
       return data || [];
     },
@@ -78,6 +80,29 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
     enabled: !!user,
   });
 
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel(`commenti-annuncio-${annuncioId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "annunci_commenti", filter: `annuncio_id=eq.${annuncioId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["commenti", annuncioId] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [annuncioId, queryClient]);
+
+  // Auto-scroll to bottom when new comments arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [commenti.length]);
+
   const addComment = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("annunci_commenti").insert({
@@ -88,9 +113,11 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
       } as any);
       if (error) throw error;
 
+      const nomeUtente = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
+      const testoTroncato = testo.length > 50 ? testo.slice(0, 50) + "…" : testo;
+
+      // Notify annuncio author
       if (user!.id !== annuncioAutoreId) {
-        const nomeUtente = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
-        const testoTroncato = testo.length > 50 ? testo.slice(0, 50) + "…" : testo;
         await supabase.from("notifiche").insert({
           user_id: annuncioAutoreId,
           tipo: "commento_annuncio",
@@ -100,6 +127,22 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
           riferimento_id: annuncioId,
           mittente_id: user!.id,
         } as any);
+      }
+
+      // Notify parent comment author (if replying)
+      if (replyTo?.id) {
+        const parentComment = commenti.find((c: any) => c.id === replyTo.id);
+        if (parentComment && parentComment.user_id !== user!.id) {
+          await supabase.from("notifiche").insert({
+            user_id: parentComment.user_id,
+            tipo: "risposta_commento",
+            titolo: "Risposta al tuo commento",
+            messaggio: `${nomeUtente} ha risposto al tuo commento: "${testoTroncato}"`,
+            link: `/annuncio/${annuncioId}`,
+            riferimento_id: annuncioId,
+            mittente_id: user!.id,
+          } as any);
+        }
       }
     },
     onSuccess: () => {
@@ -155,47 +198,41 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
     textareaRef.current?.focus();
   };
 
-  // Organize comments: top-level first, then replies grouped under parent
-  const topLevel = commenti.filter((c: any) => !c.parent_id);
-  const replies = commenti.filter((c: any) => c.parent_id);
-  const repliesByParent: Record<string, any[]> = {};
-  replies.forEach((r: any) => {
-    if (!repliesByParent[r.parent_id]) repliesByParent[r.parent_id] = [];
-    repliesByParent[r.parent_id].push(r);
-  });
-
-  const renderComment = (c: any, isReply = false) => {
+  const renderComment = (c: any) => {
     const profile = profileMap[c.user_id];
-    const initials = profile ? `${(profile.nome || "U")[0]}${(profile.cognome || "")[0] || ""}` : "U";
+    const nome = profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente";
+    const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U";
     const likesForComment = (allLikes as any[]).filter((l) => l.commento_id === c.id);
     const userLiked = user && likesForComment.some((l) => l.user_id === user.id);
 
-    // Find parent comment text for reply indicator
+    // Find parent comment for reply preview
     const parentComment = c.parent_id ? commenti.find((p: any) => p.id === c.parent_id) : null;
     const parentProfile = parentComment ? profileMap[parentComment.user_id] : null;
+    const parentNome = parentProfile ? `${parentProfile.nome || "Utente"} ${parentProfile.cognome || ""}`.trim() : "Utente";
 
     return (
-      <div key={c.id} className={`flex gap-3 ${isReply ? "ml-8 pl-3 border-l-2 border-muted" : ""}`}>
+      <div key={c.id} className="flex gap-3">
         <Avatar className="h-8 w-8 shrink-0">
+          {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
             {initials}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-foreground">
-              {profile?.nome || "Utente"} {profile?.cognome ? profile.cognome[0] + "." : ""}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: it })}
-            </span>
-          </div>
+          {/* Reply preview (WhatsApp style) */}
           {parentComment && (
-            <div className="bg-muted/50 rounded px-2 py-1 mb-1 text-xs text-muted-foreground border-l-2 border-primary/30">
-              <span className="font-medium">{parentProfile?.nome || "Utente"}</span>: {parentComment.testo?.slice(0, 60)}{parentComment.testo?.length > 60 ? "…" : ""}
+            <div className="bg-muted/60 rounded-lg px-3 py-1.5 mb-1 text-xs border-l-3 border-primary/50">
+              <span className="font-semibold text-primary">{parentNome}</span>
+              <p className="text-muted-foreground truncate">{parentComment.testo?.slice(0, 80)}{parentComment.testo?.length > 80 ? "…" : ""}</p>
             </div>
           )}
-          <p className="text-sm text-foreground/80">{c.testo}</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-foreground">{nome}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {format(new Date(c.created_at), "d MMM yyyy, HH:mm", { locale: it })}
+            </span>
+          </div>
+          <p className="text-sm text-foreground/80 mt-0.5">{c.testo}</p>
           <div className="flex items-center gap-3 mt-1">
             {user && (
               <>
@@ -235,19 +272,14 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
         Commenti ({commenti.length})
       </h2>
 
-      {/* Comment list */}
-      <div className="space-y-4 mb-4">
+      {/* Comment list - flat chronological */}
+      <div ref={scrollRef} className="space-y-4 mb-4 max-h-[500px] overflow-y-auto">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Caricamento...</p>
         ) : commenti.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nessun commento ancora. Sii il primo!</p>
         ) : (
-          topLevel.map((c: any) => (
-            <div key={c.id}>
-              {renderComment(c)}
-              {repliesByParent[c.id]?.map((r: any) => renderComment(r, true))}
-            </div>
-          ))
+          commenti.map((c: any) => renderComment(c))
         )}
       </div>
 
