@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Loader2, ArrowLeft, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
+import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -32,6 +33,8 @@ const NuovoEvento = () => {
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [eventLat, setEventLat] = useState<number | null>(null);
+  const [eventLon, setEventLon] = useState<number | null>(null);
   const [form, setForm] = useState({
     titolo: "",
     descrizione: "",
@@ -115,6 +118,8 @@ const NuovoEvento = () => {
         gratuito: form.gratuito,
         prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,
         categoria: "evento",
+        lat: eventLat,
+        lon: eventLon,
       };
       if (endDate) {
         insertData.fine = endDate.toISOString();
@@ -237,10 +242,18 @@ const NuovoEvento = () => {
             </Popover>
           </div>
 
-          {/* Luogo */}
+          {/* Luogo con mappa */}
           <div>
-            <Label htmlFor="luogo">Luogo *</Label>
-            <Input id="luogo" value={form.luogo} onChange={(e) => setForm({ ...form, luogo: e.target.value })} placeholder="Es. Piazza Duomo, Milano" required />
+            <Label>Luogo *</Label>
+            <p className="text-xs text-muted-foreground mb-2">Cerca un indirizzo o clicca sulla mappa per posizionare il segnaposto.</p>
+            <MapboxLocationPicker
+              initialLuogo={form.luogo}
+              onLocationChange={({ luogo, lat, lon }) => {
+                setForm((prev) => ({ ...prev, luogo }));
+                setEventLat(lat);
+                setEventLon(lon);
+              }}
+            />
           </div>
 
           {/* Prezzo */}
