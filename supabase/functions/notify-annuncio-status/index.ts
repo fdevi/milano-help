@@ -35,8 +35,8 @@ Deno.serve(async (req) => {
       : `Il tuo annuncio "${titolo}" è stato rifiutato`;
 
     const linkUrl = isApproved
-      ? `https://milanohelp.it/annuncio/${annuncioId}`
-      : "https://milanohelp.it/miei-annunci";
+      ? `https://milanohelp.lovable.app/annuncio/${annuncioId}`
+      : "https://milanohelp.lovable.app/miei-annunci";
 
     const bodyHtml = isApproved
       ? `
@@ -49,7 +49,6 @@ Deno.serve(async (req) => {
             Vedi il tuo annuncio
           </a>
           <p style="margin-top: 24px; color: #888; font-size: 12px;">Grazie per far parte della community di Milano Help!</p>
-          <p style="margin-top: 12px; color: #888; font-size: 12px;">Se hai domande, rispondi a questa email o <a href="https://milanohelp.it/contattaci" style="color: #0d9668;">contattaci</a>.</p>
         </div>
       `
       : `
@@ -62,7 +61,7 @@ Deno.serve(async (req) => {
              style="display: inline-block; background: #0d9668; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; margin-top: 16px;">
             Vai ai miei annunci
           </a>
-          <p style="margin-top: 24px; color: #888; font-size: 12px;">Se hai domande, rispondi a questa email o <a href="https://milanohelp.it/contattaci" style="color: #0d9668;">contattaci</a>.</p>
+          <p style="margin-top: 24px; color: #888; font-size: 12px;">Se hai domande, contattaci tramite la pagina Contatti.</p>
         </div>
       `;
 
