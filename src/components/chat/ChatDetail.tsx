@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, Reply, X, Smile } from "lucide-react";
+import { ArrowLeft, Send, Reply, X, Smile, Heart } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 
 function formatTime(dateStr: string) {
@@ -25,6 +25,11 @@ export interface ChatUserProfile {
   avatar_url: string | null;
 }
 
+export interface MessageLike {
+  messaggio_id: string;
+  user_id: string;
+}
+
 interface ChatDetailProps {
   conversationName: string;
   conversationSubtitle?: string;
@@ -34,9 +39,11 @@ interface ChatDetailProps {
   onSend: (text: string, parentId?: string | null) => void;
   onBack?: () => void;
   isGroup?: boolean;
+  likes?: MessageLike[];
+  onToggleLike?: (messageId: string) => void;
 }
 
-const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentUserId, profiles, onSend, onBack, isGroup }: ChatDetailProps) => {
+const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentUserId, profiles, onSend, onBack, isGroup, likes = [], onToggleLike }: ChatDetailProps) => {
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -88,6 +95,9 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
     return `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase();
   };
 
+  const getLikeCount = (msgId: string) => likes.filter((l) => l.messaggio_id === msgId).length;
+  const hasLiked = (msgId: string) => likes.some((l) => l.messaggio_id === msgId && l.user_id === currentUserId);
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       {/* Header */}
@@ -113,10 +123,10 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
           messages.map((msg) => {
             const isMine = msg.mittenteId === currentUserId;
             const p = profiles[msg.mittenteId];
-
-            // Find parent message for reply preview
             const parentMsg = msg.parentId ? messages.find((m) => m.id === msg.parentId) : null;
             const parentName = parentMsg ? getProfileName(parentMsg.mittenteId) : null;
+            const likeCount = getLikeCount(msg.id);
+            const liked = hasLiked(msg.id);
 
             return (
               <div key={msg.id} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"}`}>
@@ -138,38 +148,59 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                     </Avatar>
                   </div>
                 )}
-                <div className={`max-w-[75%] rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
-                  {/* Reply preview */}
-                  {parentMsg && (
-                    <div className={`px-3 pt-2 pb-1 text-xs rounded-t-2xl ${isMine ? "bg-primary/80" : "bg-muted/80"}`}>
-                      <div className={`border-l-2 pl-2 ${isMine ? "border-primary-foreground/40" : "border-primary/50"}`}>
-                        <span className={`font-semibold ${isMine ? "text-primary-foreground/90" : "text-primary"}`}>{parentName}</span>
-                        <p className={`truncate ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                          {parentMsg.testo.slice(0, 60)}{parentMsg.testo.length > 60 ? "…" : ""}
-                        </p>
+                <div className="flex flex-col">
+                  <div className={`max-w-[75%] rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
+                    {parentMsg && (
+                      <div className={`px-3 pt-2 pb-1 text-xs rounded-t-2xl ${isMine ? "bg-primary/80" : "bg-muted/80"}`}>
+                        <div className={`border-l-2 pl-2 ${isMine ? "border-primary-foreground/40" : "border-primary/50"}`}>
+                          <span className={`font-semibold ${isMine ? "text-primary-foreground/90" : "text-primary"}`}>{parentName}</span>
+                          <p className={`truncate ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                            {parentMsg.testo.slice(0, 60)}{parentMsg.testo.length > 60 ? "…" : ""}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="px-3 py-2">
+                      {(isGroup && !isMine) && (
+                        <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId)}</p>
+                      )}
+                      <p>{msg.testo}</p>
+                      <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+                        <span className={`text-[10px] ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {formatTime(msg.createdAt)}
+                        </span>
                       </div>
                     </div>
-                  )}
-                  <div className="px-3 py-2">
-                    {(isGroup && !isMine) && (
-                      <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId)}</p>
-                    )}
-                    <p>{msg.testo}</p>
-                    <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
-                      <span className={`text-[10px] ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {formatTime(msg.createdAt)}
+                  </div>
+                  {/* Like count badge below message */}
+                  {likeCount > 0 && (
+                    <div className={`flex ${isMine ? "justify-end" : "justify-start"} -mt-1`}>
+                      <span className="inline-flex items-center gap-0.5 text-[10px] bg-card border rounded-full px-1.5 py-0.5 shadow-sm">
+                        <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
+                        {likeCount}
                       </span>
                     </div>
-                  </div>
+                  )}
                 </div>
-                {/* Reply button */}
-                <button
-                  onClick={() => handleReply(msg)}
-                  className="opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-primary transition-opacity shrink-0 mb-2"
-                  title="Rispondi"
-                >
-                  <Reply className="w-3.5 h-3.5" />
-                </button>
+                {/* Action buttons */}
+                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mb-2">
+                  <button
+                    onClick={() => handleReply(msg)}
+                    className="text-muted-foreground hover:text-primary"
+                    title="Rispondi"
+                  >
+                    <Reply className="w-3.5 h-3.5" />
+                  </button>
+                  {onToggleLike && (
+                    <button
+                      onClick={() => onToggleLike(msg.id)}
+                      className={`transition-colors ${liked ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}
+                      title="Mi piace"
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-500" : ""}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })
