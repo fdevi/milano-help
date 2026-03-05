@@ -120,6 +120,7 @@ export type Database = {
           annuncio_id: string
           created_at: string
           id: string
+          parent_id: string | null
           testo: string
           user_id: string
         }
@@ -127,6 +128,7 @@ export type Database = {
           annuncio_id: string
           created_at?: string
           id?: string
+          parent_id?: string | null
           testo: string
           user_id: string
         }
@@ -134,6 +136,7 @@ export type Database = {
           annuncio_id?: string
           created_at?: string
           id?: string
+          parent_id?: string | null
           testo?: string
           user_id?: string
         }
@@ -143,6 +146,13 @@ export type Database = {
             columns: ["annuncio_id"]
             isOneToOne: false
             referencedRelation: "annunci"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annunci_commenti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "annunci_commenti"
             referencedColumns: ["id"]
           },
         ]
@@ -478,6 +488,7 @@ export type Database = {
           created_at: string
           evento_id: string
           id: string
+          parent_id: string | null
           testo: string
           user_id: string
         }
@@ -485,6 +496,7 @@ export type Database = {
           created_at?: string
           evento_id: string
           id?: string
+          parent_id?: string | null
           testo: string
           user_id: string
         }
@@ -492,6 +504,7 @@ export type Database = {
           created_at?: string
           evento_id?: string
           id?: string
+          parent_id?: string | null
           testo?: string
           user_id?: string
         }
@@ -501,6 +514,13 @@ export type Database = {
             columns: ["evento_id"]
             isOneToOne: false
             referencedRelation: "eventi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventi_commenti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "eventi_commenti"
             referencedColumns: ["id"]
           },
         ]
