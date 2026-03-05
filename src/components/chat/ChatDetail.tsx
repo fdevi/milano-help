@@ -1,29 +1,49 @@
-import { useState, useRef, useEffect } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, CheckCheck, Check } from "lucide-react";
-import type { MockConversation, MockMessage } from "@/pages/Chat";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Send, Reply, X, Smile } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 }
 
-interface ChatDetailProps {
-  conversation: MockConversation;
-  messages: MockMessage[];
-  currentUserId: string;
-  onSend: (text: string) => void;
-  onBack?: () => void;
+export interface ChatMessage {
+  id: string;
+  mittenteId: string;
+  testo: string;
+  createdAt: string;
+  letto: boolean;
+  parentId?: string | null;
 }
 
-const ChatDetail = ({ conversation, messages, currentUserId, onSend, onBack }: ChatDetailProps) => {
+export interface ChatUserProfile {
+  user_id: string;
+  nome: string | null;
+  cognome: string | null;
+  avatar_url: string | null;
+}
+
+interface ChatDetailProps {
+  conversationName: string;
+  conversationSubtitle?: string;
+  messages: ChatMessage[];
+  currentUserId: string;
+  profiles: Record<string, ChatUserProfile>;
+  onSend: (text: string, parentId?: string | null) => void;
+  onBack?: () => void;
+  isGroup?: boolean;
+}
+
+const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentUserId, profiles, onSend, onBack, isGroup }: ChatDetailProps) => {
   const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    // Scroll to bottom on new messages
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -32,12 +52,41 @@ const ChatDetail = ({ conversation, messages, currentUserId, onSend, onBack }: C
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    onSend(trimmed);
+    onSend(trimmed, replyTo?.id || null);
     setText("");
+    setReplyTo(null);
+    setShowEmoji(false);
   };
 
-  const { otherUser } = conversation;
-  const initials = `${otherUser.nome[0]}${otherUser.cognome[0]}`;
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleReply = (msg: ChatMessage) => {
+    const p = profiles[msg.mittenteId];
+    const nome = p ? `${p.nome || "Utente"} ${p.cognome ? p.cognome[0] + "." : ""}`.trim() : "Utente";
+    setReplyTo({ id: msg.id, nome, testo: msg.testo });
+    textareaRef.current?.focus();
+  };
+
+  const onEmojiClick = (emojiData: any) => {
+    setText((prev) => prev + emojiData.emoji);
+    textareaRef.current?.focus();
+  };
+
+  const getProfileName = (userId: string) => {
+    const p = profiles[userId];
+    return p ? `${p.nome || "Utente"} ${p.cognome || ""}`.trim() : "Utente";
+  };
+
+  const getInitials = (userId: string) => {
+    const p = profiles[userId];
+    if (!p) return "U";
+    return `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase();
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
@@ -48,16 +97,9 @@ const ChatDetail = ({ conversation, messages, currentUserId, onSend, onBack }: C
             <ArrowLeft className="w-5 h-5" />
           </Button>
         )}
-        <Avatar className="h-9 w-9">
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
         <div className="min-w-0">
-          <p className="font-medium text-sm leading-tight">
-            {otherUser.nome} {otherUser.cognome}
-          </p>
-          <p className="text-xs text-muted-foreground">{otherUser.quartiere}</p>
+          <p className="font-medium text-sm leading-tight">{conversationName}</p>
+          {conversationSubtitle && <p className="text-xs text-muted-foreground">{conversationSubtitle}</p>}
         </div>
       </div>
 
@@ -70,53 +112,106 @@ const ChatDetail = ({ conversation, messages, currentUserId, onSend, onBack }: C
         ) : (
           messages.map((msg) => {
             const isMine = msg.mittenteId === currentUserId;
+            const p = profiles[msg.mittenteId];
+
+            // Find parent message for reply preview
+            const parentMsg = msg.parentId ? messages.find((m) => m.id === msg.parentId) : null;
+            const parentName = parentMsg ? getProfileName(parentMsg.mittenteId) : null;
+
             return (
-              <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
-                    isMine
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md"
-                  }`}
-                >
-                  <p>{msg.testo}</p>
-                  <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
-                    <span className={`text-[10px] ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                      {formatTime(msg.createdAt)}
-                    </span>
-                    {isMine && (
-                      msg.letto
-                        ? <CheckCheck className="w-3 h-3 text-primary-foreground/70" />
-                        : <Check className="w-3 h-3 text-primary-foreground/70" />
+              <div key={msg.id} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                {!isMine && (
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarImage src={p?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                      {getInitials(msg.mittenteId)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={`max-w-[75%] rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
+                  {/* Reply preview */}
+                  {parentMsg && (
+                    <div className={`px-3 pt-2 pb-1 text-xs rounded-t-2xl ${isMine ? "bg-primary/80" : "bg-muted/80"}`}>
+                      <div className={`border-l-2 pl-2 ${isMine ? "border-primary-foreground/40" : "border-primary/50"}`}>
+                        <span className={`font-semibold ${isMine ? "text-primary-foreground/90" : "text-primary"}`}>{parentName}</span>
+                        <p className={`truncate ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {parentMsg.testo.slice(0, 60)}{parentMsg.testo.length > 60 ? "…" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="px-3 py-2">
+                    {(isGroup && !isMine) && (
+                      <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId)}</p>
                     )}
+                    <p>{msg.testo}</p>
+                    <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+                      <span className={`text-[10px] ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {formatTime(msg.createdAt)}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                {/* Reply button */}
+                <button
+                  onClick={() => handleReply(msg)}
+                  className="opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-primary transition-opacity shrink-0 mb-2"
+                  title="Rispondi"
+                >
+                  <Reply className="w-3.5 h-3.5" />
+                </button>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Typing indicator placeholder */}
-      {/* <div className="px-4 pb-1 text-xs text-muted-foreground italic">Sta scrivendo...</div> */}
-
       {/* Input */}
-      <div className="px-4 py-3 border-t bg-card flex gap-2">
-        <Input
-          placeholder="Scrivi un messaggio..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-          className="flex-1"
-        />
-        <Button
-          size="icon"
-          onClick={handleSend}
-          disabled={!text.trim()}
-          className="bg-primary hover:bg-primary/90 shrink-0"
-        >
-          <Send className="w-4 h-4 text-primary-foreground" />
-        </Button>
+      <div className="px-4 py-3 border-t bg-card">
+        {replyTo && (
+          <div className="flex items-center gap-2 bg-muted/60 rounded-t-lg px-3 py-2 text-xs border border-b-0 mb-0">
+            <Reply className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span className="text-muted-foreground truncate">
+              Stai rispondendo a <span className="font-semibold text-foreground">{replyTo.nome}</span>: {replyTo.testo.slice(0, 40)}{replyTo.testo.length > 40 ? "…" : ""}
+            </span>
+            <button onClick={() => setReplyTo(null)} className="ml-auto text-muted-foreground hover:text-destructive shrink-0">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+        <div className="flex gap-2 items-end">
+          <div className="relative flex-1">
+            <Textarea
+              ref={textareaRef}
+              placeholder="Scrivi un messaggio..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`min-h-[44px] max-h-[120px] pr-10 resize-none ${replyTo ? "rounded-t-none" : ""}`}
+              rows={1}
+            />
+            <button
+              type="button"
+              onClick={() => setShowEmoji((v) => !v)}
+              className="absolute right-2 bottom-2 text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {showEmoji && (
+              <div className="absolute bottom-12 right-0 z-50">
+                <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} searchPlaceholder="Cerca emoji..." />
+              </div>
+            )}
+          </div>
+          <Button
+            size="icon"
+            onClick={handleSend}
+            disabled={!text.trim()}
+            className="bg-primary hover:bg-primary/90 shrink-0"
+          >
+            <Send className="w-4 h-4 text-primary-foreground" />
+          </Button>
+        </div>
       </div>
     </div>
   );
