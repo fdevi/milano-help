@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import ChatList from "@/components/chat/ChatList";
 import ChatDetail from "@/components/chat/ChatDetail";
-import type { ChatMessage, ChatUserProfile } from "@/components/chat/ChatDetail";
+import type { ChatMessage, ChatUserProfile, MessageLike } from "@/components/chat/ChatDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -303,6 +303,9 @@ const Chat = () => {
         queryClient.invalidateQueries({ queryKey: ["unread_per_conv_private"] });
         queryClient.invalidateQueries({ queryKey: ["conversazioni_private"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_privati_piace" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["messaggi_privati_piace", conversationId] });
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, conversationId]);
@@ -315,6 +318,40 @@ const Chat = () => {
     letto: m.letto ?? false,
     parentId: m.parent_id || null,
   }));
+
+  // Likes for private messages
+  const messageIds = chatMessages.map((m) => m.id);
+  const { data: privateLikes = [] } = useQuery({
+    queryKey: ["messaggi_privati_piace", conversationId],
+    queryFn: async () => {
+      if (messageIds.length === 0) return [];
+      const { data } = await supabase
+        .from("messaggi_privati_piace")
+        .select("messaggio_id, user_id")
+        .in("messaggio_id", messageIds);
+      return (data || []) as MessageLike[];
+    },
+    enabled: !!conversationId && isPrivateConv === true && messageIds.length > 0,
+  });
+
+  const handleToggleLike = async (messageId: string) => {
+    if (!user) return;
+    const existing = (privateLikes as MessageLike[]).find(
+      (l) => l.messaggio_id === messageId && l.user_id === user.id
+    );
+    if (existing) {
+      await supabase
+        .from("messaggi_privati_piace")
+        .delete()
+        .eq("messaggio_id", messageId)
+        .eq("user_id", user.id);
+    } else {
+      await supabase
+        .from("messaggi_privati_piace")
+        .insert({ messaggio_id: messageId, user_id: user.id } as any);
+    }
+    queryClient.invalidateQueries({ queryKey: ["messaggi_privati_piace", conversationId] });
+  };
 
   const activeConversation = conversationId ? chatConversations.find((c) => c.id === conversationId) : null;
 
@@ -446,6 +483,8 @@ const Chat = () => {
                 profiles={mergedProfiles}
                 onSend={handleSend}
                 onBack={isMobile ? () => navigate("/chat") : undefined}
+                likes={privateLikes as MessageLike[]}
+                onToggleLike={isPrivateConv ? handleToggleLike : undefined}
               />
             ) : (
               !isMobile && (
