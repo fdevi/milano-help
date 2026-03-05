@@ -498,13 +498,27 @@ const Profilo = () => {
                         className="gap-1.5"
                         onClick={async () => {
                           const w = window as any;
-                          if (w.OneSignal?.Notifications) {
+                          const waitForOneSignal = () => new Promise<void>((resolve, reject) => {
+                            let attempts = 0;
+                            const check = () => {
+                              if (w.oneSignalReady && w.OneSignal?.Notifications) {
+                                resolve();
+                              } else if (attempts++ >= 10) {
+                                reject(new Error("timeout"));
+                              } else {
+                                setTimeout(check, 1000);
+                              }
+                            };
+                            check();
+                          });
+                          try {
+                            toast({ title: "Inizializzazione in corso...", description: "Attendi qualche secondo." });
+                            await waitForOneSignal();
                             const permission = await w.OneSignal.Notifications.requestPermission();
                             console.log("[OneSignal] Permission result:", permission);
                             toast({ title: permission ? "Notifiche attivate!" : "Permesso negato", description: permission ? "Riceverai le notifiche push." : "Puoi abilitarle dalle impostazioni del dispositivo." });
-                          } else {
-                            console.warn("[OneSignal] SDK non disponibile");
-                            toast({ title: "Errore", description: "Il servizio notifiche non è ancora pronto. Riprova tra qualche secondo.", variant: "destructive" });
+                          } catch {
+                            toast({ title: "Errore", description: "Il servizio notifiche non è disponibile. Riprova più tardi.", variant: "destructive" });
                           }
                         }}
                       >
