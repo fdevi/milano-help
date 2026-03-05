@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CalendarIcon, Loader2, X } from "lucide-react";
+import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -39,6 +40,8 @@ const ModificaEvento = () => {
   const [loadingEvento, setLoadingEvento] = useState(true);
   const [date, setDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [eventLat, setEventLat] = useState<number | null>(null);
+  const [eventLon, setEventLon] = useState<number | null>(null);
   const [form, setForm] = useState({
     titolo: "",
     descrizione: "",
@@ -90,6 +93,8 @@ const ModificaEvento = () => {
       });
       setDate(new Date(data.data));
       if (data.fine) setEndDate(new Date(data.fine));
+      if (data.lat) setEventLat(data.lat);
+      if (data.lon) setEventLon(data.lon);
       setLoadingEvento(false);
     };
 
@@ -122,6 +127,8 @@ const ModificaEvento = () => {
             ? parseInt(form.max_partecipanti)
             : null,
           fine: endDate ? endDate.toISOString() : null,
+          lat: eventLat,
+          lon: eventLon,
         };
 
       // If not admin, send back to moderation after edit
@@ -284,13 +291,17 @@ const ModificaEvento = () => {
           </div>
 
           <div>
-            <Label htmlFor="luogo">Luogo *</Label>
-            <Input
-              id="luogo"
-              value={form.luogo}
-              onChange={(e) => setForm({ ...form, luogo: e.target.value })}
-              placeholder="Es. Piazza Duomo, Milano"
-              required
+            <Label>Luogo *</Label>
+            <p className="text-xs text-muted-foreground mb-2">Cerca un indirizzo o clicca sulla mappa per posizionare il segnaposto.</p>
+            <MapboxLocationPicker
+              initialLuogo={form.luogo}
+              initialLat={eventLat}
+              initialLon={eventLon}
+              onLocationChange={({ luogo, lat, lon }) => {
+                setForm((prev) => ({ ...prev, luogo }));
+                setEventLat(lat);
+                setEventLon(lon);
+              }}
             />
           </div>
 
