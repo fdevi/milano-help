@@ -490,6 +490,11 @@ const Profilo = () => {
                       <div><p className="text-sm font-medium text-foreground">Notifiche push</p><p className="text-xs text-muted-foreground">Ricevi notifiche nel browser</p></div>
                       <Switch checked={prefs.notifiche_push} onCheckedChange={(v) => setPrefs({ ...prefs, notifiche_push: v })} />
                     </div>
+                    <div className="flex items-center gap-2 rounded-md border border-border p-2 text-xs">
+                      {(window as any).oneSignalReady
+                        ? <span className="text-green-600 font-medium">✅ OneSignal attivo</span>
+                        : <span className="text-amber-600 font-medium">⏳ OneSignal in caricamento…</span>}
+                    </div>
                     <div className="flex items-center justify-between">
                       <div><p className="text-sm font-medium text-foreground">Attiva notifiche push</p><p className="text-xs text-muted-foreground">Abilita il permesso per ricevere notifiche push sul dispositivo</p></div>
                       <Button
