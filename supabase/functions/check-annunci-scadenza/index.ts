@@ -118,11 +118,12 @@ Deno.serve(async (req) => {
                     <h2 style="color: #0d9668;">Ciao ${profile.nome || "utente"}!</h2>
                     <p>Il tuo annuncio <strong>"${a.titolo}"</strong> scadrà tra <strong>7 giorni</strong>.</p>
                     <p>Se vuoi mantenerlo attivo, puoi prorogarlo di 30 giorni dalla sezione "I miei annunci" su Milano Help.</p>
-                    <a href="https://milanohelp.lovable.app/miei-annunci" 
+                    <a href="https://milanohelp.it/miei-annunci" 
                        style="display: inline-block; background: #0d9668; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; margin-top: 16px;">
                       Vai ai miei annunci
                     </a>
                     <p style="margin-top: 24px; color: #888; font-size: 12px;">Se non fai nulla, l'annuncio verrà chiuso automaticamente alla scadenza.</p>
+                    <p style="margin-top: 12px; color: #888; font-size: 12px;">Se hai domande, rispondi a questa email o <a href="https://milanohelp.it/contattaci" style="color: #0d9668;">contattaci</a>.</p>
                   </div>
                 `,
               }),
