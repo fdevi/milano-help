@@ -486,9 +486,30 @@ const Profilo = () => {
                       <div><p className="text-sm font-medium text-foreground">Notifiche email</p><p className="text-xs text-muted-foreground">Ricevi aggiornamenti via email</p></div>
                       <Switch checked={prefs.notifiche_email} onCheckedChange={(v) => setPrefs({ ...prefs, notifiche_email: v })} />
                     </div>
-                    <div className="flex items-center justify-between">
+                     <div className="flex items-center justify-between">
                       <div><p className="text-sm font-medium text-foreground">Notifiche push</p><p className="text-xs text-muted-foreground">Ricevi notifiche nel browser</p></div>
                       <Switch checked={prefs.notifiche_push} onCheckedChange={(v) => setPrefs({ ...prefs, notifiche_push: v })} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div><p className="text-sm font-medium text-foreground">Attiva notifiche push</p><p className="text-xs text-muted-foreground">Abilita il permesso per ricevere notifiche push sul dispositivo</p></div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={async () => {
+                          const w = window as any;
+                          if (w.OneSignal?.Notifications) {
+                            const permission = await w.OneSignal.Notifications.requestPermission();
+                            console.log("[OneSignal] Permission result:", permission);
+                            toast({ title: permission ? "Notifiche attivate!" : "Permesso negato", description: permission ? "Riceverai le notifiche push." : "Puoi abilitarle dalle impostazioni del dispositivo." });
+                          } else {
+                            console.warn("[OneSignal] SDK non disponibile");
+                            toast({ title: "Errore", description: "Il servizio notifiche non è ancora pronto. Riprova tra qualche secondo.", variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <Bell className="w-4 h-4" /> Attiva
+                      </Button>
                     </div>
                     <div className="flex items-center justify-between">
                       <div><p className="text-sm font-medium text-foreground">Newsletter</p><p className="text-xs text-muted-foreground">Ricevi la newsletter settimanale</p></div>
