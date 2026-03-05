@@ -350,6 +350,16 @@ const GruppoDetail = () => {
                               </AvatarFallback>
                             </Avatar>
                           )}
+                          {isMine && (
+                            <div className="order-last">
+                              <Avatar className="h-7 w-7 shrink-0">
+                                <AvatarImage src={p?.avatar_url || undefined} />
+                                <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
+                          )}
                           <div className={`max-w-[75%] rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
                             {/* Reply preview */}
                             {parentMsg && (

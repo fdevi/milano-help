@@ -119,7 +119,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
             const parentName = parentMsg ? getProfileName(parentMsg.mittenteId) : null;
 
             return (
-              <div key={msg.id} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+              <div key={msg.id} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"}`}>
                 {!isMine && (
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={p?.avatar_url || undefined} />
@@ -127,6 +127,16 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                       {getInitials(msg.mittenteId)}
                     </AvatarFallback>
                   </Avatar>
+                )}
+                {isMine && (
+                  <div className="order-last">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarImage src={p?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                        {getInitials(msg.mittenteId)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                 )}
                 <div className={`max-w-[75%] rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
                   {/* Reply preview */}
