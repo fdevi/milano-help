@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2, Reply, Smile } from "lucide-react";
+import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2, Reply, Smile, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -88,6 +88,37 @@ const GruppoDetail = () => {
     enabled: !!id && isMember,
   });
 
+  // Likes for group messages
+  const groupMsgIds = (messaggi as any[]).map((m) => m.id);
+  const { data: groupLikes = [] } = useQuery({
+    queryKey: ["gruppi_messaggi_piace", id],
+    queryFn: async () => {
+      if (groupMsgIds.length === 0) return [];
+      const { data } = await supabase
+        .from("gruppi_messaggi_piace")
+        .select("messaggio_id, user_id")
+        .in("messaggio_id", groupMsgIds);
+      return data || [];
+    },
+    enabled: !!id && isMember && groupMsgIds.length > 0,
+  });
+
+  const handleToggleGroupLike = async (messageId: string) => {
+    if (!user) return;
+    const existing = (groupLikes as any[]).find(
+      (l: any) => l.messaggio_id === messageId && l.user_id === user.id
+    );
+    if (existing) {
+      await supabase.from("gruppi_messaggi_piace").delete().eq("messaggio_id", messageId).eq("user_id", user.id);
+    } else {
+      await supabase.from("gruppi_messaggi_piace").insert({ messaggio_id: messageId, user_id: user.id } as any);
+    }
+    queryClient.invalidateQueries({ queryKey: ["gruppi_messaggi_piace", id] });
+  };
+
+  const getGroupLikeCount = (msgId: string) => (groupLikes as any[]).filter((l: any) => l.messaggio_id === msgId).length;
+  const hasGroupLiked = (msgId: string) => (groupLikes as any[]).some((l: any) => l.messaggio_id === msgId && l.user_id === user?.id);
+
   // Profiles for messages
   const msgUserIds = [...new Set((messaggi as any[]).map((m) => m.mittente_id))];
   const { data: msgProfiles = [] } = useQuery({
@@ -142,6 +173,9 @@ const GruppoDetail = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
         queryClient.invalidateQueries({ queryKey: ["msg_profiles"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "gruppi_messaggi_piace" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["gruppi_messaggi_piace", id] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -360,6 +394,7 @@ const GruppoDetail = () => {
                               </Avatar>
                             </div>
                           )}
+                          <div className="flex flex-col">
                           <div className={`max-w-[75%] rounded-2xl text-sm ${isMine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
                             {/* Reply preview */}
                             {parentMsg && (
@@ -380,13 +415,31 @@ const GruppoDetail = () => {
                               </p>
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleReply(msg)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity shrink-0 mb-2"
-                            title="Rispondi"
-                          >
-                            <Reply className="w-3.5 h-3.5" />
-                          </button>
+                          {getGroupLikeCount(msg.id) > 0 && (
+                            <div className={`flex ${isMine ? "justify-end" : "justify-start"} -mt-1`}>
+                              <span className="inline-flex items-center gap-0.5 text-[10px] bg-card border rounded-full px-1.5 py-0.5 shadow-sm">
+                                <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
+                                {getGroupLikeCount(msg.id)}
+                              </span>
+                            </div>
+                          )}
+                          </div>
+                          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mb-2">
+                            <button
+                              onClick={() => handleReply(msg)}
+                              className="text-muted-foreground hover:text-primary"
+                              title="Rispondi"
+                            >
+                              <Reply className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleToggleGroupLike(msg.id)}
+                              className={`transition-colors ${hasGroupLiked(msg.id) ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}
+                              title="Mi piace"
+                            >
+                              <Heart className={`w-3.5 h-3.5 ${hasGroupLiked(msg.id) ? "fill-red-500" : ""}`} />
+                            </button>
+                          </div>
                         </div>
                       );
                     })
