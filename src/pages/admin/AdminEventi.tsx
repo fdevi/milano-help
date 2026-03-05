@@ -80,7 +80,7 @@ const AdminEventi = () => {
         tipo: "evento_approvato",
         titolo: "Evento approvato",
         messaggio: `Il tuo evento "${evento.titolo}" è stato approvato`,
-        link: `/eventi/${evento.id}`,
+        link: `/evento/${evento.id}`,
         riferimento_id: evento.id,
         mittente_id: user?.id,
       });
