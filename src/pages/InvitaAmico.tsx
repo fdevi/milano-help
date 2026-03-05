@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const BASE_URL = typeof window !== "undefined" ? window.location.origin : "https://milanohelp.it";
+const BASE_URL = typeof window !== "undefined" ? window.location.origin : "https://milanohelp.lovable.app";
 
 // Icone social (SVG inline)
 const IconWhatsApp = () => (
