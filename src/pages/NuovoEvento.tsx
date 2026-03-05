@@ -29,6 +29,7 @@ const NuovoEvento = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [form, setForm] = useState({
@@ -104,7 +105,7 @@ const NuovoEvento = () => {
 
     setLoading(true);
     try {
-      const { data: evento, error } = await supabase.from("eventi").insert({
+      const insertData: any = {
         titolo: form.titolo,
         descrizione: form.descrizione || null,
         data: date.toISOString(),
@@ -114,7 +115,11 @@ const NuovoEvento = () => {
         gratuito: form.gratuito,
         prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,
         categoria: "evento",
-      }).select("id").single();
+      };
+      if (endDate) {
+        insertData.fine = endDate.toISOString();
+      }
+      const { data: evento, error } = await supabase.from("eventi").insert(insertData).select("id").single();
 
       if (error) throw error;
 
@@ -195,6 +200,38 @@ const NuovoEvento = () => {
                       setDate(newDate);
                     }
                   }} />
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Data e ora fine (opzionale) */}
+          <div>
+            <Label>Data e ora fine (opzionale)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Se non specificata, l'evento termina alle 23:59 dello stesso giorno.</p>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PPP HH:mm", { locale: it }) : "Nessuna data di fine"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                <div className="p-3 border-t flex gap-2 items-center">
+                  <Input type="time" onChange={(e) => {
+                    if (endDate) {
+                      const [hours, minutes] = e.target.value.split(":");
+                      const newDate = new Date(endDate);
+                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      setEndDate(newDate);
+                    }
+                  }} />
+                  {endDate && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setEndDate(undefined)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
