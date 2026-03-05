@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
           riferimento_id: annuncioId,
           mittente_id: user!.id,
         } as any);
+        sendPushNotification(annuncioAutoreId, "Nuovo commento", `${nomeUtente} ha commentato il tuo annuncio "${annuncioTitolo || ""}": "${testoTroncato}"`, `/annuncio/${annuncioId}`);
       }
 
       // Notify parent comment author (if replying)
@@ -142,6 +144,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
             riferimento_id: annuncioId,
             mittente_id: user!.id,
           } as any);
+          sendPushNotification(parentComment.user_id, "Risposta al tuo commento", `${nomeUtente} ha risposto al tuo commento: "${testoTroncato}"`, `/annuncio/${annuncioId}`);
         }
       }
     },
