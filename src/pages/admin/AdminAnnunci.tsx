@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,7 @@ const AdminAnnunci = () => {
         link: newStato === "attivo" ? `/annuncio/${annuncio.id}` : "/miei-annunci",
       };
       await supabase.from("notifiche").insert(notifica);
+      sendPushNotification(annuncio.user_id, notifica.titolo, notifica.messaggio, notifica.link);
 
       // Send email via edge function
       const recipientEmail = profile?.email;

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import EmojiPicker from "emoji-picker-react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -206,6 +207,7 @@ const EventoPage = () => {
           mittente_id: user.id,
           riferimento_id: evento.id,
         });
+        sendPushNotification(evento.organizzatore_id, "Mi piace al tuo evento", `A ${nomeUtente} piace il tuo evento "${evento.titolo}"`, `/evento/${evento.id}`);
       }
     }
     queryClient.invalidateQueries({ queryKey: ["evento_like", id] });
@@ -245,6 +247,7 @@ const EventoPage = () => {
           mittente_id: user.id,
           riferimento_id: evento.id,
         });
+        sendPushNotification(evento.organizzatore_id, "Nuovo commento sul tuo evento", `${nomeUtente} ha commentato il tuo evento "${evento.titolo}": "${preview}"`, `/evento/${evento.id}`);
       }
 
       // Notify parent comment author (if replying)
@@ -260,6 +263,7 @@ const EventoPage = () => {
             mittente_id: user.id,
             riferimento_id: evento.id,
           });
+          sendPushNotification(parentComment.user_id, "Risposta al tuo commento", `${nomeUtente} ha risposto al tuo commento: "${preview}"`, `/evento/${evento.id}`);
         }
       }
 
@@ -302,6 +306,7 @@ const EventoPage = () => {
             mittente_id: user.id,
             riferimento_id: evento.id,
           });
+          sendPushNotification(evento.organizzatore_id, "Nuovo partecipante", `${nomeUtente} parteciperà al tuo evento "${evento.titolo}"`, `/evento/${evento.id}`);
         }
       }
     }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -84,6 +85,7 @@ const AdminEventi = () => {
         riferimento_id: evento.id,
         mittente_id: user?.id,
       });
+      sendPushNotification(evento.organizzatore_id, "Evento approvato", `Il tuo evento "${evento.titolo}" è stato approvato`, `/evento/${evento.id}`);
     }
     sonnerToast.success("Evento approvato");
     queryClient.invalidateQueries({ queryKey: ["admin-eventi"] });
@@ -108,6 +110,7 @@ const AdminEventi = () => {
         riferimento_id: evento.id,
         mittente_id: user?.id,
       });
+      sendPushNotification(evento.organizzatore_id, "Evento rifiutato", `Il tuo evento "${evento.titolo}" è stato rifiutato. Motivo: ${motivoRifiuto}`, `/miei-eventi`);
     }
     sonnerToast.success("Evento rifiutato");
     setRifiutoModal(null);
