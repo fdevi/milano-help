@@ -1,10 +1,11 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye, Link as LinkIcon, Mail, Share2, Check, HelpCircle } from "lucide-react";
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye, Link as LinkIcon, Mail, Share2, Check, HelpCircle, Reply, X, Smile } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import EmojiPicker from "emoji-picker-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -25,6 +26,9 @@ const EventoPage = () => {
   const queryClient = useQueryClient();
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch evento
   const { data: evento, isLoading, error } = useQuery({
@@ -194,6 +198,7 @@ const EventoPage = () => {
       evento_id: evento.id,
       user_id: user.id,
       testo: testoTroncato,
+      parent_id: replyTo?.id || null,
     });
     setSending(false);
 
@@ -215,6 +220,8 @@ const EventoPage = () => {
         });
       }
       setCommentText("");
+      setReplyTo(null);
+      setShowEmoji(false);
       queryClient.invalidateQueries({ queryKey: ["evento_commenti", id] });
     }
   };
@@ -411,51 +418,136 @@ const EventoPage = () => {
                   Commenti ({commenti.length})
                 </h2>
 
-                {user ? (
-                  <div className="flex gap-3 mb-6">
-                    <Textarea
-                      placeholder="Scrivi un commento..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="min-h-[60px]"
-                    />
-                    <Button onClick={handleComment} disabled={sending || !commentText.trim()} size="icon" className="shrink-0 self-end">
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground mb-4">
-                    <Link to="/login" className="underline hover:text-primary">Accedi</Link> per lasciare un commento.
-                  </p>
-                )}
+                {(() => {
+                  const topLevel = commenti.filter((c: any) => !c.parent_id);
+                  const repliesByParent: Record<string, any[]> = {};
+                  commenti.filter((c: any) => c.parent_id).forEach((r: any) => {
+                    if (!repliesByParent[r.parent_id]) repliesByParent[r.parent_id] = [];
+                    repliesByParent[r.parent_id].push(r);
+                  });
 
-                {commenti.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Nessun commento ancora. Sii il primo!</p>
-                ) : (
-                  <div className="space-y-4">
-                    {commenti.map((c: any) => {
-                      const nome = c.profilo ? `${c.profilo.nome || ""} ${c.profilo.cognome || ""}`.trim() || "Utente" : "Utente";
-                      const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
-                      return (
-                        <div key={c.id} className="flex gap-3">
-                          <Avatar className="w-8 h-8 shrink-0">
-                            {c.profilo?.avatar_url && <AvatarImage src={c.profilo.avatar_url} />}
-                            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-sm font-medium text-foreground">{nome}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(c.created_at), "d MMM yyyy, HH:mm", { locale: it })}
-                              </span>
-                            </div>
-                            <p className="text-sm text-foreground/80 mt-0.5">{c.testo}</p>
+                  const handleReplyClick = (c: any) => {
+                    const nome = c.profilo ? `${c.profilo.nome || ""} ${c.profilo.cognome ? c.profilo.cognome[0] + "." : ""}`.trim() || "Utente" : "Utente";
+                    setReplyTo({ id: c.id, nome, testo: c.testo });
+                    commentTextareaRef.current?.focus();
+                  };
+
+                  const handleCommentKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (commentText.trim() && !sending) handleComment();
+                    }
+                  };
+
+                  const onEmojiClick = (emojiData: any) => {
+                    setCommentText((prev) => prev + emojiData.emoji);
+                    commentTextareaRef.current?.focus();
+                  };
+
+                  const renderComment = (c: any, isReply = false) => {
+                    const nome = c.profilo ? `${c.profilo.nome || ""} ${c.profilo.cognome || ""}`.trim() || "Utente" : "Utente";
+                    const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                    const parentComment = c.parent_id ? commenti.find((p: any) => p.id === c.parent_id) : null;
+
+                    return (
+                      <div key={c.id} className={`flex gap-3 ${isReply ? "ml-8 pl-3 border-l-2 border-muted" : ""}`}>
+                        <Avatar className="w-8 h-8 shrink-0">
+                          {c.profilo?.avatar_url && <AvatarImage src={c.profilo.avatar_url} />}
+                          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-medium text-foreground">{nome}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(c.created_at), "d MMM yyyy, HH:mm", { locale: it })}
+                            </span>
                           </div>
+                          {parentComment && (
+                            <div className="bg-muted/50 rounded px-2 py-1 mb-1 text-xs text-muted-foreground border-l-2 border-primary/30">
+                              <span className="font-medium">{parentComment.profilo?.nome || "Utente"}</span>: {parentComment.testo?.slice(0, 60)}{parentComment.testo?.length > 60 ? "…" : ""}
+                            </div>
+                          )}
+                          <p className="text-sm text-foreground/80 mt-0.5">{c.testo}</p>
+                          {user && (
+                            <div className="flex items-center gap-3 mt-1">
+                              <button
+                                onClick={() => handleReplyClick(c)}
+                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                <Reply className="w-3.5 h-3.5" /> Rispondi
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <>
+                      {user ? (
+                        <div className="relative mb-6">
+                          {replyTo && (
+                            <div className="flex items-center gap-2 bg-muted/60 rounded-t-lg px-3 py-2 text-xs border border-b-0">
+                              <Reply className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-muted-foreground">
+                                Stai rispondendo a <span className="font-semibold text-foreground">{replyTo.nome}</span>: {replyTo.testo.slice(0, 40)}{replyTo.testo.length > 40 ? "…" : ""}
+                              </span>
+                              <button onClick={() => setReplyTo(null)} className="ml-auto text-muted-foreground hover:text-destructive">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                          <div className="flex gap-2 items-end">
+                            <div className="relative flex-1">
+                              <Textarea
+                                ref={commentTextareaRef}
+                                placeholder="Scrivi un commento..."
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                onKeyDown={handleCommentKeyDown}
+                                className={`min-h-[60px] pr-10 ${replyTo ? "rounded-t-none" : ""}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowEmoji((v) => !v)}
+                                className="absolute right-2 bottom-2 text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                <Smile className="w-5 h-5" />
+                              </button>
+                              {showEmoji && (
+                                <div className="absolute bottom-12 right-0 z-50">
+                                  <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} searchPlaceholder="Cerca emoji..." />
+                                </div>
+                              )}
+                            </div>
+                            <Button onClick={handleComment} disabled={sending || !commentText.trim()} size="icon" className="shrink-0">
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">Premi Invio per inviare, Maiusc+Invio per andare a capo</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mb-4">
+                          <Link to="/login" className="underline hover:text-primary">Accedi</Link> per lasciare un commento.
+                        </p>
+                      )}
+
+                      {commenti.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">Nessun commento ancora. Sii il primo!</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {topLevel.map((c: any) => (
+                            <div key={c.id}>
+                              {renderComment(c)}
+                              {repliesByParent[c.id]?.map((r: any) => renderComment(r, true))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
