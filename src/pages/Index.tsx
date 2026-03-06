@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -149,6 +150,7 @@ const EventCard = ({ evento }: { evento: any }) => {
 };
 
 const Index = () => {
+  const { user } = useAuth();
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [annunciCount, setAnnunciCount] = useState<Record<string, number>>({});
@@ -264,16 +266,33 @@ const Index = () => {
               Offri servizi, cerca aiuto, vendi e regala — tutto nel tuo quartiere.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/registrati">
-                <Button size="lg" variant="hero" className="gap-2">
-                  Unisciti alla community
-                </Button>
-              </Link>
-              <Link to="/sezioni">
-                <Button size="lg" variant="outline">
-                  Esplora le sezioni
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/home">
+                    <Button size="lg" variant="hero" className="gap-2">
+                      Vai alla Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/sezioni">
+                    <Button size="lg" variant="outline">
+                      Esplora le sezioni
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button size="lg" variant="hero" className="gap-2">
+                      Accedi
+                    </Button>
+                  </Link>
+                  <Link to="/registrati">
+                    <Button size="lg" variant="outline">
+                      Registrati
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
 
