@@ -11,9 +11,15 @@ export async function sendPushNotification(
   link?: string,
 ) {
   try {
-    await supabase.functions.invoke("send-push-notification", {
+    console.log("[push] Calling send-push-notification for userId:", userId, "title:", title);
+    const { data, error } = await supabase.functions.invoke("send-push-notification", {
       body: { userId, title, message, link },
     });
+    if (error) {
+      console.warn("[push] Edge function error:", error);
+    } else {
+      console.log("[push] Edge function response:", data);
+    }
   } catch (e) {
     console.warn("[push] failed:", e);
   }

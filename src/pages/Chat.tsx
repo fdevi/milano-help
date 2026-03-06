@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import ChatList from "@/components/chat/ChatList";
@@ -371,7 +372,16 @@ const Chat = () => {
         ultimo_mittente_id: user.id,
       }).eq("id", conversationId);
 
-      // Notification is handled by DB trigger (notify_messaggio_privato)
+      // Send push notification to the other user
+      const conv = (privateConversations as any[]).find((c) => c.id === conversationId);
+      if (conv) {
+        const otherId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
+        if (otherId) {
+          const myName = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
+          const preview = text.length > 50 ? text.slice(0, 50) + "…" : text;
+          sendPushNotification(otherId, "Nuovo messaggio", `${myName}: ${preview}`, `/chat/${conversationId}`);
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversazioni_private"] });
