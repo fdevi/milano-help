@@ -390,13 +390,18 @@ const Chat = () => {
 
       // Send push notification to the other user
       const conv = (privateConversations as any[]).find((c) => c.id === conversationId);
+      console.log("[chat-push] conv found:", !!conv, "conversationId:", conversationId, "privateConversations count:", (privateConversations as any[]).length);
       if (conv) {
         const otherId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
+        console.log("[chat-push] otherId:", otherId, "acquirente_id:", conv.acquirente_id, "venditore_id:", conv.venditore_id, "myId:", user.id);
         if (otherId) {
           const myName = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
           const preview = text.length > 50 ? text.slice(0, 50) + "…" : text;
+          console.log("[chat-push] Sending push to:", otherId, "title: Nuovo messaggio, body:", `${myName}: ${preview}`);
           sendPushNotification(otherId, "Nuovo messaggio", `${myName}: ${preview}`, `/chat/${conversationId}`);
         }
+      } else {
+        console.warn("[chat-push] Conversation not found in privateConversations! conversationId:", conversationId);
       }
 
       queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
