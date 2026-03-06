@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
