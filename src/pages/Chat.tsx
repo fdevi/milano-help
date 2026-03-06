@@ -350,6 +350,22 @@ const Chat = () => {
       await supabase
         .from("messaggi_privati_piace")
         .insert({ messaggio_id: messageId, user_id: user.id } as any);
+
+      // Push notification for like on private message
+      try {
+        const msg = (messages as any[]).find((m) => m.id === messageId);
+        if (msg && msg.mittente_id !== user.id) {
+          const myName = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
+          sendPushNotification(
+            msg.mittente_id,
+            "Nuovo like",
+            `${myName} ha messo like al tuo messaggio`,
+            `/chat/${conversationId}`
+          );
+        }
+      } catch (e) {
+        console.warn("[push] private like push failed:", e);
+      }
     }
     queryClient.invalidateQueries({ queryKey: ["messaggi_privati_piace", conversationId] });
   };
