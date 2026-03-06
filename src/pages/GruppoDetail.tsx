@@ -113,6 +113,23 @@ const GruppoDetail = () => {
       await supabase.from("gruppi_messaggi_piace").delete().eq("messaggio_id", messageId).eq("user_id", user.id);
     } else {
       await supabase.from("gruppi_messaggi_piace").insert({ messaggio_id: messageId, user_id: user.id } as any);
+
+      // Push notification for like on group message
+      try {
+        const msg = (messaggi as any[]).find((m) => m.id === messageId);
+        if (msg && msg.mittente_id !== user.id) {
+          const p = profileMap[user.id];
+          const myName = p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente";
+          sendPushNotification(
+            msg.mittente_id,
+            "Nuovo like",
+            `${myName} ha messo like al tuo messaggio`,
+            `/gruppo/${id}`
+          );
+        }
+      } catch (e) {
+        console.warn("[push] group like push failed:", e);
+      }
     }
     queryClient.invalidateQueries({ queryKey: ["gruppi_messaggi_piace", id] });
   };
