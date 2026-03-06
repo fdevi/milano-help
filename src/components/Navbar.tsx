@@ -84,10 +84,19 @@ const Navbar = () => {
 
         {/* Mobile: icons + hamburger */}
         <div className="flex md:hidden items-center gap-1">
-          {user && (
+          {user ? (
             <>
               <DropdownChat />
               <PannelloNotifiche />
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Accedi</Button>
+              </Link>
+              <Link to="/registrati">
+                <Button size="sm">Registrati</Button>
+              </Link>
             </>
           )}
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
