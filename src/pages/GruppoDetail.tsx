@@ -196,11 +196,42 @@ const GruppoDetail = () => {
       } as any);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      const sentText = text.trim();
       setText("");
       setReplyTo(null);
       setShowEmoji(false);
       queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
+
+      // Push notification to all group members except sender
+      try {
+        const { data: membri } = await supabase
+          .from("gruppi_membri")
+          .select("user_id")
+          .eq("gruppo_id", id!)
+          .eq("stato", "approvato")
+          .neq("user_id", user!.id);
+
+        if (membri && membri.length > 0) {
+          const p = profileMap[user!.id];
+          const myName = p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente";
+          const preview = sentText.length > 50 ? sentText.slice(0, 50) + "…" : sentText;
+          const gruppoNome = (gruppo as any)?.nome || "gruppo";
+
+          await Promise.all(
+            membri.map((m: any) =>
+              sendPushNotification(
+                m.user_id,
+                `Nuovo messaggio in ${gruppoNome}`,
+                `${myName}: ${preview}`,
+                `/gruppo/${id}`
+              )
+            )
+          );
+        }
+      } catch (e) {
+        console.warn("[push] group message push failed:", e);
+      }
     },
   });
 
