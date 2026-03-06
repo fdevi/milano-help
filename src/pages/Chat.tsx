@@ -416,6 +416,23 @@ const Chat = () => {
         ultimo_messaggio: text,
         ultimo_aggiornamento: new Date().toISOString(),
       }).eq("id", conversationId);
+
+      // Send push notification for old-style conversations
+      const conv = (conversations as any[]).find((c: any) => c.id === conversationId);
+      console.log("[chat-push-old] conv found:", !!conv, "conversationId:", conversationId, "conversations count:", (conversations as any[]).length);
+      if (conv) {
+        const otherId = conv.utente1_id === user.id ? conv.utente2_id : conv.utente1_id;
+        console.log("[chat-push-old] otherId:", otherId, "utente1_id:", conv.utente1_id, "utente2_id:", conv.utente2_id, "myId:", user.id);
+        if (otherId) {
+          const myName = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
+          const preview = text.length > 50 ? text.slice(0, 50) + "…" : text;
+          console.log("[chat-push-old] Sending push to:", otherId, "title: Nuovo messaggio, body:", `${myName}: ${preview}`);
+          sendPushNotification(otherId, "Nuovo messaggio", `${myName}: ${preview}`, `/chat/${conversationId}`);
+        }
+      } else {
+        console.warn("[chat-push-old] Conversation not found in conversations! conversationId:", conversationId);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversazioni"] });
     }
