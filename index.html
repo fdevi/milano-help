@@ -10,20 +10,37 @@
 
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          await OneSignal.init({
-            appId: "dada59a2-fab8-46aa-b12c-6ef78b12e976",
-            serviceWorkerPath: "/OneSignalSDKWorker.js",
-            notifyButton: { enable: true },
-          });
-          window.oneSignalReady = true;
-          console.log("[OneSignal] SDK inizializzato e pronto ✅");
-        } catch (err) {
-          console.error("[OneSignal] Errore durante init:", err);
-        }
-      });
+      // Wait for full page load (required for iOS Safari / PWA)
+      function initOneSignal() {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+          try {
+            // Enable trace logging for iOS debugging
+            if (OneSignal.Debug) {
+              OneSignal.Debug.setLogLevel('trace');
+            }
+            console.log("[OneSignal] Avvio init...");
+            await OneSignal.init({
+              appId: "dada59a2-fab8-46aa-b12c-6ef78b12e976",
+              serviceWorkerPath: "/OneSignalSDKWorker.js",
+              serviceWorkerParam: { scope: "/" },
+              notifyButton: { enable: true },
+              allowLocalhostAsSecureOrigin: false,
+            });
+            window.oneSignalReady = true;
+            console.log("[OneSignal] SDK inizializzato e pronto ✅");
+          } catch (err) {
+            console.error("[OneSignal] Errore durante init:", err);
+          }
+        });
+      }
+
+      // iOS Safari requires the page to be fully loaded
+      if (document.readyState === 'complete') {
+        initOneSignal();
+      } else {
+        window.addEventListener('load', initOneSignal);
+      }
     </script>
     
     
