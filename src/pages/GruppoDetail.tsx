@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2, Reply, Smile, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { sendPushNotification } from "@/lib/pushNotification";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -112,6 +113,23 @@ const GruppoDetail = () => {
       await supabase.from("gruppi_messaggi_piace").delete().eq("messaggio_id", messageId).eq("user_id", user.id);
     } else {
       await supabase.from("gruppi_messaggi_piace").insert({ messaggio_id: messageId, user_id: user.id } as any);
+
+      // Push notification for like on group message
+      try {
+        const msg = (messaggi as any[]).find((m) => m.id === messageId);
+        if (msg && msg.mittente_id !== user.id) {
+          const p = profileMap[user.id];
+          const myName = p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente";
+          sendPushNotification(
+            msg.mittente_id,
+            "Nuovo like",
+            `${myName} ha messo like al tuo messaggio`,
+            `/gruppo/${id}`
+          );
+        }
+      } catch (e) {
+        console.warn("[push] group like push failed:", e);
+      }
     }
     queryClient.invalidateQueries({ queryKey: ["gruppi_messaggi_piace", id] });
   };
@@ -195,11 +213,42 @@ const GruppoDetail = () => {
       } as any);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      const sentText = text.trim();
       setText("");
       setReplyTo(null);
       setShowEmoji(false);
       queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
+
+      // Push notification to all group members except sender
+      try {
+        const { data: membri } = await supabase
+          .from("gruppi_membri")
+          .select("user_id")
+          .eq("gruppo_id", id!)
+          .eq("stato", "approvato")
+          .neq("user_id", user!.id);
+
+        if (membri && membri.length > 0) {
+          const p = profileMap[user!.id];
+          const myName = p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente";
+          const preview = sentText.length > 50 ? sentText.slice(0, 50) + "…" : sentText;
+          const gruppoNome = (gruppo as any)?.nome || "gruppo";
+
+          await Promise.all(
+            membri.map((m: any) =>
+              sendPushNotification(
+                m.user_id,
+                `Nuovo messaggio in ${gruppoNome}`,
+                `${myName}: ${preview}`,
+                `/gruppo/${id}`
+              )
+            )
+          );
+        }
+      } catch (e) {
+        console.warn("[push] group message push failed:", e);
+      }
     },
   });
 
