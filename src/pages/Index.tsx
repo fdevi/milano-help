@@ -150,6 +150,7 @@ const EventCard = ({ evento }: { evento: any }) => {
 };
 
 const Index = () => {
+  const { user } = useAuth();
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [annunciCount, setAnnunciCount] = useState<Record<string, number>>({});
