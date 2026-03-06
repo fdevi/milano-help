@@ -8,7 +8,23 @@
     <meta name="description" content="Portale di servizi">
     <meta name="author" content="Lovable" />
 
-    <!-- TODO: Update og:title to match your application name -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          await OneSignal.init({
+            appId: "dada59a2-fab8-46aa-b12c-6ef78b12e976",
+            serviceWorkerPath: "/OneSignalSDKWorker.js",
+            notifyButton: { enable: true },
+          });
+          window.oneSignalReady = true;
+          console.log("[OneSignal] SDK inizializzato e pronto ✅");
+        } catch (err) {
+          console.error("[OneSignal] Errore durante init:", err);
+        }
+      });
+    </script>
     
     
     <meta property="og:type" content="website" />
