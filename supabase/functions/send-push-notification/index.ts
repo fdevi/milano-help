@@ -17,37 +17,45 @@ serve(async (req) => {
     const onesignalApiKey = Deno.env.get('ONESIGNAL_REST_API_KEY')
 
     if (!onesignalAppId || !onesignalApiKey) {
+      console.error('[push] OneSignal credentials not configured')
       return new Response(JSON.stringify({ error: 'OneSignal credentials not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
+    console.log('[push] Sending to userId:', userId, 'title:', title)
+
+    // Use the modern OneSignal REST API with include_aliases
     const payload = {
       app_id: onesignalAppId,
       contents: { en: message },
       headings: { en: title },
-      include_external_user_ids: [userId],
+      include_aliases: { external_id: [userId] },
+      target_channel: "push",
       url: link,
       data: data || {},
     }
 
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+    console.log('[push] Payload:', JSON.stringify(payload))
+
+    const response = await fetch('https://api.onesignal.com/notifications', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${onesignalApiKey}`,
+        'Authorization': `Basic ${onesignalApiKey}`,
       },
       body: JSON.stringify(payload),
     })
 
     const result = await response.json()
+    console.log('[push] OneSignal response:', JSON.stringify(result))
 
     return new Response(JSON.stringify({ success: true, result }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: unknown) {
-    console.error(error)
+    console.error('[push] Error:', error)
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
