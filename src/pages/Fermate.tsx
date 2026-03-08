@@ -6,7 +6,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ChevronDown, Bus, ArrowLeft, MapPin } from 'lucide-react';
 import { fermate, percorsi, Fermata, LineaPassaggio, Percorso } from '@/lib/datiMooneyGo';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
 type Vista = 'fermate' | 'linea' | 'corsa';
 
