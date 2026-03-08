@@ -1,4 +1,4 @@
-import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase } from "lucide-react";
+import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase, Train } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ const mainItems = [
   { title: "Eventi", url: "/eventi", icon: CalendarDays },
   { title: "Servizi", url: "/servizi", icon: Briefcase },
   { title: "Pubblica", url: "/nuovo-annuncio", icon: PlusCircle },
+  { title: "Fermate", url: "/fermate", icon: Train },
   { title: "Chat", url: "/chat", icon: MessageCircle },
 ];
 
@@ -32,7 +33,7 @@ const SidebarLink = ({ item }: { item: (typeof mainItems)[0] }) => {
       )}
     >
       <item.icon className="w-5 h-5 shrink-0" />
-      <span className="hidden lg:inline">{item.title}</span>
+      <span className="hidden md:inline">{item.title}</span>
     </Link>
   );
 };
@@ -56,7 +57,7 @@ const AppSidebar = () => {
             )}
           >
             <Settings className="w-5 h-5 shrink-0" />
-            <span className="hidden lg:inline">Admin</span>
+            <span className="hidden md:inline">Admin</span>
           </Link>
         )}
       </nav>

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
-  Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle, CalendarClock, RefreshCw,
+  Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle, CalendarClock, RefreshCw, Train,
 } from "lucide-react";
+import { getPreferiti } from "@/lib/fermate";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -170,6 +171,12 @@ const Profilo = () => {
         .order("data", { ascending: true });
       return data ?? [];
     },
+    enabled: !!user,
+  });
+
+  const { data: preferitiFermate } = useQuery({
+    queryKey: ["profilo-fermate-preferite", user?.id],
+    queryFn: () => getPreferiti(user!.id),
     enabled: !!user,
   });
 
@@ -348,10 +355,11 @@ const Profilo = () => {
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="dati" className="w-full">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="dati" className="gap-1.5"><User className="w-4 h-4" /> I miei dati</TabsTrigger>
-            <TabsTrigger value="annunci" className="gap-1.5"><FileText className="w-4 h-4" /> I miei annunci</TabsTrigger>
+            <TabsTrigger value="annunci" className="gap-1.5"><FileText className="w-4 h-4" /> Annunci</TabsTrigger>
             <TabsTrigger value="eventi" className="gap-1.5"><CalendarDays className="w-4 h-4" /> Eventi</TabsTrigger>
+            <TabsTrigger value="fermate" className="gap-1.5"><Train className="w-4 h-4" /> Le mie fermate</TabsTrigger>
             <TabsTrigger value="preferenze" className="gap-1.5"><Shield className="w-4 h-4" /> Preferenze</TabsTrigger>
           </TabsList>
 
@@ -471,6 +479,61 @@ const Profilo = () => {
                     </form>
                   )}
                 </div>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* ── Tab: Le mie fermate ── */}
+          <TabsContent value="fermate">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Card className="p-6 shadow-card space-y-4">
+                <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+                  <Train className="w-4 h-4 text-primary" /> Le mie fermate
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Le tue fermate preferite. Clicca su una fermata per aprirla sulla mappa.
+                </p>
+                {!preferitiFermate || preferitiFermate.length === 0 ? (
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-sm text-muted-foreground">Nessuna fermata tra i preferiti.</p>
+                    <Link to="/fermate">
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" /> Vai alla mappa fermate
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {preferitiFermate.map((pref) => (
+                      <li key={pref.id}>
+                        <Link
+                          to={`/fermate?fermata=${pref.fermataId}`}
+                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-sm transition-all"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Train className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{pref.fermata?.nome ?? pref.fermataId}</p>
+                            {pref.fermata?.linee && pref.fermata.linee.length > 0 && (
+                              <p className="text-xs text-muted-foreground">Linee: {pref.fermata.linee.join(", ")}</p>
+                            )}
+                          </div>
+                          <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {preferitiFermate && preferitiFermate.length > 0 && (
+                  <div className="pt-2">
+                    <Link to="/fermate">
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" /> Apri mappa fermate
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </Card>
             </motion.div>
           </TabsContent>

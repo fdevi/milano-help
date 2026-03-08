@@ -7,11 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Wrench, Search, ShoppingBag, Gift, GraduationCap, Heart, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Wrench, Search, ShoppingBag, Gift, GraduationCap, Heart,
   Home, Store, Baby, Calendar, MessageCircle, DollarSign,
   Loader2, ArrowRight, MapPin, Users, Shield, Award, Building2, Sprout, Briefcase,
-  Clock
+  Clock, Train,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -154,6 +162,7 @@ const Index = () => {
   const [categorie, setCategorie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [annunciCount, setAnnunciCount] = useState<Record<string, number>>({});
+  const [showFermateDialog, setShowFermateDialog] = useState(false);
   const mountedRef = useRef(true);
 
   // Carica le categorie con protezione unmount
@@ -265,7 +274,7 @@ const Index = () => {
               Connetti, aiuta e cresci insieme ai tuoi vicini a Milano, provincia e Monza Brianza. 
               Offri servizi, cerca aiuto, vendi e regala — tutto nel tuo quartiere.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-wrap gap-4 justify-center">
               {user ? (
                 <>
                   <Link to="/home">
@@ -276,6 +285,12 @@ const Index = () => {
                   <Link to="/sezioni">
                     <Button size="lg" variant="outline">
                       Esplora le sezioni
+                    </Button>
+                  </Link>
+                  <Link to="/fermate">
+                    <Button size="lg" variant="outline" className="gap-2">
+                      <Train className="w-4 h-4 shrink-0 md:inline" />
+                      <span className="hidden md:inline">Fermate & Stazioni</span>
                     </Button>
                   </Link>
                 </>
@@ -291,6 +306,15 @@ const Index = () => {
                       Registrati
                     </Button>
                   </Link>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setShowFermateDialog(true)}
+                  >
+                    <Train className="w-4 h-4 shrink-0 md:inline" />
+                    <span className="hidden md:inline">Fermate & Stazioni</span>
+                  </Button>
                 </>
               )}
             </div>
@@ -540,6 +564,33 @@ const Index = () => {
       </section>
 
       <Footer />
+
+      {/* Dialog: login richiesto per Fermate & Stazioni (solo utenti non loggati) */}
+      <Dialog open={showFermateDialog} onOpenChange={setShowFermateDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Train className="w-5 h-5 text-primary" />
+              Fermate & Stazioni
+            </DialogTitle>
+            <DialogDescription>
+              Per accedere a Fermate & Stazioni devi effettuare il login.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Link to="/login" className="w-full sm:w-auto" onClick={() => setShowFermateDialog(false)}>
+              <Button className="w-full" variant="default">
+                Accedi
+              </Button>
+            </Link>
+            <Link to="/registrati" className="w-full sm:w-auto" onClick={() => setShowFermateDialog(false)}>
+              <Button className="w-full" variant="outline">
+                Registrati
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
