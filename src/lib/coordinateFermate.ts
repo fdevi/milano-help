@@ -104,7 +104,7 @@ export const coordinateFermate: Record<string, CoordFermata> = {
   "Sant'Agostino": { lat: 45.4623, lng: 9.1723 },
   Lanza: { lat: 45.4689, lng: 9.1789 },
   Moscova: { lat: 45.4723, lng: 9.1856 },
-  "Garibaldi FS": { lat: 45.4846, lng: 9.2044 },
+  // "Garibaldi FS" already defined above
   Gioia: { lat: 45.4867, lng: 9.2067 },
 
   // Bus 90, 91
