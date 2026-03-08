@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Map, { Marker, NavigationControl, Source, Layer } from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { ChevronDown, Bus, ArrowLeft, MapPin } from 'lucide-react';
+import { ChevronDown, Bus, ArrowLeft, MapPin, LocateFixed } from 'lucide-react';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { fermate, percorsi, Fermata, LineaPassaggio, Percorso } from '@/lib/datiMooneyGo';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
@@ -150,6 +151,19 @@ const Fermate: React.FC = () => {
   const [selectedPercorso, setSelectedPercorso] = useState<Percorso | null>(null);
   const [selectedFermataNome, setSelectedFermataNome] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
+
+  const { latitude, longitude, requestPosition, loading: geoLoading } = useGeolocation();
+
+  const handleGeolocate = () => {
+    requestPosition();
+  };
+
+  useEffect(() => {
+    if (latitude != null && longitude != null && mapRef.current) {
+      const map = mapRef.current?.getMap?.() ?? mapRef.current;
+      map?.flyTo?.({ center: [longitude, latitude], zoom: 16 });
+    }
+  }, [latitude, longitude]);
 
   useEffect(() => {
     const map = mapRef.current?.getMap?.() ?? mapRef.current;
@@ -358,6 +372,11 @@ const Fermate: React.FC = () => {
               </div>
             </Marker>
           ))}
+          {latitude != null && longitude != null && (
+            <Marker longitude={longitude} latitude={latitude} anchor="center">
+              <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-white shadow-lg" />
+            </Marker>
+          )}
           {percorsoGeoJson && (
             <Source id="percorso-line" type="geojson" data={percorsoGeoJson}>
               <Layer
@@ -390,6 +409,19 @@ const Fermate: React.FC = () => {
             </Source>
           )}
         </Map>
+        {/* Pulsante di geolocalizzazione - allineato ai controlli zoom Mapbox */}
+        <div className="absolute" style={{ top: '120px', right: '12px', zIndex: 20 }}>
+          <button
+            type="button"
+            onClick={handleGeolocate}
+            disabled={geoLoading}
+            className="bg-white p-1.5 rounded-md shadow-md hover:bg-gray-100 transition-colors disabled:opacity-50 border border-gray-200"
+            style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Vai alla mia posizione"
+          >
+            <LocateFixed className="h-4 w-4 text-gray-700" />
+          </button>
+        </div>
       </div>
 
       <div
