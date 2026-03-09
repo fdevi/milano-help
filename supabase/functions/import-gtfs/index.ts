@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     // For stop_times with URL, use streaming mode
     if (table === "stop_times" && csvUrl) {
       console.log(`[import-gtfs] Streaming stop_times from URL, skip=${skip}, limit=${limit}`);
-      const result = await streamProcessStopTimes(csvUrl, supabase, skip, limit);
+      const result = await streamProcessStopTimes(csvUrl, supabase as any, skip, limit);
       console.log(`[import-gtfs] stop_times result: inserted=${result.inserted}, totalProcessed=${result.totalProcessed}, done=${result.done}`);
       return new Response(
         JSON.stringify({
