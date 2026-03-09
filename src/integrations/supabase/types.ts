@@ -1288,6 +1288,27 @@ export type Database = {
         }
         Relationships: []
       }
+      routes_atm: {
+        Row: {
+          route_id: string
+          route_long_name: string | null
+          route_short_name: string | null
+          route_type: number | null
+        }
+        Insert: {
+          route_id: string
+          route_long_name?: string | null
+          route_short_name?: string | null
+          route_type?: number | null
+        }
+        Update: {
+          route_id?: string
+          route_long_name?: string | null
+          route_short_name?: string | null
+          route_type?: number | null
+        }
+        Relationships: []
+      }
       segnalazioni: {
         Row: {
           annuncio_id: string
@@ -1376,6 +1397,74 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categorie"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      stop_times_atm: {
+        Row: {
+          arrival_time: string | null
+          departure_time: string | null
+          stop_id: string
+          stop_sequence: number
+          trip_id: string
+        }
+        Insert: {
+          arrival_time?: string | null
+          departure_time?: string | null
+          stop_id: string
+          stop_sequence: number
+          trip_id: string
+        }
+        Update: {
+          arrival_time?: string | null
+          departure_time?: string | null
+          stop_id?: string
+          stop_sequence?: number
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stop_times_atm_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "fermate_atm"
+            referencedColumns: ["stop_id"]
+          },
+          {
+            foreignKeyName: "stop_times_atm_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips_atm"
+            referencedColumns: ["trip_id"]
+          },
+        ]
+      }
+      trips_atm: {
+        Row: {
+          direction_id: number | null
+          route_id: string | null
+          trip_headsign: string | null
+          trip_id: string
+        }
+        Insert: {
+          direction_id?: number | null
+          route_id?: string | null
+          trip_headsign?: string | null
+          trip_id: string
+        }
+        Update: {
+          direction_id?: number | null
+          route_id?: string | null
+          trip_headsign?: string | null
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_atm_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes_atm"
+            referencedColumns: ["route_id"]
           },
         ]
       }
