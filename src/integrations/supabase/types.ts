@@ -609,6 +609,27 @@ export type Database = {
           },
         ]
       }
+      fermate_atm: {
+        Row: {
+          stop_id: string
+          stop_lat: number | null
+          stop_lon: number | null
+          stop_name: string | null
+        }
+        Insert: {
+          stop_id: string
+          stop_lat?: number | null
+          stop_lon?: number | null
+          stop_name?: string | null
+        }
+        Update: {
+          stop_id?: string
+          stop_lat?: number | null
+          stop_lon?: number | null
+          stop_name?: string | null
+        }
+        Relationships: []
+      }
       gruppi: {
         Row: {
           categoria: string | null
