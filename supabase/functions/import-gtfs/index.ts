@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const table = url.searchParams.get("table");
+    const csvUrl = url.searchParams.get("url");
 
     if (!table || !["routes", "trips", "stop_times", "fermate"].includes(table)) {
       return new Response(
@@ -57,11 +58,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = await req.text();
+    let body: string;
+    if (csvUrl) {
+      console.log(`[import-gtfs] Fetching CSV from URL: ${csvUrl.substring(0, 100)}...`);
+      const resp = await fetch(csvUrl, { redirect: "follow" });
+      if (!resp.ok) {
+        return new Response(
+          JSON.stringify({ error: `Failed to fetch URL: ${resp.status} ${resp.statusText}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      body = await resp.text();
+      console.log(`[import-gtfs] Downloaded ${body.length} bytes from URL`);
+    } else {
+      body = await req.text();
+    }
+
     console.log(`[import-gtfs] table=${table}, body length=${body.length}, first 200 chars: ${body.substring(0, 200)}`);
     if (!body || body.length < 10) {
       return new Response(
-        JSON.stringify({ error: "Send CSV data as POST body" }),
+        JSON.stringify({ error: "No CSV data (send as POST body or use ?url= parameter)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -131,7 +147,6 @@ Deno.serve(async (req) => {
         }))
         .filter((r) => r.trip_id && r.stop_id);
 
-      // Larger batches for stop_times since there are millions of rows
       const stBatchSize = 1000;
       for (let i = 0; i < data.length; i += stBatchSize) {
         const batch = data.slice(i, i + stBatchSize);
@@ -140,6 +155,7 @@ Deno.serve(async (req) => {
           .upsert(batch, { onConflict: "trip_id,stop_sequence" });
         if (error) return errorResp(error.message, inserted, i);
         inserted += batch.length;
+        if (i % 50000 === 0) console.log(`[import-gtfs] stop_times progress: ${inserted}/${data.length}`);
       }
     }
 
@@ -148,6 +164,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error(`[import-gtfs] Error: ${String(err)}`);
     return new Response(
       JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
