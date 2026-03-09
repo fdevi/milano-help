@@ -5,7 +5,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ChevronDown, Bus, ArrowLeft, MapPin, LocateFixed } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { fermate, percorsi, Fermata, LineaPassaggio, Percorso } from '@/lib/datiMooneyGo';
+import { supabase } from '@/integrations/supabase/client';
+import { percorsi, Fermata, LineaPassaggio, Percorso } from '@/lib/datiMooneyGo';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
@@ -14,9 +15,21 @@ type Vista = 'fermate' | 'linea' | 'corsa';
 /** Emoji per tipo fermata */
 function emojiForTipo(tipo: string): string {
   if (tipo.includes('Metropolitana')) return '🚇';
-  if (tipo.toLowerCase().includes('bus')) return '🚌';
   if (tipo.toLowerCase().includes('tram')) return '🚊';
-  return '🚆';
+  if (tipo.toLowerCase().includes('treno')) return '🚆';
+  if (tipo.toLowerCase().includes('bus')) return '🚌';
+  return '🚌';
+}
+
+/** Deduce il tipo di mezzo dal nome della fermata */
+function deduciTipoMezzo(nome: string | null): string {
+  if (!nome) return 'Bus';
+  const upper = nome.toUpperCase();
+  if (/M[1-5]/.test(upper)) return 'Metropolitana';
+  if (upper.includes('TRAM')) return 'Tram';
+  if (upper.includes('BUS')) return 'Bus';
+  if (upper.includes('TRENO') || upper.includes('STAZIONE') || upper.includes('FS')) return 'Treno';
+  return 'Bus';
 }
 
 function isMetro(tipo: string): boolean {
@@ -152,7 +165,60 @@ const Fermate: React.FC = () => {
   const [selectedFermataNome, setSelectedFermataNome] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
 
+  const [searchCenter, setSearchCenter] = useState({ lat: 45.4642, lng: 9.19 }); // Milano centro
+  const [fermate, setFermate] = useState<Fermata[]>([]);
+  const [loadingFermate, setLoadingFermate] = useState(false);
+  const [popupFermata, setPopupFermata] = useState<Fermata | null>(null);
+
   const { latitude, longitude, requestPosition, loading: geoLoading } = useGeolocation();
+
+  const caricaFermateVicine = async (lat: number, lng: number, raggioM: number = 2000) => {
+    setLoadingFermate(true);
+    // RPC da creare su Supabase; i tipi generati non includono ancora fermate_vicine
+    const { data, error } = await (supabase as unknown as { rpc: (n: string, p: object) => ReturnType<typeof supabase.rpc> }).rpc('fermate_vicine', {
+      lat,
+      lng,
+      raggio_m: raggioM,
+    });
+
+    if (error) {
+      console.error('Errore caricamento fermate:', error);
+      const { data: fallback } = await supabase
+        .from('fermate_atm')
+        .select('stop_id, stop_name, stop_lat, stop_lon')
+        .limit(200);
+      if (fallback) {
+        const mappate: Fermata[] = fallback
+          .filter((f) => f.stop_lat != null && f.stop_lon != null && f.stop_name != null)
+          .map((f) => ({
+            id: f.stop_id,
+            nome: f.stop_name!,
+            lat: f.stop_lat!,
+            lng: f.stop_lon!,
+            tipo: deduciTipoMezzo(f.stop_name),
+            distanza: 0,
+            linee: [],
+          }));
+        setFermate(mappate);
+      }
+    } else if (data && Array.isArray(data)) {
+      const fermateMappate: Fermata[] = data.map((f: { stop_id: string; stop_name: string | null; stop_lat: number; stop_lon: number; distanza?: number }) => ({
+        id: f.stop_id,
+        nome: f.stop_name ?? '',
+        lat: f.stop_lat,
+        lng: f.stop_lon,
+        tipo: deduciTipoMezzo(f.stop_name),
+        distanza: typeof f.distanza === 'number' ? Math.round(f.distanza) : 0,
+        linee: [],
+      }));
+      setFermate(fermateMappate);
+    }
+    setLoadingFermate(false);
+  };
+
+  useEffect(() => {
+    caricaFermateVicine(searchCenter.lat, searchCenter.lng);
+  }, []);
 
   const handleGeolocate = () => {
     requestPosition();
@@ -162,13 +228,15 @@ const Fermate: React.FC = () => {
     if (latitude != null && longitude != null && mapRef.current) {
       const map = mapRef.current?.getMap?.() ?? mapRef.current;
       map?.flyTo?.({ center: [longitude, latitude], zoom: 16 });
+      setSearchCenter({ lat: latitude, lng: longitude });
+      caricaFermateVicine(latitude, longitude);
     }
   }, [latitude, longitude]);
 
   useEffect(() => {
     const map = mapRef.current?.getMap?.() ?? mapRef.current;
     if (map) {
-      map.flyTo?.({ center: [9.182, 45.506], zoom: 14 });
+      map.flyTo?.({ center: [searchCenter.lng, searchCenter.lat], zoom: 14 });
     }
   }, []);
 
@@ -261,12 +329,27 @@ const Fermate: React.FC = () => {
   const handleMarkerClick = (f: Fermata) => {
     setSelectedFermata(f);
     setFermataSelezionata(f);
-    setLineaSelezionata(null);
-    setVista('linea');
+    setPopupFermata(f);
     const map = mapRef.current?.getMap?.() ?? mapRef.current;
     if (map?.flyTo) {
       map.flyTo({ center: [f.lng, f.lat], zoom: 16, duration: 500 });
     }
+  };
+
+  const handleMapMoveEnd = () => {
+    const map = mapRef.current?.getMap?.() ?? mapRef.current;
+    if (!map) return;
+    const center = map.getCenter();
+    const lat = center.lat;
+    const lng = center.lng;
+    setSearchCenter({ lat, lng });
+    caricaFermateVicine(lat, lng);
+  };
+
+  const handleSearchMarkerDragEnd = (e: { lngLat: { lat: number; lng: number } }) => {
+    const { lat, lng } = e.lngLat;
+    setSearchCenter({ lat, lng });
+    caricaFermateVicine(lat, lng);
   };
 
   const handleBack = () => {
@@ -342,14 +425,28 @@ const Fermate: React.FC = () => {
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
           initialViewState={{
-            longitude: 9.182,
-            latitude: 45.506,
+            longitude: searchCenter.lng,
+            latitude: searchCenter.lat,
             zoom: 14,
           }}
           style={{ width: '100%', height: '100%' }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
+          onMoveEnd={handleMapMoveEnd}
         >
           <NavigationControl position="top-right" />
+          {/* Marker rosso trascinabile: centro di ricerca */}
+          <Marker
+            longitude={searchCenter.lng}
+            latitude={searchCenter.lat}
+            anchor="center"
+            draggable
+            onDragEnd={handleSearchMarkerDragEnd}
+          >
+            <div
+              className="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing"
+              title="Trascina per cambiare zona di ricerca"
+            />
+          </Marker>
           {fermate.map((f) => (
             <Marker key={f.id} longitude={f.lng} latitude={f.lat} anchor="center">
               <div
@@ -368,7 +465,7 @@ const Fermate: React.FC = () => {
                 }}
                 aria-label={`Fermata ${f.nome}`}
               >
-                {emojiForTipo(f.tipo)}
+                {f.tipo === 'Metropolitana' ? '🚇' : f.tipo === 'Tram' ? '🚊' : f.tipo === 'Treno' ? '🚆' : '🚌'}
               </div>
             </Marker>
           ))}
@@ -470,32 +567,46 @@ const Fermate: React.FC = () => {
             {vista === 'fermate' && (
               <>
                 <div className="mb-3 text-sm text-gray-500">Cerca in questa zona</div>
+                {loadingFermate ? (
+                  <div className="py-8 text-center text-gray-500">Caricamento fermate...</div>
+                ) : (
+                <>
                 {fermate.map((fermata) => (
                   <div
                     key={fermata.id}
                     className="mb-4 pb-3 border-b border-gray-100 last:border-0"
                   >
-                    <div className="flex items-center gap-2">
-                      {isMetro(fermata.tipo) ? (
-                        <span className="flex-shrink-0 w-8 h-8 rounded bg-amber-400 text-amber-950 font-bold text-sm flex items-center justify-center">
-                          {fermata.linee[0]?.numero ?? 'M'}
-                        </span>
-                      ) : (
-                        <span className="flex-shrink-0 w-8 h-8 rounded bg-orange-500 text-white flex items-center justify-center">
-                          <Bus className="w-4 h-4" />
-                        </span>
-                      )}
-                      <span className="font-semibold text-base text-gray-900">
+                    <div
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded"
+                      onClick={() => setPopupFermata(fermata)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setPopupFermata(fermata);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <span className="flex-shrink-0 text-xl leading-none" aria-hidden>
+                        {emojiForTipo(fermata.tipo)}
+                      </span>
+                      <span className="font-semibold text-base text-gray-900 flex-1 min-w-0">
                         {fermata.nome}
                       </span>
+                      {fermata.distanza > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white flex-shrink-0">
+                          {fermata.distanza}mt
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap mt-0.5 mb-1">
                       <span className="text-sm text-gray-500">{fermata.tipo}</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
-                        {fermata.distanza}mt
-                      </span>
                     </div>
-                    {fermata.linee.map((linea, idx) => (
+                    {fermata.linee.length === 0 ? (
+                      <p className="text-sm text-gray-400 py-1">Nessuna linea disponibile per questa fermata.</p>
+                    ) : (
+                    fermata.linee.map((linea, idx) => (
                       <div
                         key={`${fermata.id}-${linea.percorsoId}-${idx}`}
                         className="flex items-center gap-2 py-1.5 px-1 -mx-1 rounded cursor-pointer hover:bg-gray-50 transition-colors"
@@ -525,9 +636,12 @@ const Fermate: React.FC = () => {
                           {linea.orario}
                         </span>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
                 ))}
+                </>
+                )}
               </>
             )}
 
@@ -752,6 +866,34 @@ const Fermate: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Popup dettaglio fermata */}
+      {popupFermata && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setPopupFermata(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="popup-fermata-nome"
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p id="popup-fermata-nome" className="font-semibold text-gray-900 text-lg">
+              {popupFermata.nome}
+            </p>
+            <p className="text-gray-500 mt-2">Dettagli in arrivo.</p>
+            <button
+              type="button"
+              onClick={() => setPopupFermata(null)}
+              className="mt-4 w-full py-2 rounded-lg bg-cyan-600 text-white font-medium hover:bg-cyan-700"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
