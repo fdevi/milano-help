@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.text();
+    console.log(`[import-gtfs] table=${table}, body length=${body.length}, first 200 chars: ${body.substring(0, 200)}`);
     if (!body || body.length < 10) {
       return new Response(
         JSON.stringify({ error: "Send CSV data as POST body" }),
@@ -66,6 +67,8 @@ Deno.serve(async (req) => {
     }
 
     const { headers, rows } = parseCSV(body);
+    console.log(`[import-gtfs] headers: ${JSON.stringify(headers)}, total rows: ${rows.length}`);
+    if (rows.length > 0) console.log(`[import-gtfs] first row: ${JSON.stringify(rows[0])}`);
     let inserted = 0;
     const batchSize = 500;
 
