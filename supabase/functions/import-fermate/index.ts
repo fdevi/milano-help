@@ -15,13 +15,21 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Get the CSV data from body
     const body = await req.text();
+    if (!body || body.length < 10) {
+      return new Response(JSON.stringify({ error: "Send CSV data as POST body" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
     const lines = body.split("\n").filter((l) => l.trim().length > 0);
     
-    // Skip header line
-    const dataLines = lines.slice(1);
+    // Skip header if present
+    const firstLine = lines[0];
+    const dataLines = firstLine.includes("stop_id") ? lines.slice(1) : lines;
     
-    // Parse CSV - handle quoted fields with commas
     function parseCSVLine(line: string): string[] {
       const result: string[] = [];
       let current = "";
@@ -51,14 +59,13 @@ Deno.serve(async (req) => {
       };
     }).filter(r => r.stop_id && !isNaN(r.stop_lat) && !isNaN(r.stop_lon));
 
-    // Batch insert 500 at a time
     let inserted = 0;
     const batchSize = 500;
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
       const { error } = await supabase.from("fermate_atm").upsert(batch, { onConflict: "stop_id" });
       if (error) {
-        return new Response(JSON.stringify({ error: error.message, inserted }), {
+        return new Response(JSON.stringify({ error: error.message, inserted, batch_index: i }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -66,7 +73,7 @@ Deno.serve(async (req) => {
       inserted += batch.length;
     }
 
-    return new Response(JSON.stringify({ success: true, inserted }), {
+    return new Response(JSON.stringify({ success: true, inserted, total_lines: dataLines.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
