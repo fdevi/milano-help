@@ -1495,6 +1495,14 @@ export type Database = {
     }
     Functions: {
       count_group_members: { Args: { _gruppo_id: string }; Returns: number }
+      fermate_con_linee: {
+        Args: { stop_ids: string[] }
+        Returns: {
+          route_short_name: string
+          route_type: number
+          stop_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

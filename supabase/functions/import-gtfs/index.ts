@@ -103,7 +103,7 @@ async function streamProcessStopTimes(
       if (batch.length >= batchSize) {
         const { error } = await supabase
           .from("stop_times_atm")
-          .upsert(batch, { onConflict: "trip_id,stop_sequence" });
+          .upsert(batch as any, { onConflict: "trip_id,stop_sequence" });
         if (error) throw new Error(`DB error at row ${rowCount}: ${error.message}`);
         inserted += batch.length;
         batch = [];
@@ -137,7 +137,7 @@ async function streamProcessStopTimes(
   if (batch.length > 0) {
     const { error } = await supabase
       .from("stop_times_atm")
-      .upsert(batch, { onConflict: "trip_id,stop_sequence" });
+      .upsert(batch as any, { onConflict: "trip_id,stop_sequence" });
     if (error) throw new Error(`DB error at flush: ${error.message}`);
     inserted += batch.length;
   }
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     // For stop_times with URL, use streaming mode
     if (table === "stop_times" && csvUrl) {
       console.log(`[import-gtfs] Streaming stop_times from URL, skip=${skip}, limit=${limit}`);
-      const result = await streamProcessStopTimes(csvUrl, supabase, skip, limit);
+      const result = await streamProcessStopTimes(csvUrl, supabase as any, skip, limit);
       console.log(`[import-gtfs] stop_times result: inserted=${result.inserted}, totalProcessed=${result.totalProcessed}, done=${result.done}`);
       return new Response(
         JSON.stringify({
