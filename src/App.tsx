@@ -62,6 +62,7 @@ import ConfirmEmail from "./pages/ConfirmEmail";
 import ConfirmEmailChange from "./pages/ConfirmEmailChange";
 import CompletaProfilo from "./pages/CompletaProfilo";
 import Fermate from "./pages/Fermate";
+import ImportFermate from "./pages/ImportFermate";
 import OneSignalInit from "./components/OneSignalInit";
 
 const queryClient = new QueryClient();
@@ -129,6 +130,7 @@ const App = () => (
             <Route path="/miei-servizi-prenotati" element={<ProtectedRoute><MieiServiziPrenotati /></ProtectedRoute>} />
             <Route path="/completa-profilo" element={<ProtectedRoute><CompletaProfilo /></ProtectedRoute>} />
             <Route path="/fermate" element={<ProtectedRoute><Fermate /></ProtectedRoute>} />
+            <Route path="/import-fermate" element={<AdminRoute><ImportFermate /></AdminRoute>} />
             <Route path="/auth/confirm" element={<ConfirmEmail />} />
             <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
             <Route path="*" element={<NotFound />} />
