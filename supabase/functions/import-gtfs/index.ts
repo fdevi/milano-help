@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
     }
 
     const { headers, rows } = parseCSV(body);
+    console.log(`[import-gtfs] headers: ${JSON.stringify(headers)}, total rows: ${rows.length}`);
+    if (rows.length > 0) console.log(`[import-gtfs] first row: ${JSON.stringify(rows[0])}`);
     let inserted = 0;
     const batchSize = 500;
 
