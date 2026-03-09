@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.text();
+    console.log(`[import-gtfs] table=${table}, body length=${body.length}, first 200 chars: ${body.substring(0, 200)}`);
     if (!body || body.length < 10) {
       return new Response(
         JSON.stringify({ error: "Send CSV data as POST body" }),
