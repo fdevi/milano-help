@@ -37,6 +37,114 @@ function getCol(headers: string[], row: string[], name: string): string {
   return idx >= 0 ? row[idx] ?? "" : "";
 }
 
+async function streamProcessStopTimes(
+  csvUrl: string,
+  supabase: ReturnType<typeof createClient>,
+  skipRows: number,
+  maxRows: number
+): Promise<{ inserted: number; totalProcessed: number; done: boolean }> {
+  const resp = await fetch(csvUrl, { redirect: "follow" });
+  if (!resp.ok) throw new Error(`Failed to fetch: ${resp.status}`);
+
+  const reader = resp.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let headers: string[] | null = null;
+  let rowCount = 0;
+  let inserted = 0;
+  let batch: any[] = [];
+  const batchSize = 1000;
+  let skipped = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      if (!headers) {
+        headers = parseCSVLine(trimmed);
+        continue;
+      }
+
+      rowCount++;
+
+      // Skip rows we've already processed
+      if (skipped < skipRows) {
+        skipped++;
+        continue;
+      }
+
+      // Stop if we've processed enough
+      if (inserted >= maxRows) {
+        reader.cancel();
+        return { inserted, totalProcessed: rowCount, done: false };
+      }
+
+      const r = parseCSVLine(trimmed);
+      const trip_id = getCol(headers, r, "trip_id");
+      const stop_id = getCol(headers, r, "stop_id");
+      if (!trip_id || !stop_id) continue;
+
+      batch.push({
+        trip_id,
+        stop_id,
+        arrival_time: getCol(headers, r, "arrival_time"),
+        departure_time: getCol(headers, r, "departure_time"),
+        stop_sequence: parseInt(getCol(headers, r, "stop_sequence")) || 0,
+      });
+
+      if (batch.length >= batchSize) {
+        const { error } = await supabase
+          .from("stop_times_atm")
+          .upsert(batch, { onConflict: "trip_id,stop_sequence" });
+        if (error) throw new Error(`DB error at row ${rowCount}: ${error.message}`);
+        inserted += batch.length;
+        batch = [];
+        if (inserted % 50000 === 0) {
+          console.log(`[import-gtfs] stop_times progress: ${inserted} inserted, row ${rowCount}`);
+        }
+      }
+    }
+  }
+
+  // Process remaining buffer
+  if (buffer.trim() && headers) {
+    rowCount++;
+    if (skipped >= skipRows && inserted < maxRows) {
+      const r = parseCSVLine(buffer.trim());
+      const trip_id = getCol(headers, r, "trip_id");
+      const stop_id = getCol(headers, r, "stop_id");
+      if (trip_id && stop_id) {
+        batch.push({
+          trip_id,
+          stop_id,
+          arrival_time: getCol(headers, r, "arrival_time"),
+          departure_time: getCol(headers, r, "departure_time"),
+          stop_sequence: parseInt(getCol(headers, r, "stop_sequence")) || 0,
+        });
+      }
+    }
+  }
+
+  // Flush remaining batch
+  if (batch.length > 0) {
+    const { error } = await supabase
+      .from("stop_times_atm")
+      .upsert(batch, { onConflict: "trip_id,stop_sequence" });
+    if (error) throw new Error(`DB error at flush: ${error.message}`);
+    inserted += batch.length;
+  }
+
+  return { inserted, totalProcessed: rowCount, done: true };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -49,6 +157,9 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const table = url.searchParams.get("table");
+    const csvUrl = url.searchParams.get("url");
+    const skip = parseInt(url.searchParams.get("skip") || "0");
+    const limit = parseInt(url.searchParams.get("limit") || "500000");
 
     if (!table || !["routes", "trips", "stop_times", "fermate"].includes(table)) {
       return new Response(
@@ -57,11 +168,43 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = await req.text();
+    // For stop_times with URL, use streaming mode
+    if (table === "stop_times" && csvUrl) {
+      console.log(`[import-gtfs] Streaming stop_times from URL, skip=${skip}, limit=${limit}`);
+      const result = await streamProcessStopTimes(csvUrl, supabase, skip, limit);
+      console.log(`[import-gtfs] stop_times result: inserted=${result.inserted}, totalProcessed=${result.totalProcessed}, done=${result.done}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          inserted: result.inserted,
+          total_processed: result.totalProcessed,
+          done: result.done,
+          next_skip: skip + result.inserted,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let body: string;
+    if (csvUrl) {
+      console.log(`[import-gtfs] Fetching CSV from URL: ${csvUrl.substring(0, 100)}...`);
+      const resp = await fetch(csvUrl, { redirect: "follow" });
+      if (!resp.ok) {
+        return new Response(
+          JSON.stringify({ error: `Failed to fetch URL: ${resp.status} ${resp.statusText}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      body = await resp.text();
+      console.log(`[import-gtfs] Downloaded ${body.length} bytes from URL`);
+    } else {
+      body = await req.text();
+    }
+
     console.log(`[import-gtfs] table=${table}, body length=${body.length}, first 200 chars: ${body.substring(0, 200)}`);
     if (!body || body.length < 10) {
       return new Response(
-        JSON.stringify({ error: "Send CSV data as POST body" }),
+        JSON.stringify({ error: "No CSV data (send as POST body or use ?url= parameter)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -121,6 +264,7 @@ Deno.serve(async (req) => {
         inserted += batch.length;
       }
     } else if (table === "stop_times") {
+      // Non-URL mode for stop_times (from POST body)
       const data = rows
         .map((r) => ({
           trip_id: getCol(headers, r, "trip_id"),
@@ -131,7 +275,6 @@ Deno.serve(async (req) => {
         }))
         .filter((r) => r.trip_id && r.stop_id);
 
-      // Larger batches for stop_times since there are millions of rows
       const stBatchSize = 1000;
       for (let i = 0; i < data.length; i += stBatchSize) {
         const batch = data.slice(i, i + stBatchSize);
@@ -148,6 +291,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error(`[import-gtfs] Error: ${String(err)}`);
     return new Response(
       JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
