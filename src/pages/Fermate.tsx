@@ -326,8 +326,10 @@ const Fermate: React.FC = () => {
       setFermate(fermateMappate);
 
       const stopIds = fermateMappate.map((f) => f.id).slice(0, 150);
+      console.log('[Fermate] stopIds per RPC fermate_con_linee:', stopIds.length, stopIds.slice(0, 5));
       if (stopIds.length > 0) {
         const { data: lineeData, error: errLinee } = await (supabase as unknown as { rpc: (name: string, params: { stop_ids: string[] }) => Promise<{ data: { stop_id: string; route_short_name: string; route_type: number | null }[] | null; error: unknown }> }).rpc('fermate_con_linee', { stop_ids: stopIds });
+        console.log('[Fermate] RPC fermate_con_linee risposta:', { righe: lineeData?.length ?? 0, errore: errLinee });
         if (!errLinee && lineeData?.length) {
           const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const row of lineeData) {
@@ -338,8 +340,11 @@ const Fermate: React.FC = () => {
             const arr = grouped.get(row.stop_id)!;
             if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
           }
-          setLineePerFermata(Object.fromEntries(grouped));
+          const result = Object.fromEntries(grouped);
+          console.log('[Fermate] lineePerFermata salvate:', Object.keys(result).length, 'fermate con linee');
+          setLineePerFermata(result);
         } else {
+          console.warn('[Fermate] RPC fermate_con_linee: nessun dato o errore', errLinee);
           setLineePerFermata({});
         }
       } else {
