@@ -6,14 +6,81 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { ChevronDown, Bus, ArrowLeft, MapPin, LocateFixed } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
-import { percorsi, Fermata, LineaPassaggio, Percorso } from '@/lib/datiMooneyGo';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
+/** Costruttore Map nativo (evita conflitto con Map di react-map-gl) */
+const MapNative = globalThis.Map;
+
 type Vista = 'fermate' | 'linea' | 'corsa';
 
-/** Emoji per tipo fermata */
-function emojiForTipo(tipo: string): string {
+/** Tipi compatibili con la UI esistente */
+export interface Fermata {
+  id: string;
+  nome: string;
+  tipo: string;
+  lat: number;
+  lng: number;
+  distanza: number;
+  linee: LineaPassaggio[];
+  route_type?: number; // GTFS: 0=tram, 1=metro, 2=treno, 3=bus
+}
+
+export interface LineaPassaggio {
+  numero: string;
+  direzione: string;
+  orario: string;
+  percorsoId: string; // trip_id per caricare il percorso
+  route_type?: number;
+}
+
+export interface Percorso {
+  id: string;
+  nome: string;
+  colore: string;
+  fermate: { nome: string; lat: number; lng: number; arrivo?: string; partenza?: string }[];
+}
+
+/** Formato MooneyGo per vista 2: linee con direzioni e orari (max 3 per direzione, con trip_id per vista 3) */
+export interface OrarioConTrip {
+  orario: string;
+  trip_id: string;
+}
+export interface DirezioneConOrari {
+  nome: string;
+  orari: OrarioConTrip[];
+}
+export interface LineaConDirezioni {
+  nome: string;
+  colore: string;
+  route_type?: number;
+  direzioni: DirezioneConOrari[];
+}
+export interface LineePerFermata {
+  linee: LineaConDirezioni[];
+}
+
+/** Distanza in metri (formula di Haversine) */
+function calcolaDistanza(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000; // raggio Terra in metri
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
+/** Emoji in base a route_type GTFS (0=tram, 1=metro, 2=treno, 3=bus) o tipo testuale */
+function emojiForTipo(tipo: string | number): string {
+  if (typeof tipo === 'number') {
+    if (tipo === 0) return '🚊';
+    if (tipo === 1) return '🚇';
+    if (tipo === 2) return '🚆';
+    if (tipo === 3) return '🚌';
+    return '🚏';
+  }
   if (tipo.includes('Metropolitana')) return '🚇';
   if (tipo.toLowerCase().includes('tram')) return '🚊';
   if (tipo.toLowerCase().includes('treno')) return '🚆';
@@ -21,7 +88,7 @@ function emojiForTipo(tipo: string): string {
   return '🚌';
 }
 
-/** Deduce il tipo di mezzo dal nome della fermata */
+/** Deduce il tipo di mezzo dal nome della fermata (fallback quando manca route_type) */
 function deduciTipoMezzo(nome: string | null): string {
   if (!nome) return 'Bus';
   const upper = nome.toUpperCase();
@@ -32,12 +99,55 @@ function deduciTipoMezzo(nome: string | null): string {
   return 'Bus';
 }
 
+/** Colore linea in base a route_type */
+function colorePerRouteType(routeType: number | null | undefined): string {
+  if (routeType === 0) return '#00a651';
+  if (routeType === 1) return '#f9b718';
+  if (routeType === 2) return '#0066ad';
+  if (routeType === 3) return '#e85b21';
+  return '#6b7280';
+}
+
+/** Normalizza arrival_time GTFS (es. "04:37:00", "25:30:00" per giorno dopo) in "HH:MM" */
+function normalizzaOrario(t: string | null): string {
+  if (!t) return '';
+  const parts = t.trim().split(':');
+  let h = parseInt(parts[0], 10);
+  const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+  if (h >= 24) h -= 24;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+/** Converte orario GTFS in minuti (0..1440+). Ore 25:xx = giorno dopo; 00:xx-03:xx considerate giorno dopo per confronto con sera. */
+function orarioToMinuti(t: string | null): number {
+  if (!t) return 0;
+  const parts = t.trim().split(':');
+  let h = parseInt(parts[0], 10);
+  const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+  if (h >= 24) return (h - 24) * 60 + m + 24 * 60;
+  if (h < 4) return h * 60 + m + 24 * 60;
+  return h * 60 + m;
+}
+
 function isMetro(tipo: string): boolean {
   return tipo.includes('Metropolitana');
 }
 
 function isMetroLine(numero: string): boolean {
   return /^M\d*$/.test(numero.trim());
+}
+
+/** Stile badge per lista fermate (vista 1): forma + classi colore in base a nome linea e route_type GTFS (0=tram, 1=metro, 2=treno, 3=bus) */
+function badgeLineaClasses(nome: string, routeType: number | null | undefined): { base: string; color: string } {
+  const n = nome.trim().toUpperCase();
+  if (n === 'M1') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-red-600 text-white' };
+  if (n === 'M2') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-green-600 text-white' };
+  if (n === 'M3') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-yellow-400 text-black' };
+  if (n === 'M5') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-purple-600 text-white' };
+  if (/^M\d+$/.test(n)) return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-amber-500 text-black' };
+  if (routeType === 3) return { base: 'inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold min-h-[2rem]', color: 'bg-orange-500 text-black' };
+  if (routeType === 0) return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold', color: 'bg-green-600 text-white' };
+  return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold', color: 'bg-gray-500 text-white' };
 }
 
 /** Genera orari finti a partire da ora (arrotondata a 5 min), 8 corse */
@@ -169,51 +279,192 @@ const Fermate: React.FC = () => {
   const [fermate, setFermate] = useState<Fermata[]>([]);
   const [loadingFermate, setLoadingFermate] = useState(false);
   const [popupFermata, setPopupFermata] = useState<Fermata | null>(null);
+  const [lineeCache, setLineeCache] = useState<Record<string, LineePerFermata>>({});
+  const [loadingLinee, setLoadingLinee] = useState(false);
+  const [lineePerFermataSelezionata, setLineePerFermataSelezionata] = useState<LineePerFermata | null>(null);
+  /** Linee per stop_id (vista 1): nome + route_type per badge colorati, da RPC fermate_con_linee */
+  const [lineePerFermata, setLineePerFermata] = useState<Record<string, { nome: string; tipo: number }[]>>({});
 
   const { latitude, longitude, requestPosition, loading: geoLoading } = useGeolocation();
 
+  /** Carica fermate in un rettangolo approssimato (lat/lon ± delta), poi filtra per distanza Haversine */
   const caricaFermateVicine = async (lat: number, lng: number, raggioM: number = 2000) => {
     setLoadingFermate(true);
-    // RPC da creare su Supabase; i tipi generati non includono ancora fermate_vicine
-    const { data, error } = await (supabase as unknown as { rpc: (n: string, p: object) => ReturnType<typeof supabase.rpc> }).rpc('fermate_vicine', {
-      lat,
-      lng,
-      raggio_m: raggioM,
-    });
+    const delta = raggioM / 111320; // ~111.32 km per grado di latitudine
+    const { data, error } = await supabase
+      .from('fermate_atm')
+      .select('stop_id, stop_name, stop_lat, stop_lon')
+      .gte('stop_lat', lat - delta)
+      .lte('stop_lat', lat + delta)
+      .gte('stop_lon', lng - delta)
+      .lte('stop_lon', lng + delta)
+      .limit(500);
 
     if (error) {
       console.error('Errore caricamento fermate:', error);
-      const { data: fallback } = await supabase
-        .from('fermate_atm')
-        .select('stop_id, stop_name, stop_lat, stop_lon')
-        .limit(200);
-      if (fallback) {
-        const mappate: Fermata[] = fallback
-          .filter((f) => f.stop_lat != null && f.stop_lon != null && f.stop_name != null)
-          .map((f) => ({
-            id: f.stop_id,
-            nome: f.stop_name!,
-            lat: f.stop_lat!,
-            lng: f.stop_lon!,
-            tipo: deduciTipoMezzo(f.stop_name),
-            distanza: 0,
-            linee: [],
-          }));
-        setFermate(mappate);
-      }
-    } else if (data && Array.isArray(data)) {
-      const fermateMappate: Fermata[] = data.map((f: { stop_id: string; stop_name: string | null; stop_lat: number; stop_lon: number; distanza?: number }) => ({
+      setFermate([]);
+      setLineePerFermata({});
+    } else if (data) {
+      const conDistanza = data
+        .filter((f) => f.stop_lat != null && f.stop_lon != null && f.stop_name != null)
+        .map((f) => ({
+          ...f,
+          distanza: calcolaDistanza(lat, lng, f.stop_lat!, f.stop_lon!),
+        }))
+        .filter((f) => f.distanza <= raggioM)
+        .sort((a, b) => a.distanza - b.distanza)
+        .slice(0, 300);
+      const fermateMappate: Fermata[] = conDistanza.map((f) => ({
         id: f.stop_id,
-        nome: f.stop_name ?? '',
-        lat: f.stop_lat,
-        lng: f.stop_lon,
+        nome: f.stop_name!,
+        lat: f.stop_lat!,
+        lng: f.stop_lon!,
         tipo: deduciTipoMezzo(f.stop_name),
-        distanza: typeof f.distanza === 'number' ? Math.round(f.distanza) : 0,
+        distanza: f.distanza,
         linee: [],
       }));
       setFermate(fermateMappate);
+
+      const stopIds = fermateMappate.map((f) => f.id).slice(0, 150);
+      if (stopIds.length > 0) {
+        const { data: lineeData, error: errLinee } = await (supabase as unknown as { rpc: (name: string, params: { stop_ids: string[] }) => Promise<{ data: { stop_id: string; route_short_name: string; route_type: number | null }[] | null; error: unknown }> }).rpc('fermate_con_linee', { stop_ids: stopIds });
+        if (!errLinee && lineeData?.length) {
+          const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
+          for (const row of lineeData) {
+            const nome = row.route_short_name?.trim();
+            if (!nome) continue;
+            const tipo = row.route_type ?? 3;
+            if (!grouped.has(row.stop_id)) grouped.set(row.stop_id, []);
+            const arr = grouped.get(row.stop_id)!;
+            if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
+          }
+          setLineePerFermata(Object.fromEntries(grouped));
+        } else {
+          setLineePerFermata({});
+        }
+      } else {
+        setLineePerFermata({});
+      }
+    } else {
+      setLineePerFermata({});
     }
     setLoadingFermate(false);
+  };
+
+  /** Carica linee e prossimi orari per una fermata (vista 2). Formato MooneyGo: linee[].direzioni[].orari (max 3 per direzione, con trip_id). */
+  const caricaLineePerFermata = async (stopId: string): Promise<LineePerFermata> => {
+    const empty: LineePerFermata = { linee: [] };
+    const { data: stopTimes, error: errSt } = await supabase
+      .from('stop_times_atm')
+      .select('trip_id, arrival_time')
+      .eq('stop_id', stopId)
+      .order('arrival_time', { ascending: true })
+      .limit(1000);
+    if (errSt) {
+      console.error('caricaLineePerFermata stop_times:', errSt);
+      return empty;
+    }
+    if (!stopTimes?.length) return empty;
+
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+    const tripIds = [...new Set(stopTimes.map((st) => st.trip_id))];
+    const { data: trips, error: errTr } = await supabase
+      .from('trips_atm')
+      .select('trip_id, route_id, trip_headsign')
+      .in('trip_id', tripIds.slice(0, 500));
+    if (errTr || !trips?.length) return empty;
+
+    const routeIds = [...new Set(trips.map((t) => t.route_id).filter(Boolean))] as string[];
+    const { data: routes, error: errR } = await supabase
+      .from('routes_atm')
+      .select('route_id, route_short_name, route_type')
+      .in('route_id', routeIds);
+    if (errR) return empty;
+
+    const routeMap = new MapNative<string, { nome: string; route_type: number | null }>();
+    routes?.forEach((r) => {
+      routeMap.set(r.route_id, { nome: r.route_short_name ?? r.route_id, route_type: r.route_type ?? null });
+    });
+    const tripMap = new MapNative(trips.map((t) => [t.trip_id, t]));
+
+    type Acc = { routeId: string; headsign: string; routeType: number | null; items: OrarioConTrip[] };
+    const byKey = new MapNative<string, Acc>();
+    for (const st of stopTimes) {
+      const t = tripMap.get(st.trip_id);
+      if (!t?.route_id) continue;
+      const r = routeMap.get(t.route_id);
+      const headsign = t.trip_headsign ?? '';
+      const key = `${t.route_id}|${headsign}`;
+      const orario = normalizzaOrario(st.arrival_time);
+      if (!orario) continue;
+      const min = orarioToMinuti(st.arrival_time);
+      if (min < nowMin - 60) continue;
+      if (!byKey.has(key)) {
+        byKey.set(key, { routeId: t.route_id, headsign, routeType: r?.route_type ?? null, items: [] });
+      }
+      const acc = byKey.get(key)!;
+      if (acc.items.length < 3) acc.items.push({ orario, trip_id: st.trip_id });
+    }
+
+    const byRoute = new MapNative<string, LineaConDirezioni>();
+    byKey.forEach((acc) => {
+      const nome = routeMap.get(acc.routeId)?.nome ?? acc.routeId;
+      const colore = colorePerRouteType(acc.routeType);
+      if (!byRoute.has(acc.routeId)) {
+        byRoute.set(acc.routeId, {
+          nome,
+          colore,
+          route_type: acc.routeType ?? undefined,
+          direzioni: [],
+        });
+      }
+      const linea = byRoute.get(acc.routeId)!;
+      linea.direzioni.push({
+        nome: acc.headsign ? `per ${acc.headsign}` : '',
+        orari: acc.items,
+      });
+    });
+    return { linee: Array.from(byRoute.values()) };
+  };
+
+  /** Carica percorso completo di una corsa (vista 3 + polyline mappa) */
+  const caricaPercorsoCorsa = async (tripId: string): Promise<Percorso | null> => {
+    const { data: stopTimes, error: errSt } = await supabase
+      .from('stop_times_atm')
+      .select('stop_id, stop_sequence, arrival_time, departure_time')
+      .eq('trip_id', tripId)
+      .order('stop_sequence');
+    if (errSt || !stopTimes?.length) return null;
+
+    const { data: trip } = await supabase.from('trips_atm').select('route_id, trip_headsign').eq('trip_id', tripId).single();
+    if (!trip?.route_id) return null;
+
+    const { data: route } = await supabase.from('routes_atm').select('route_short_name, route_type').eq('route_id', trip.route_id).single();
+    const stopIds = stopTimes.map((st) => st.stop_id);
+    const { data: stops } = await supabase.from('fermate_atm').select('stop_id, stop_name, stop_lat, stop_lon').in('stop_id', stopIds);
+    const stopMap = new MapNative(stops?.map((s) => [s.stop_id, s]) ?? []);
+
+    const fermate: { nome: string; lat: number; lng: number; arrivo?: string; partenza?: string }[] = [];
+    for (const st of stopTimes) {
+      const s = stopMap.get(st.stop_id);
+      if (!s?.stop_lat || !s.stop_lon) continue;
+      fermate.push({
+        nome: s.stop_name ?? st.stop_id,
+        lat: s.stop_lat,
+        lng: s.stop_lon,
+        arrivo: normalizzaOrario(st.arrival_time),
+        partenza: normalizzaOrario(st.departure_time),
+      });
+    }
+    const nomeRoute = route?.route_short_name ?? trip.route_id;
+    const headsign = trip.trip_headsign ?? '';
+    return {
+      id: tripId,
+      nome: `${nomeRoute} per ${headsign}`,
+      colore: colorePerRouteType(route?.route_type ?? null),
+      fermate,
+    };
   };
 
   useEffect(() => {
@@ -279,57 +530,32 @@ const Fermate: React.FC = () => {
     (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
   };
 
-  const handleLineaClick = (linea: LineaPassaggio, fermata: Fermata) => {
-    setSelectedFermata(fermata);
-    setFermataSelezionata(fermata);
-    setLineaSelezionata({
-      nome: linea.numero,
-      direzione: linea.direzione,
-      percorsoId: linea.percorsoId,
-    });
-    setVista('linea');
-  };
-
-  const handleCorsaClick = (orario: string) => {
-    if (!lineaSelezionata) return;
-    setCorsaSelezionata({
-      linea: lineaSelezionata.nome,
-      direzione: lineaSelezionata.direzione,
-      orario,
-    });
+  /** Click su un orario in vista 2: apre vista 3 con il percorso del trip */
+  const handleOrarioClick = async (tripId: string, orario: string, lineaNome: string, direzione: string) => {
+    setLineaSelezionata({ nome: lineaNome, direzione, percorsoId: tripId });
+    setCorsaSelezionata({ linea: lineaNome, direzione, orario });
+    setSelectedFermataNome(selectedFermata?.nome ?? fermataSelezionata?.nome ?? null);
     setVista('corsa');
-    const percorso = percorsi[lineaSelezionata.percorsoId];
-    if (percorso) {
-      setSelectedPercorso(percorso);
-      setSelectedFermataNome(fermataSelezionata?.nome ?? null);
-    }
-  };
-
-  /** Click su un orario in vista linea (quando si è arrivati dalla mappa: più linee/direzioni) */
-  const handleOrarioClick = (linea: LineaPassaggio, fermata: Fermata, orario: string) => {
-    setLineaSelezionata({
-      nome: linea.numero,
-      direzione: linea.direzione,
-      percorsoId: linea.percorsoId,
-    });
-    setCorsaSelezionata({
-      linea: linea.numero,
-      direzione: linea.direzione,
-      orario,
-    });
-    setFermataSelezionata(fermata);
-    setVista('corsa');
-    const percorso = percorsi[linea.percorsoId];
-    if (percorso) {
-      setSelectedPercorso(percorso);
-      setSelectedFermataNome(fermata.nome);
-    }
+    const percorso = await caricaPercorsoCorsa(tripId);
+    if (percorso) setSelectedPercorso(percorso);
   };
 
   const handleMarkerClick = (f: Fermata) => {
     setSelectedFermata(f);
     setFermataSelezionata(f);
-    setPopupFermata(f);
+    setLineaSelezionata(null);
+    setVista('linea');
+    if (lineeCache[f.id]) {
+      setLineePerFermataSelezionata(lineeCache[f.id]);
+    } else {
+      setLoadingLinee(true);
+      setLineePerFermataSelezionata(null);
+      caricaLineePerFermata(f.id).then((data) => {
+        setLineeCache((prev) => ({ ...prev, [f.id]: data }));
+        setLineePerFermataSelezionata(data);
+        setLoadingLinee(false);
+      });
+    }
     const map = mapRef.current?.getMap?.() ?? mapRef.current;
     if (map?.flyTo) {
       map.flyTo({ center: [f.lng, f.lat], zoom: 16, duration: 500 });
@@ -365,8 +591,6 @@ const Fermate: React.FC = () => {
       setSelectedFermataNome(null);
     }
   };
-
-  const orariCorse = useMemo(() => generaOrari(), []);
 
   const percorsoGeoJson = selectedPercorso
     ? {
@@ -405,6 +629,7 @@ const Fermate: React.FC = () => {
         }
       : null;
 
+  /** Orari calcolati per vista 3 (usati solo se GTFS non fornisce arrivo/partenza) */
   const dettaglioCorsaOrari =
     vista === 'corsa' &&
     corsaSelezionata &&
@@ -578,11 +803,40 @@ const Fermate: React.FC = () => {
                   >
                     <div
                       className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded"
-                      onClick={() => setPopupFermata(fermata)}
+                      onClick={() => {
+                        setSelectedFermata(fermata);
+                        setFermataSelezionata(fermata);
+                        setLineaSelezionata(null);
+                        setVista('linea');
+                        if (lineeCache[fermata.id]) {
+                          setLineePerFermataSelezionata(lineeCache[fermata.id]);
+                        } else {
+                          setLoadingLinee(true);
+                          setLineePerFermataSelezionata(null);
+                          caricaLineePerFermata(fermata.id).then((data) => {
+                            setLineeCache((prev) => ({ ...prev, [fermata.id]: data }));
+                            setLineePerFermataSelezionata(data);
+                            setLoadingLinee(false);
+                          });
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          setPopupFermata(fermata);
+                          setSelectedFermata(fermata);
+                          setFermataSelezionata(fermata);
+                          setLineaSelezionata(null);
+                          setVista('linea');
+                          if (lineeCache[fermata.id]) setLineePerFermataSelezionata(lineeCache[fermata.id]);
+                          else {
+                            setLoadingLinee(true);
+                            setLineePerFermataSelezionata(null);
+                            caricaLineePerFermata(fermata.id).then((data) => {
+                              setLineeCache((prev) => ({ ...prev, [fermata.id]: data }));
+                              setLineePerFermataSelezionata(data);
+                              setLoadingLinee(false);
+                            });
+                          }
                         }
                       }}
                       role="button"
@@ -603,41 +857,19 @@ const Fermate: React.FC = () => {
                     <div className="flex items-center gap-2 flex-wrap mt-0.5 mb-1">
                       <span className="text-sm text-gray-500">{fermata.tipo}</span>
                     </div>
-                    {fermata.linee.length === 0 ? (
-                      <p className="text-sm text-gray-400 py-1">Nessuna linea disponibile per questa fermata.</p>
-                    ) : (
-                    fermata.linee.map((linea, idx) => (
-                      <div
-                        key={`${fermata.id}-${linea.percorsoId}-${idx}`}
-                        className="flex items-center gap-2 py-1.5 px-1 -mx-1 rounded cursor-pointer hover:bg-gray-50 transition-colors"
-                        onClick={() => handleLineaClick(linea, fermata)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleLineaClick(linea, fermata);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        {isMetroLine(linea.numero) ? (
-                          <span className="flex-shrink-0 w-7 h-7 rounded bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center">
-                            {linea.numero}
-                          </span>
-                        ) : (
-                          <span className="flex-shrink-0 w-7 h-7 rounded bg-orange-500 text-white font-semibold text-xs flex items-center justify-center">
-                            {linea.numero}
-                          </span>
-                        )}
-                        <span className="flex-1 min-w-0 text-sm text-gray-900">
-                          {linea.numero} {linea.direzione}
-                        </span>
-                        <span className="flex-shrink-0 text-sm text-gray-600">
-                          {linea.orario}
-                        </span>
+                    {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
+                        {lineePerFermata[fermata.id].map((linea) => {
+                          const { base, color } = badgeLineaClasses(linea.nome, linea.tipo);
+                          return (
+                            <span key={linea.nome} className={`${base} ${color}`}>
+                              {linea.nome}
+                            </span>
+                          );
+                        })}
                       </div>
-                    ))
                     )}
+                    <p className="text-sm text-cyan-600 py-1.5">Vedi linee e orari</p>
                   </div>
                 ))}
                 </>
@@ -645,9 +877,11 @@ const Fermate: React.FC = () => {
               </>
             )}
 
-            {/* Vista 2 – Dettaglio linea (da lista: una linea; da mappa: tutte le linee con orari multipli) */}
+            {/* Vista 2 – Dettaglio linea (MooneyGo: linee → direzioni → orari, max 3 per direzione) */}
             {vista === 'linea' && (selectedFermata ?? fermataSelezionata) && (() => {
               const fermata = selectedFermata ?? fermataSelezionata!;
+              const data = lineePerFermataSelezionata;
+              const linee = data?.linee ?? [];
               return (
                 <>
                   <div className="flex items-center gap-2 mb-3">
@@ -662,13 +896,15 @@ const Fermate: React.FC = () => {
                     <span className="text-base font-medium text-cyan-600">
                       {isMetro(fermata.tipo) ? 'Fermata metro' : 'Fermata bus'}
                     </span>
-                    <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
-                      {fermata.distanza}mt
-                    </span>
+                    {fermata.distanza > 0 && (
+                      <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
+                        {fermata.distanza}mt
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     {isMetro(fermata.tipo) ? (
-                      <span className="flex-shrink-0 w-8 h-8 rounded bg-red-500 text-white font-bold text-sm flex items-center justify-center">
+                      <span className="flex-shrink-0 w-8 h-8 rounded bg-amber-400 text-amber-950 font-bold text-sm flex items-center justify-center">
                         M
                       </span>
                     ) : (
@@ -683,84 +919,43 @@ const Fermate: React.FC = () => {
                   <div className="text-sm text-gray-500 mb-3">{fermata.tipo}</div>
                   <div className="text-cyan-600 text-sm font-medium mb-3">Adesso</div>
 
-                  {/* Da lista: una sola linea con 8 corse in righe */}
-                  {lineaSelezionata && (
-                    <>
-                      <div className="space-y-0 border-t border-gray-100">
-                        {orariCorse.map((corsa, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
-                            onClick={() => handleCorsaClick(corsa.orario)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                handleCorsaClick(corsa.orario);
-                              }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                          >
-                            <span className="flex-shrink-0 w-8 h-8 rounded bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center">
-                              {lineaSelezionata.nome}
-                            </span>
-                            <span className="flex-1 text-sm text-gray-900">
-                              {lineaSelezionata.nome} {lineaSelezionata.direzione}
-                            </span>
-                            <span className="text-base font-semibold text-gray-900">
-                              {corsa.orario}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${fermata.lat},${fermata.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-4 block w-full py-3 bg-blue-500 text-white text-center rounded-xl font-medium flex items-center justify-center gap-2"
-                      >
-                        <MapPin className="w-4 h-4" />
-                        Portami qui
-                      </a>
-                    </>
-                  )}
-
-                  {/* Da mappa: tutte le linee con orari multipli per direzione */}
-                  {!lineaSelezionata && (
+                  {loadingLinee ? (
+                    <div className="py-6 text-center text-gray-500">Caricamento linee...</div>
+                  ) : linee.length === 0 ? (
+                    <p className="py-4 text-sm text-gray-500">Nessuna linea disponibile per questa fermata.</p>
+                  ) : (
                     <div className="space-y-4">
-                      {fermata.linee.map((linea, idx) => {
-                        const orari = generaOrariPerDirezione(linea.orario, 4);
-                        return (
-                          <div key={`${linea.percorsoId}-${idx}`} className="border-b border-gray-100 pb-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              {isMetroLine(linea.numero) ? (
-                                <span className="flex-shrink-0 w-8 h-8 rounded bg-amber-400 text-amber-950 font-semibold text-xs flex items-center justify-center">
-                                  {linea.numero}
-                                </span>
-                              ) : (
-                                <span className="flex-shrink-0 w-8 h-8 rounded bg-orange-500 text-white font-semibold text-xs flex items-center justify-center">
-                                  {linea.numero}
-                                </span>
-                              )}
-                              <span className="text-sm font-semibold text-gray-900">
-                                {linea.numero} {linea.direzione}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {orari.map((orario, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  className="px-3 py-1.5 border border-gray-300 rounded-full text-sm hover:bg-gray-100 transition-colors"
-                                  onClick={() => handleOrarioClick(linea, fermata, orario)}
+                      {linee.map((linea) => (
+                        <div key={linea.nome} className="border-b border-gray-100 pb-3">
+                          {linea.direzioni.map((dir, dirIdx) => (
+                            <div key={`${linea.nome}-${dirIdx}`} className="mb-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span
+                                  className="flex-shrink-0 w-8 h-8 rounded font-semibold text-sm flex items-center justify-center text-white"
+                                  style={{ backgroundColor: linea.colore }}
                                 >
-                                  {orario}
-                                </button>
-                              ))}
+                                  {linea.nome}
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                  {linea.nome} {dir.nome}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {dir.orari.slice(0, 3).map((o, i) => (
+                                  <button
+                                    key={`${o.trip_id}-${i}`}
+                                    type="button"
+                                    className="px-3 py-1.5 border border-gray-300 rounded-full text-sm hover:bg-gray-100 transition-colors"
+                                    onClick={() => handleOrarioClick(o.trip_id, o.orario, linea.nome, dir.nome)}
+                                  >
+                                    {o.orario}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          ))}
+                        </div>
+                      ))}
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${fermata.lat},${fermata.lng}`}
                         target="_blank"
@@ -825,9 +1020,15 @@ const Fermate: React.FC = () => {
                         ?.nome ?? ''}
                     </span>
                   </div>
-                  <div className="relative pl-6 border-l-4 border-amber-400 space-y-4">
+                  <div
+                    className="relative pl-6 border-l-4 space-y-4"
+                    style={{ borderColor: selectedPercorso.colore }}
+                  >
                     {selectedPercorso.fermate.map((f, idx) => {
-                      const orari = dettaglioCorsaOrari[idx];
+                      const orariGtfs = f.arrivo != null && f.partenza != null;
+                      const orari = orariGtfs
+                        ? { arrivo: f.arrivo!, partenza: f.partenza! }
+                        : dettaglioCorsaOrari[idx];
                       const isSelected =
                         selectedFermataNome
                           .toLowerCase()
@@ -840,9 +1041,10 @@ const Fermate: React.FC = () => {
                       return (
                         <div key={idx} className="flex gap-3">
                           <div
-                            className={`flex-shrink-0 w-3 h-3 rounded-full border-2 border-amber-500 -ml-[1.125rem] mt-1.5 ${
-                              isSelected ? 'bg-amber-400' : 'bg-white'
+                            className={`flex-shrink-0 w-3 h-3 rounded-full border-2 -ml-[1.125rem] mt-1.5 ${
+                              isSelected ? 'bg-opacity-100' : 'bg-white'
                             }`}
+                            style={{ borderColor: selectedPercorso.colore, backgroundColor: isSelected ? selectedPercorso.colore : undefined }}
                           />
                           <div className="flex-1 min-w-0">
                             {isSelected && (
