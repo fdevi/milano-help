@@ -630,6 +630,24 @@ export type Database = {
         }
         Relationships: []
       }
+      fermate_linee_lookup: {
+        Row: {
+          route_short_name: string
+          route_type: number
+          stop_id: string
+        }
+        Insert: {
+          route_short_name: string
+          route_type?: number
+          stop_id: string
+        }
+        Update: {
+          route_short_name?: string
+          route_type?: number
+          stop_id?: string
+        }
+        Relationships: []
+      }
       gruppi: {
         Row: {
           categoria: string | null
