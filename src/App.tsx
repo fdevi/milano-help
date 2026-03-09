@@ -62,6 +62,7 @@ import ConfirmEmail from "./pages/ConfirmEmail";
 import ConfirmEmailChange from "./pages/ConfirmEmailChange";
 import CompletaProfilo from "./pages/CompletaProfilo";
 import Fermate from "./pages/Fermate";
+import ImportFermate from "./pages/ImportFermate";
 import OneSignalInit from "./components/OneSignalInit";
 
 const queryClient = new QueryClient();
