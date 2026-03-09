@@ -137,7 +137,7 @@ async function streamProcessStopTimes(
   if (batch.length > 0) {
     const { error } = await supabase
       .from("stop_times_atm")
-      .upsert(batch, { onConflict: "trip_id,stop_sequence" });
+      .upsert(batch as any, { onConflict: "trip_id,stop_sequence" });
     if (error) throw new Error(`DB error at flush: ${error.message}`);
     inserted += batch.length;
   }
