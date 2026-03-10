@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Map, { Marker, NavigationControl, Source, Layer } from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { ChevronDown, Bus, ArrowLeft, MapPin, LocateFixed } from 'lucide-react';
+import { ChevronDown, ArrowLeft, MapPin, LocateFixed } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -137,74 +137,70 @@ function isMetroLine(numero: string): boolean {
   return /^M\d*$/.test(numero.trim());
 }
 
-/** Stile badge per lista fermate (vista 1): mappatura basata su contenuto del nome e route_type (fix per dati RPC con prefissi tipo "NM3", "NM5"). */
-function getBadgeStyle(nome: string, routeType: number | null | undefined): { base: string; color: string } {
-  const n = nome.trim().toUpperCase();
+/** Normalizza il nome visualizzato della linea: per metro (route_type=1) aggiunge prefisso "M" se manca; rimuove prefisso "N" (NM→M). */
+function displayNomeLinea(nome: string, routeType: number | null | undefined): string {
+  let n = nome.trim();
+  // Rimuovi prefisso "N" (es. NM1 → M1, NM3 → M3)
+  n = n.replace(/^N/i, '').trim() || n;
+  // Se route_type=1 (metro) e il nome è solo un numero, aggiungi "M"
+  if (routeType === 1 && /^\d+$/.test(n)) {
+    n = `M${n}`;
+  }
+  return n;
+}
+
+/** Stile badge per lista fermate (vista 1): usa il nome display (già normalizzato con M per metro). */
+function getBadgeStyle(displayName: string, routeType: number | null | undefined): { base: string; color: string } {
+  const n = displayName.trim().toUpperCase();
   const square = 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold';
   const rect = 'inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold min-h-[2rem]';
   const circle = 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold';
-  // Metro: M1, M2, M3, M4, M5 (quadrato arrotondato; testo da badgeLabel)
-  if (n.includes('M1')) return { base: square, color: 'bg-red-600 text-white' };
-  if (n.includes('M2')) return { base: square, color: 'bg-green-600 text-white' };
-  if (n.includes('M3')) return { base: square, color: 'bg-yellow-400 text-black' };
-  if (n.includes('M4') || n.includes('NM4')) return { base: square, color: 'bg-blue-600 text-white' };
-  if (n.includes('M5') || n.includes('NM5')) return { base: square, color: 'bg-purple-600 text-white' };
-  // Tram (route_type 0 o nome contiene TRAM): cerchio verde, testo nero — prima delle regole generiche
-  if (routeType === 0 || n.includes('TRAM')) return { base: circle, color: 'bg-green-600 text-black' };
-  // Bus (route_type 3, BUS, o numero senza M)
-  if (routeType === 3 || n.includes('BUS') || (!n.includes('M') && /^[\d\/\-\.]+$/.test(n))) return { base: rect, color: 'bg-orange-500 text-black' };
+  // Metro: M1-M5 (quadrato arrotondato)
+  if (n === 'M1') return { base: square, color: 'bg-red-600 text-white' };
+  if (n === 'M2') return { base: square, color: 'bg-green-600 text-white' };
+  if (n === 'M3') return { base: square, color: 'bg-yellow-400 text-black' };
+  if (n === 'M4') return { base: square, color: 'bg-blue-600 text-white' };
+  if (n === 'M5') return { base: square, color: 'bg-purple-600 text-white' };
+  // Tram (route_type 0): cerchio verde
+  if (routeType === 0) return { base: circle, color: 'bg-green-600 text-black' };
+  // Bus (route_type 3 o numerico): rettangolo arancione
+  if (routeType === 3 || /^[\d\/\-\.]+$/.test(n)) return { base: rect, color: 'bg-orange-500 text-black' };
   // Altro
   return { base: circle, color: 'bg-gray-500 text-white' };
 }
-
-/** Normalizza il nome della linea: rimuove prefisso "N" (es. NM3 → M3, NM4 → M4, NM5 → M5). Usato in lineePerFermata e badge. */
-function normalizzaNomeLinea(nome: string): string {
-  if (!nome) return '';
-  const senzaN = nome.replace(/^N/i, '').trim();
-  return senzaN || nome;
-}
-
-/** Testo da mostrare nel badge: usa nome normalizzato (es. NM3 → M3, NM5 → M5). */
-function badgeLabel(nome: string): string {
-  return normalizzaNomeLinea(nome) || nome;
-}
-
 type MarkerStyleType = 'metro' | 'bus' | 'tram' | 'treno' | 'other';
 
-/** Stile marker mappa: priorità metro > bus > tram > treno > altro. */
+/** Stile marker mappa: priorità metro > bus > tram > treno > altro. Usa displayNomeLinea per match esatto. */
 function getMarkerStyle(
   fermata: { id: string; nome: string; tipo: string },
   lineePerFermata: Record<string, { nome: string; tipo: number }[]>
 ): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string } {
   const linee = lineePerFermata[fermata.id] ?? [];
-  const find = (pred: (l: { nome: string; tipo: number }) => boolean) => linee.find(pred);
-  const n = (nome: string) => nome.trim().toUpperCase();
 
-  // 1. Metro: colore da nome linea (M1/M2/M3/M4/M5), priorità in ordine; altrimenti route_type 1 → amber
-  for (const [key, bg, text] of [
-    ['M1', 'bg-red-600', 'text-white'],
-    ['M2', 'bg-green-600', 'text-white'],
-    ['M3', 'bg-yellow-400', 'text-black'],
-    ['M4', 'bg-blue-600', 'text-white'],
-    ['M5', 'bg-purple-600', 'text-white'],
-  ] as const) {
-    if (find((l) => n(l.nome).includes(key)))
-      return { markerType: 'metro', bgClass: bg, textClass: text, label: 'M' };
-  }
-  if (find((l) => l.tipo === 1))
+  // Metro: cerca linee con route_type=1
+  const metroLinee = linee.filter((l) => l.tipo === 1);
+  if (metroLinee.length > 0) {
+    // Trova la prima metro M1-M5 per il colore del marker
+    for (const ml of metroLinee) {
+      const dn = displayNomeLinea(ml.nome, 1).toUpperCase();
+      if (dn === 'M1') return { markerType: 'metro', bgClass: 'bg-red-600', textClass: 'text-white', label: 'M' };
+      if (dn === 'M2') return { markerType: 'metro', bgClass: 'bg-green-600', textClass: 'text-white', label: 'M' };
+      if (dn === 'M3') return { markerType: 'metro', bgClass: 'bg-yellow-400', textClass: 'text-black', label: 'M' };
+      if (dn === 'M4') return { markerType: 'metro', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'M' };
+      if (dn === 'M5') return { markerType: 'metro', bgClass: 'bg-purple-600', textClass: 'text-white', label: 'M' };
+    }
     return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M' };
-  // 2. Bus (route_type === 3): rettangolo arancione con "BUS"
-  if (find((l) => l.tipo === 3 || n(l.nome).includes('BUS')))
+  }
+  // Bus (route_type === 3)
+  if (linee.some((l) => l.tipo === 3))
     return { markerType: 'bus', bgClass: 'bg-orange-500', textClass: 'text-black', label: 'BUS' };
-  // 3. Tram (route_type === 0): cerchio verde chiaro con emoji 🚊
-  if (find((l) => l.tipo === 0 || n(l.nome).includes('TRAM')))
+  // Tram (route_type === 0)
+  if (linee.some((l) => l.tipo === 0))
     return { markerType: 'tram', bgClass: 'bg-green-100', textClass: '', label: '🚊' };
-  // 4. Treno (route_type === 2): cerchio blu con "T"
-  if (find((l) => l.tipo === 2) || n(fermata.nome).includes('TRENO') || n(fermata.nome).includes('STAZIONE') || n(fermata.nome).includes('FS'))
+  // Treno (route_type === 2)
+  if (linee.some((l) => l.tipo === 2))
     return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
-  // 5. Fallback
-  if (fermata.tipo === 'Treno')
-    return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
+  // Fallback
   return { markerType: 'other', bgClass: 'bg-gray-100', textClass: '', label: '🚌' };
 }
 
@@ -926,9 +922,6 @@ const Fermate: React.FC = () => {
                       role="button"
                       tabIndex={0}
                     >
-                      <span className="flex-shrink-0 text-xl leading-none" aria-hidden>
-                        {emojiForTipo(fermata.tipo)}
-                      </span>
                       <span className="font-semibold text-base text-gray-900 flex-1 min-w-0">
                         {fermata.nome}
                       </span>
@@ -938,16 +931,14 @@ const Fermate: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap mt-0.5 mb-1">
-                      <span className="text-sm text-gray-500">{fermata.tipo}</span>
-                    </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
                         {lineePerFermata[fermata.id].map((linea) => {
-                          const { base, color } = getBadgeStyle(linea.nome, linea.tipo);
+                          const dn = displayNomeLinea(linea.nome, linea.tipo);
+                          const { base, color } = getBadgeStyle(dn, linea.tipo);
                           return (
                             <span key={linea.nome} className={`${base} ${color}`}>
-                              {badgeLabel(linea.nome)}
+                              {dn}
                             </span>
                           );
                         })}
@@ -978,7 +969,7 @@ const Fermate: React.FC = () => {
                       <ArrowLeft className="h-5 w-5" />
                     </button>
                     <span className="text-base font-medium text-cyan-600">
-                      {isMetro(fermata.tipo) ? 'Fermata metro' : 'Fermata bus'}
+                      Fermata
                     </span>
                     {fermata.distanza > 0 && (
                       <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
@@ -987,21 +978,25 @@ const Fermate: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    {isMetro(fermata.tipo) ? (
-                      <span className="flex-shrink-0 w-8 h-8 rounded bg-amber-400 text-amber-950 font-bold text-sm flex items-center justify-center">
-                        M
-                      </span>
-                    ) : (
-                      <span className="flex-shrink-0 w-8 h-8 rounded bg-orange-500 text-white flex items-center justify-center">
-                        <Bus className="w-4 h-4" />
-                      </span>
-                    )}
                     <span className="font-semibold text-base text-gray-900">
                       {fermata.nome}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500 mb-3">{fermata.tipo}</div>
-                  <div className="text-cyan-600 text-sm font-medium mb-3">Adesso</div>
+                  {/* Badge linee nella vista 2 */}
+                  {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {lineePerFermata[fermata.id].map((linea) => {
+                        const dn = displayNomeLinea(linea.nome, linea.tipo);
+                        const { base, color } = getBadgeStyle(dn, linea.tipo);
+                        return (
+                          <span key={linea.nome} className={`${base} ${color}`}>
+                            {dn}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="text-cyan-600 text-sm font-medium mb-3">Prossimi orari</div>
 
                   {loadingLinee ? (
                     <div className="py-6 text-center text-gray-500">Caricamento linee...</div>
@@ -1009,19 +1004,19 @@ const Fermate: React.FC = () => {
                     <p className="py-4 text-sm text-gray-500">Nessuna linea disponibile per questa fermata.</p>
                   ) : (
                     <div className="space-y-4">
-                      {linee.map((linea) => (
+                      {linee.map((linea) => {
+                        const dn = displayNomeLinea(linea.nome, linea.route_type ?? null);
+                        const { base, color } = getBadgeStyle(dn, linea.route_type ?? null);
+                        return (
                         <div key={linea.nome} className="border-b border-gray-100 pb-3">
                           {linea.direzioni.map((dir, dirIdx) => (
                             <div key={`${linea.nome}-${dirIdx}`} className="mb-3">
                               <div className="flex items-center gap-2 mb-2">
-                                <span
-                                  className="flex-shrink-0 w-8 h-8 rounded font-semibold text-sm flex items-center justify-center text-white"
-                                  style={{ backgroundColor: linea.colore }}
-                                >
-                                  {linea.nome}
+                                <span className={`flex-shrink-0 ${base} ${color}`}>
+                                  {dn}
                                 </span>
                                 <span className="text-sm font-semibold text-gray-900">
-                                  {linea.nome} {dir.nome}
+                                  {dn} {dir.nome}
                                 </span>
                               </div>
                               <div className="flex flex-wrap gap-2">
@@ -1039,7 +1034,8 @@ const Fermate: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                      ))}
+                        );
+                      })}
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${fermata.lat},${fermata.lng}`}
                         target="_blank"
