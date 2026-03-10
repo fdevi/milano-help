@@ -39,6 +39,31 @@ const Gruppi = () => {
   const [tipo, setTipo] = useState("pubblico");
   const [categoria, setCategoria] = useState("");
   const [quartiere, setQuartiere] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+
+  const generateImage = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-group-image", {
+        body: { prompt: aiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        setImmagine(data.url);
+        setShowAiPrompt(false);
+        setAiPrompt("");
+        toast({ title: "Immagine generata!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Errore", description: err?.message || "Impossibile generare l'immagine.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const { data: gruppi = [], isLoading } = useQuery({
     queryKey: ["gruppi"],
