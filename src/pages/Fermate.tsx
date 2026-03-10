@@ -761,24 +761,36 @@ const Fermate: React.FC = () => {
                       : `w-8 h-8 rounded-full text-lg leading-none ${style.bgClass}`;
             return (
               <Marker key={f.id} longitude={f.lng} latitude={f.lat} anchor="center">
-                <div
-                  className={`${baseClasses} ${markerClasses}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMarkerClick(f);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleMarkerClick(f);
-                    }
-                  }}
-                  aria-label={`Fermata ${f.nome}`}
-                >
-                  {style.label}
-                </div>
+                {style.markerType === 'metro' && style.metroLines && style.metroLines.length > 1 ? (
+                  <div
+                    className="flex gap-0.5 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); handleMarkerClick(f); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMarkerClick(f); } }}
+                    aria-label={`Fermata ${f.nome}`}
+                  >
+                    {style.metroLines.map(ml => {
+                      const mp = METRO_PRIORITY[ml];
+                      return (
+                        <div key={ml} className={`w-5 h-5 rounded-sm text-[9px] font-bold flex items-center justify-center shadow-md border border-gray-300 ${mp?.bgClass ?? 'bg-amber-500'} ${mp?.textClass ?? 'text-black'}`}>
+                          {ml}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    className={`${baseClasses} ${markerClasses}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); handleMarkerClick(f); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMarkerClick(f); } }}
+                    aria-label={`Fermata ${f.nome}`}
+                  >
+                    {style.label}
+                  </div>
+                )}
               </Marker>
             );
           })}
