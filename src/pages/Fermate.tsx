@@ -144,6 +144,14 @@ function getLineColor(displayName: string, routeType: number | null | undefined)
 
 type MarkerStyleType = 'metro' | 'bus' | 'tram' | 'treno' | 'other';
 
+const METRO_PRIORITY: Record<string, { bgClass: string; textClass: string }> = {
+  M1: { bgClass: 'bg-red-600', textClass: 'text-white' },
+  M2: { bgClass: 'bg-green-600', textClass: 'text-white' },
+  M3: { bgClass: 'bg-yellow-400', textClass: 'text-black' },
+  M4: { bgClass: 'bg-blue-600', textClass: 'text-white' },
+  M5: { bgClass: 'bg-purple-600', textClass: 'text-white' },
+};
+
 function getMarkerStyle(
   fermata: { id: string; nome: string; tipo: string },
   lineePerFermata: Record<string, { nome: string; tipo: number }[]>
@@ -151,13 +159,14 @@ function getMarkerStyle(
   const linee = lineePerFermata[fermata.id] ?? [];
   const metroLinee = linee.filter((l) => l.tipo === 1);
   if (metroLinee.length > 0) {
-    for (const ml of metroLinee) {
-      const dn = displayNomeLinea(ml.nome, 1).toUpperCase();
-      if (dn === 'M1') return { markerType: 'metro', bgClass: 'bg-red-600', textClass: 'text-white', label: 'M' };
-      if (dn === 'M2') return { markerType: 'metro', bgClass: 'bg-green-600', textClass: 'text-white', label: 'M' };
-      if (dn === 'M3') return { markerType: 'metro', bgClass: 'bg-yellow-400', textClass: 'text-black', label: 'M' };
-      if (dn === 'M4') return { markerType: 'metro', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'M' };
-      if (dn === 'M5') return { markerType: 'metro', bgClass: 'bg-purple-600', textClass: 'text-white', label: 'M' };
+    // Sort by metro number (M1 < M2 < ... < M5) and pick first
+    const sorted = metroLinee
+      .map((ml) => displayNomeLinea(ml.nome, 1).toUpperCase())
+      .filter((dn) => dn in METRO_PRIORITY)
+      .sort();
+    const best = sorted[0];
+    if (best && METRO_PRIORITY[best]) {
+      return { markerType: 'metro', ...METRO_PRIORITY[best], label: 'M' };
     }
     return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M' };
   }
