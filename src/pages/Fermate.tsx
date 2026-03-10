@@ -334,16 +334,34 @@ const Fermate: React.FC = () => {
     setLoadingFermate(false);
   };
 
-  /** Carica linee e prossimi orari per una fermata usando RPC ottimizzata */
+  /** Carica linee e prossimi orari per una fermata usando RPC ottimizzata.
+   *  Cerca TUTTI gli stop_id con lo stesso stop_name per aggregare metro+bus. */
   const caricaLineePerFermata = async (stopId: string): Promise<LineePerFermata> => {
     const empty: LineePerFermata = { linee: [] };
     const now = new Date();
     const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    console.log('[Fermate] Chiamata RPC prossimi_arrivi per stop', stopId);
-    // Fetch ALL times (no time filter) so we get all directions
-    const { data, error } = await (supabase as any).rpc('prossimi_arrivi', {
-      _stop_id: stopId,
+    // Find sibling stop_ids with same stop_name
+    const fermataCorrente = fermate.find(f => f.id === stopId);
+    const nomeNorm = fermataCorrente?.nome?.trim().toLowerCase();
+    let siblingIds: string[];
+    if (nomeNorm) {
+      // Collect all fermate loaded that share the same name
+      const fromLoaded = fermate.filter(f => f.nome.trim().toLowerCase() === nomeNorm).map(f => f.id);
+      // Also query DB for stop_ids not in the loaded set (e.g. 'ZARA' uppercase)
+      const { data: siblings } = await supabase
+        .from('fermate_atm')
+        .select('stop_id')
+        .ilike('stop_name', nomeNorm);
+      const fromDb = siblings?.map(s => s.stop_id) ?? [];
+      siblingIds = [...new Set([...fromLoaded, ...fromDb])];
+    } else {
+      siblingIds = [stopId];
+    }
+
+    console.log('[Fermate] Chiamata RPC prossimi_arrivi_multi per stops', siblingIds);
+    const { data, error } = await (supabase as any).rpc('prossimi_arrivi_multi', {
+      _stop_ids: siblingIds,
       _ora_corrente: '00:00',
     });
 
