@@ -137,22 +137,34 @@ function isMetroLine(numero: string): boolean {
   return /^M\d*$/.test(numero.trim());
 }
 
-/** Stile badge per lista fermate (vista 1): mappatura basata su contenuto del nome e route_type (fix per dati RPC con prefissi tipo "NM3", "NM5"). */
-function getBadgeStyle(nome: string, routeType: number | null | undefined): { base: string; color: string } {
-  const n = nome.trim().toUpperCase();
+/** Normalizza il nome visualizzato della linea: per metro (route_type=1) aggiunge prefisso "M" se manca; rimuove prefisso "N" (NM→M). */
+function displayNomeLinea(nome: string, routeType: number | null | undefined): string {
+  let n = nome.trim();
+  // Rimuovi prefisso "N" (es. NM1 → M1, NM3 → M3)
+  n = n.replace(/^N/i, '').trim() || n;
+  // Se route_type=1 (metro) e il nome è solo un numero, aggiungi "M"
+  if (routeType === 1 && /^\d+$/.test(n)) {
+    n = `M${n}`;
+  }
+  return n;
+}
+
+/** Stile badge per lista fermate (vista 1): usa il nome display (già normalizzato con M per metro). */
+function getBadgeStyle(displayName: string, routeType: number | null | undefined): { base: string; color: string } {
+  const n = displayName.trim().toUpperCase();
   const square = 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold';
   const rect = 'inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold min-h-[2rem]';
   const circle = 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold';
-  // Metro: M1, M2, M3, M4, M5 (quadrato arrotondato; testo da badgeLabel)
-  if (n.includes('M1')) return { base: square, color: 'bg-red-600 text-white' };
-  if (n.includes('M2')) return { base: square, color: 'bg-green-600 text-white' };
-  if (n.includes('M3')) return { base: square, color: 'bg-yellow-400 text-black' };
-  if (n.includes('M4') || n.includes('NM4')) return { base: square, color: 'bg-blue-600 text-white' };
-  if (n.includes('M5') || n.includes('NM5')) return { base: square, color: 'bg-purple-600 text-white' };
-  // Tram (route_type 0 o nome contiene TRAM): cerchio verde, testo nero — prima delle regole generiche
-  if (routeType === 0 || n.includes('TRAM')) return { base: circle, color: 'bg-green-600 text-black' };
-  // Bus (route_type 3, BUS, o numero senza M)
-  if (routeType === 3 || n.includes('BUS') || (!n.includes('M') && /^[\d\/\-\.]+$/.test(n))) return { base: rect, color: 'bg-orange-500 text-black' };
+  // Metro: M1-M5 (quadrato arrotondato)
+  if (n === 'M1') return { base: square, color: 'bg-red-600 text-white' };
+  if (n === 'M2') return { base: square, color: 'bg-green-600 text-white' };
+  if (n === 'M3') return { base: square, color: 'bg-yellow-400 text-black' };
+  if (n === 'M4') return { base: square, color: 'bg-blue-600 text-white' };
+  if (n === 'M5') return { base: square, color: 'bg-purple-600 text-white' };
+  // Tram (route_type 0): cerchio verde
+  if (routeType === 0) return { base: circle, color: 'bg-green-600 text-black' };
+  // Bus (route_type 3 o numerico): rettangolo arancione
+  if (routeType === 3 || /^[\d\/\-\.]+$/.test(n)) return { base: rect, color: 'bg-orange-500 text-black' };
   // Altro
   return { base: circle, color: 'bg-gray-500 text-white' };
 }
