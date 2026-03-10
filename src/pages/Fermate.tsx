@@ -813,10 +813,10 @@ const Fermate: React.FC = () => {
                 {fermate.map((fermata) => (
                   <div
                     key={fermata.id}
-                    className="mb-4 pb-3 border-b border-gray-100 last:border-0"
+                    className="mb-2 pb-2 border-b border-gray-100 last:border-0"
                   >
                     <div
-                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded"
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-1 px-1 py-1.5 rounded active:bg-gray-100"
                       onClick={() => handleMarkerClick(fermata)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -827,29 +827,29 @@ const Fermate: React.FC = () => {
                       role="button"
                       tabIndex={0}
                     >
-                      <span className="font-semibold text-base text-gray-900 flex-1 min-w-0">
+                      <span className="font-semibold text-sm sm:text-base text-gray-900 flex-1 min-w-0">
                         {fermata.nome}
                       </span>
                       {fermata.distanza > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white flex-shrink-0">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-teal-500 text-white flex-shrink-0">
                           {fermata.distanza}mt
                         </span>
                       )}
                     </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
+                      <div className="flex flex-wrap gap-1 mt-0.5 mb-0.5">
                         {lineePerFermata[fermata.id].map((linea) => {
                           const dn = displayNomeLinea(linea.nome, linea.tipo);
                           const { base, color } = getBadgeStyle(dn, linea.tipo);
                           return (
-                            <span key={linea.nome} className={`${base} ${color}`}>
+                            <span key={linea.nome} className={`${base} ${color} !w-7 !h-7 !text-[10px] sm:!w-8 sm:!h-8 sm:!text-xs`}>
                               {dn}
                             </span>
                           );
                         })}
                       </div>
                     )}
-                    <p className="text-sm text-cyan-600 py-1.5">Vedi linee e orari</p>
+                    <p className="text-xs sm:text-sm text-cyan-600 py-1">Vedi linee e orari</p>
                   </div>
                 ))}
                 </>
