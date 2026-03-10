@@ -982,7 +982,7 @@ const Fermate: React.FC = () => {
                       <ArrowLeft className="h-5 w-5" />
                     </button>
                     <span className="text-base font-medium text-cyan-600">
-                      {isMetro(fermata.tipo) ? 'Fermata metro' : 'Fermata bus'}
+                      Fermata
                     </span>
                     {fermata.distanza > 0 && (
                       <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
@@ -991,21 +991,25 @@ const Fermate: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    {isMetro(fermata.tipo) ? (
-                      <span className="flex-shrink-0 w-8 h-8 rounded bg-amber-400 text-amber-950 font-bold text-sm flex items-center justify-center">
-                        M
-                      </span>
-                    ) : (
-                      <span className="flex-shrink-0 w-8 h-8 rounded bg-orange-500 text-white flex items-center justify-center">
-                        <Bus className="w-4 h-4" />
-                      </span>
-                    )}
                     <span className="font-semibold text-base text-gray-900">
                       {fermata.nome}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500 mb-3">{fermata.tipo}</div>
-                  <div className="text-cyan-600 text-sm font-medium mb-3">Adesso</div>
+                  {/* Badge linee nella vista 2 */}
+                  {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {lineePerFermata[fermata.id].map((linea) => {
+                        const dn = displayNomeLinea(linea.nome, linea.tipo);
+                        const { base, color } = getBadgeStyle(dn, linea.tipo);
+                        return (
+                          <span key={linea.nome} className={`${base} ${color}`}>
+                            {dn}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="text-cyan-600 text-sm font-medium mb-3">Prossimi orari</div>
 
                   {loadingLinee ? (
                     <div className="py-6 text-center text-gray-500">Caricamento linee...</div>
