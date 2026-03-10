@@ -1017,19 +1017,19 @@ const Fermate: React.FC = () => {
                     <p className="py-4 text-sm text-gray-500">Nessuna linea disponibile per questa fermata.</p>
                   ) : (
                     <div className="space-y-4">
-                      {linee.map((linea) => (
+                      {linee.map((linea) => {
+                        const dn = displayNomeLinea(linea.nome, linea.route_type ?? null);
+                        const { base, color } = getBadgeStyle(dn, linea.route_type ?? null);
+                        return (
                         <div key={linea.nome} className="border-b border-gray-100 pb-3">
                           {linea.direzioni.map((dir, dirIdx) => (
                             <div key={`${linea.nome}-${dirIdx}`} className="mb-3">
                               <div className="flex items-center gap-2 mb-2">
-                                <span
-                                  className="flex-shrink-0 w-8 h-8 rounded font-semibold text-sm flex items-center justify-center text-white"
-                                  style={{ backgroundColor: linea.colore }}
-                                >
-                                  {linea.nome}
+                                <span className={`flex-shrink-0 ${base} ${color}`}>
+                                  {dn}
                                 </span>
                                 <span className="text-sm font-semibold text-gray-900">
-                                  {linea.nome} {dir.nome}
+                                  {dn} {dir.nome}
                                 </span>
                               </div>
                               <div className="flex flex-wrap gap-2">
