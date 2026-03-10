@@ -329,12 +329,13 @@ const Fermate: React.FC = () => {
   const caricaLineePerFermata = async (stopId: string): Promise<LineePerFermata> => {
     const empty: LineePerFermata = { linee: [] };
     const now = new Date();
-    const oraCorrente = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:00`;
+    const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    console.log('[Fermate] Chiamata RPC prossimi_arrivi per stop', stopId, 'ora', oraCorrente);
+    console.log('[Fermate] Chiamata RPC prossimi_arrivi per stop', stopId);
+    // Fetch ALL times (no time filter) so we get all directions
     const { data, error } = await (supabase as any).rpc('prossimi_arrivi', {
       _stop_id: stopId,
-      _ora_corrente: oraCorrente,
+      _ora_corrente: '00:00',
     });
 
     if (error) {
@@ -348,28 +349,36 @@ const Fermate: React.FC = () => {
 
     console.log('[Fermate] RPC prossimi_arrivi: righe ricevute:', data.length);
 
-    // Group by route+direction, deduplicate by arrival_time (keep first trip per time)
-    type Acc = { routeType: number; items: OrarioConTrip[] };
+    // Group by route+direction
+    type Acc = { routeType: number; items: { orario: string; trip_id: string; minuti: number; isDomani: boolean }[] };
     const byKey = new MapNative<string, Acc>();
 
     for (const row of data) {
       const nome = row.route_short_name?.trim() ?? '';
       const headsign = row.trip_headsign?.trim() ?? '';
       const key = `${nome}|${headsign}`;
-      const orario = normalizzaOrario(row.arrival_time);
-      if (!orario) continue;
+      const parsed = parseOrarioGtfs(row.arrival_time);
+      if (!parsed) continue;
 
       if (!byKey.has(key)) {
         byKey.set(key, { routeType: row.route_type ?? 3, items: [] });
       }
       const acc = byKey.get(key)!;
-      // Deduplicate: same arrival_time = same scheduled time for different weekdays
-      if (!acc.items.some(i => i.orario === orario)) {
-        if (acc.items.length < 5) {
-          acc.items.push({ orario, trip_id: row.trip_id });
-        }
+      // Deduplicate same display time
+      if (!acc.items.some(i => i.orario === parsed.display)) {
+        acc.items.push({ orario: parsed.display, trip_id: row.trip_id, minuti: parsed.minuti, isDomani: parsed.isDomani });
       }
     }
+
+    // For each direction, filter to show future times first, then tomorrow's
+    const filterFutureOrari = (items: Acc['items']): OrarioConTrip[] => {
+      // Split into "today future" and "tomorrow/past"
+      const future = items.filter(i => !i.isDomani && i.minuti >= nowMinuti);
+      const tomorrow = items.filter(i => i.isDomani || i.minuti < nowMinuti);
+      // Take first 5 future, or if none, first 5 tomorrow
+      const selected = future.length > 0 ? future.slice(0, 5) : tomorrow.slice(0, 5);
+      return selected.map(i => ({ orario: i.orario, trip_id: i.trip_id }));
+    };
 
     // Group directions under same route
     const byRoute = new MapNative<string, LineaConDirezioni>();
@@ -386,9 +395,10 @@ const Fermate: React.FC = () => {
         });
       }
       const linea = byRoute.get(routeKey)!;
+      const orari = filterFutureOrari(acc.items);
       linea.direzioni.push({
         nome: headsign ? `per ${headsign}` : '',
-        orari: acc.items,
+        orari,
       });
     });
 
