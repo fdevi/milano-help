@@ -327,22 +327,28 @@ const Fermate: React.FC = () => {
             const arr = byStopId.get(row.stop_id)!;
             if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
           }
-          // Now merge sibling stop_ids (same stop_name) so each fermata shows all lines
+          // Now merge sibling stop_ids (same stop_name OR same base name) so each fermata shows all lines
           const byName = new MapNative<string, { nome: string; tipo: number }[]>();
+          // Also group by base name to merge metro stops (e.g. 'ZARA' + 'zara m3 m5')
+          const byBaseName = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const f of fermateMappate) {
             const nameKey = f.nome.trim().toLowerCase();
+            const baseKey = estraiNomeBase(f.nome);
             if (!byName.has(nameKey)) byName.set(nameKey, []);
-            const merged = byName.get(nameKey)!;
+            if (!byBaseName.has(baseKey)) byBaseName.set(baseKey, []);
             const stopLinee = byStopId.get(f.id) ?? [];
             for (const l of stopLinee) {
-              if (!merged.some(m => m.nome === l.nome)) merged.push(l);
+              const nameArr = byName.get(nameKey)!;
+              if (!nameArr.some(m => m.nome === l.nome)) nameArr.push(l);
+              const baseArr = byBaseName.get(baseKey)!;
+              if (!baseArr.some(m => m.nome === l.nome)) baseArr.push(l);
             }
           }
-          // Assign merged lines back to each fermata
+          // Assign merged lines: use base name grouping (broader merge)
           const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const f of fermateMappate) {
-            const nameKey = f.nome.trim().toLowerCase();
-            grouped.set(f.id, byName.get(nameKey) ?? []);
+            const baseKey = estraiNomeBase(f.nome);
+            grouped.set(f.id, byBaseName.get(baseKey) ?? []);
           }
           setLineePerFermata(Object.fromEntries(grouped));
         } else {
