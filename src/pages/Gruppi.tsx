@@ -300,15 +300,28 @@ const Gruppi = () => {
               <Card key={g.id} className="hover:shadow-md transition-shadow h-full flex flex-col">
                 <Link to={`/gruppo/${g.id}`} className="block flex-1">
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-lg line-clamp-1">{g.nome}</CardTitle>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {user?.id === g.creatore_id && (
-                          <Badge variant="default" className="gap-1 text-xs">
-                            <Shield className="w-3 h-3" /> Admin
-                          </Badge>
-                        )}
-                        {g.tipo === "privato" ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
+                    <div className="flex items-center gap-3">
+                      {g.immagine ? (
+                        <img src={g.immagine} alt={g.nome} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-primary font-bold text-sm">
+                            {g.nome?.slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <CardTitle className="text-lg line-clamp-1">{g.nome}</CardTitle>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {user?.id === g.creatore_id && (
+                              <Badge variant="default" className="gap-1 text-xs">
+                                <Shield className="w-3 h-3" /> Admin
+                              </Badge>
+                            )}
+                            {g.tipo === "privato" ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
