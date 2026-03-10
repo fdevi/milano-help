@@ -155,20 +155,20 @@ const METRO_PRIORITY: Record<string, { bgClass: string; textClass: string }> = {
 function getMarkerStyle(
   fermata: { id: string; nome: string; tipo: string },
   lineePerFermata: Record<string, { nome: string; tipo: number }[]>
-): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string } {
+): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string; metroLines?: string[] } {
   const linee = lineePerFermata[fermata.id] ?? [];
   const metroLinee = linee.filter((l) => l.tipo === 1);
   if (metroLinee.length > 0) {
-    // Sort by metro number (M1 < M2 < ... < M5) and pick first
     const sorted = metroLinee
       .map((ml) => displayNomeLinea(ml.nome, 1).toUpperCase())
       .filter((dn) => dn in METRO_PRIORITY)
       .sort();
-    const best = sorted[0];
+    const unique = [...new Set(sorted)];
+    const best = unique[0];
     if (best && METRO_PRIORITY[best]) {
-      return { markerType: 'metro', ...METRO_PRIORITY[best], label: 'M' };
+      return { markerType: 'metro', ...METRO_PRIORITY[best], label: 'M', metroLines: unique };
     }
-    return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M' };
+    return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M', metroLines: unique };
   }
   if (linee.some((l) => l.tipo === 3))
     return { markerType: 'bus', bgClass: 'bg-orange-500', textClass: 'text-black', label: 'BUS' };
@@ -177,6 +177,11 @@ function getMarkerStyle(
   if (linee.some((l) => l.tipo === 2))
     return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
   return { markerType: 'other', bgClass: 'bg-gray-100', textClass: '', label: '🚌' };
+}
+
+/** Estrae il nome base di una fermata rimuovendo suffissi metro (es. "zara m3 m5" → "zara") */
+function estraiNomeBase(nome: string): string {
+  return nome.trim().toLowerCase().replace(/\s+m[1-5](\s+m[1-5])*/gi, '').trim();
 }
 
 function aggiungiMinuti(orario: string, deltaMinuti: number): string {
