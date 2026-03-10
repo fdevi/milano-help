@@ -382,11 +382,16 @@ const Fermate: React.FC = () => {
 
     const siblingIds = fermata.stopIds;
 
-    console.log('[Fermate] Chiamata RPC prossimi_arrivi_multi per stops', siblingIds);
+    // Pass actual current time so RPC filters server-side (avoids PostgREST 1000 row limit)
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const oraCorrente = `${hh}:${mm}:00`;
+
+    console.log('[Fermate] Chiamata RPC prossimi_arrivi_multi per stops', siblingIds, 'ora:', oraCorrente);
     const { data, error } = await (supabase as any).rpc('prossimi_arrivi_multi', {
       _stop_ids: siblingIds,
-      _ora_corrente: '00:00',
-    }).limit(10000);
+      _ora_corrente: oraCorrente,
+    });
 
     if (error) {
       console.error('[Fermate] RPC prossimi_arrivi errore:', error);
