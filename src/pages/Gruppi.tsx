@@ -381,7 +381,61 @@ const Gruppi = () => {
           <div className="space-y-4">
             <Input placeholder="Nome del gruppo *" value={nome} onChange={(e) => setNome(e.target.value)} />
             <Textarea placeholder="Descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)} rows={3} />
-            <Input placeholder="URL immagine (opzionale)" value={immagine} onChange={(e) => setImmagine(e.target.value)} />
+            
+            {/* Image section */}
+            <div className="space-y-2">
+              <Label>Immagine del gruppo (opzionale)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="URL immagine" 
+                  value={immagine} 
+                  onChange={(e) => setImmagine(e.target.value)} 
+                  className="flex-1"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAiPrompt(!showAiPrompt)}
+                  className="shrink-0 gap-1"
+                >
+                  <Sparkles className="w-4 h-4" /> Genera con AI
+                </Button>
+              </div>
+              
+              {showAiPrompt && (
+                <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Input
+                    placeholder="Descrivi l'immagine (es. montagna con tramonto)"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && generateImage()}
+                    className="flex-1"
+                    disabled={isGenerating}
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={generateImage} 
+                    disabled={!aiPrompt.trim() || isGenerating}
+                  >
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Genera"}
+                  </Button>
+                </div>
+              )}
+
+              {immagine && (
+                <div className="flex justify-center">
+                  <img 
+                    src={immagine} 
+                    alt="Anteprima" 
+                    className="max-w-[200px] max-h-[200px] rounded-lg object-cover border"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                    onLoad={(e) => (e.currentTarget.style.display = "block")}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <Select value={tipo} onValueChange={setTipo}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
