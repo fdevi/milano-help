@@ -381,9 +381,14 @@ const Fermate: React.FC = () => {
 
     // For each direction, filter to show future times first, then tomorrow's
     const filterFutureOrari = (items: Acc['items']): OrarioConTrip[] => {
+      // Sort all items by raw minuti first
+      const sorted = [...items].sort((a, b) => a.minuti - b.minuti);
       // Split into "today future" and "tomorrow/past"
-      const future = items.filter(i => !i.isDomani && i.minuti >= nowMinuti);
-      const tomorrow = items.filter(i => i.isDomani || i.minuti < nowMinuti);
+      const future = sorted.filter(i => !i.isDomani && i.minuti >= nowMinuti);
+      // Tomorrow = isDomani items (24:xx+) sorted by minuti, then past-today items
+      const domani = sorted.filter(i => i.isDomani).sort((a, b) => a.minuti - b.minuti);
+      const passati = sorted.filter(i => !i.isDomani && i.minuti < nowMinuti);
+      const tomorrow = [...domani, ...passati];
       // Take first 5 future, or if none, first 5 tomorrow
       const selected = future.length > 0 ? future.slice(0, 5) : tomorrow.slice(0, 5);
       return selected.map(i => ({ orario: i.orario, trip_id: i.trip_id }));
