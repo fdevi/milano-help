@@ -137,17 +137,75 @@ function isMetroLine(numero: string): boolean {
   return /^M\d*$/.test(numero.trim());
 }
 
-/** Stile badge per lista fermate (vista 1): forma + classi colore in base a nome linea e route_type GTFS (0=tram, 1=metro, 2=treno, 3=bus) */
-function badgeLineaClasses(nome: string, routeType: number | null | undefined): { base: string; color: string } {
+/** Stile badge per lista fermate (vista 1): mappatura basata su contenuto del nome e route_type (fix per dati RPC con prefissi tipo "NM3", "NM5"). */
+function getBadgeStyle(nome: string, routeType: number | null | undefined): { base: string; color: string } {
   const n = nome.trim().toUpperCase();
-  if (n === 'M1') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-red-600 text-white' };
-  if (n === 'M2') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-green-600 text-white' };
-  if (n === 'M3') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-yellow-400 text-black' };
-  if (n === 'M5') return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-purple-600 text-white' };
-  if (/^M\d+$/.test(n)) return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold', color: 'bg-amber-500 text-black' };
-  if (routeType === 3) return { base: 'inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold min-h-[2rem]', color: 'bg-orange-500 text-black' };
-  if (routeType === 0) return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold', color: 'bg-green-600 text-white' };
-  return { base: 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold', color: 'bg-gray-500 text-white' };
+  const square = 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold';
+  const rect = 'inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold min-h-[2rem]';
+  const circle = 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold';
+  // Metro: M1, M2, M3, M4, M5 (quadrato arrotondato; testo da badgeLabel)
+  if (n.includes('M1')) return { base: square, color: 'bg-red-600 text-white' };
+  if (n.includes('M2')) return { base: square, color: 'bg-green-600 text-white' };
+  if (n.includes('M3')) return { base: square, color: 'bg-yellow-400 text-black' };
+  if (n.includes('M4') || n.includes('NM4')) return { base: square, color: 'bg-blue-600 text-white' };
+  if (n.includes('M5') || n.includes('NM5')) return { base: square, color: 'bg-purple-600 text-white' };
+  // Tram (route_type 0 o nome contiene TRAM): cerchio verde, testo nero — prima delle regole generiche
+  if (routeType === 0 || n.includes('TRAM')) return { base: circle, color: 'bg-green-600 text-black' };
+  // Bus (route_type 3, BUS, o numero senza M)
+  if (routeType === 3 || n.includes('BUS') || (!n.includes('M') && /^[\d\/\-\.]+$/.test(n))) return { base: rect, color: 'bg-orange-500 text-black' };
+  // Altro
+  return { base: circle, color: 'bg-gray-500 text-white' };
+}
+
+/** Normalizza il nome della linea: rimuove prefisso "N" (es. NM3 → M3, NM4 → M4, NM5 → M5). Usato in lineePerFermata e badge. */
+function normalizzaNomeLinea(nome: string): string {
+  if (!nome) return '';
+  const senzaN = nome.replace(/^N/i, '').trim();
+  return senzaN || nome;
+}
+
+/** Testo da mostrare nel badge: usa nome normalizzato (es. NM3 → M3, NM5 → M5). */
+function badgeLabel(nome: string): string {
+  return normalizzaNomeLinea(nome) || nome;
+}
+
+type MarkerStyleType = 'metro' | 'bus' | 'tram' | 'treno' | 'other';
+
+/** Stile marker mappa: priorità metro > bus > tram > treno > altro. */
+function getMarkerStyle(
+  fermata: { id: string; nome: string; tipo: string },
+  lineePerFermata: Record<string, { nome: string; tipo: number }[]>
+): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string } {
+  const linee = lineePerFermata[fermata.id] ?? [];
+  const find = (pred: (l: { nome: string; tipo: number }) => boolean) => linee.find(pred);
+  const n = (nome: string) => nome.trim().toUpperCase();
+
+  // 1. Metro: colore da nome linea (M1/M2/M3/M4/M5), priorità in ordine; altrimenti route_type 1 → amber
+  for (const [key, bg, text] of [
+    ['M1', 'bg-red-600', 'text-white'],
+    ['M2', 'bg-green-600', 'text-white'],
+    ['M3', 'bg-yellow-400', 'text-black'],
+    ['M4', 'bg-blue-600', 'text-white'],
+    ['M5', 'bg-purple-600', 'text-white'],
+  ] as const) {
+    if (find((l) => n(l.nome).includes(key)))
+      return { markerType: 'metro', bgClass: bg, textClass: text, label: 'M' };
+  }
+  if (find((l) => l.tipo === 1))
+    return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M' };
+  // 2. Bus (route_type === 3): rettangolo arancione con "BUS"
+  if (find((l) => l.tipo === 3 || n(l.nome).includes('BUS')))
+    return { markerType: 'bus', bgClass: 'bg-orange-500', textClass: 'text-black', label: 'BUS' };
+  // 3. Tram (route_type === 0): cerchio verde chiaro con emoji 🚊
+  if (find((l) => l.tipo === 0 || n(l.nome).includes('TRAM')))
+    return { markerType: 'tram', bgClass: 'bg-green-100', textClass: '', label: '🚊' };
+  // 4. Treno (route_type === 2): cerchio blu con "T"
+  if (find((l) => l.tipo === 2) || n(fermata.nome).includes('TRENO') || n(fermata.nome).includes('STAZIONE') || n(fermata.nome).includes('FS'))
+    return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
+  // 5. Fallback
+  if (fermata.tipo === 'Treno')
+    return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
+  return { markerType: 'other', bgClass: 'bg-gray-100', textClass: '', label: '🚌' };
 }
 
 /** Genera orari finti a partire da ora (arrotondata a 5 min), 8 corse */
@@ -333,12 +391,12 @@ const Fermate: React.FC = () => {
         if (!errLinee && lineeData?.length) {
           const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const row of lineeData) {
-            const nome = row.route_short_name?.trim();
-            if (!nome) continue;
+            const nomeNorm = normalizzaNomeLinea(row.route_short_name ?? '');
+            if (!nomeNorm) continue;
             const tipo = row.route_type ?? 3;
             if (!grouped.has(row.stop_id)) grouped.set(row.stop_id, []);
             const arr = grouped.get(row.stop_id)!;
-            if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
+            if (!arr.some((l) => l.nome === nomeNorm)) arr.push({ nome: nomeNorm, tipo });
           }
           const result = Object.fromEntries(grouped);
           console.log('[Fermate] lineePerFermata salvate:', Object.keys(result).length, 'fermate con linee');
@@ -546,6 +604,10 @@ const Fermate: React.FC = () => {
   };
 
   const handleMarkerClick = (f: Fermata) => {
+    const linee = lineePerFermata[f.id] ?? [];
+    if (linee.length > 0) {
+      console.log('[Fermate] Click fermata:', f.nome, '| linee restituite:', linee.map((l) => `${l.nome}(tipo=${l.tipo})`));
+    }
     setSelectedFermata(f);
     setFermataSelezionata(f);
     setLineaSelezionata(null);
@@ -677,28 +739,42 @@ const Fermate: React.FC = () => {
               title="Trascina per cambiare zona di ricerca"
             />
           </Marker>
-          {fermate.map((f) => (
-            <Marker key={f.id} longitude={f.lng} latitude={f.lat} anchor="center">
-              <div
-                className="bg-white rounded-full p-1 shadow-md border border-gray-300 text-lg leading-none cursor-pointer hover:ring-2 hover:ring-cyan-500 transition-shadow"
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMarkerClick(f);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
+          {fermate.map((f) => {
+            const style = getMarkerStyle(f, lineePerFermata);
+            const baseClasses = 'flex items-center justify-center shadow-md border border-gray-300 cursor-pointer hover:ring-2 hover:ring-cyan-500 transition-shadow';
+            const markerClasses =
+              style.markerType === 'metro'
+                ? `w-6 h-6 rounded-md text-xs font-bold ${style.bgClass} ${style.textClass}`
+                : style.markerType === 'bus'
+                  ? `w-8 h-6 rounded-md text-xs font-bold ${style.bgClass} ${style.textClass}`
+                  : style.markerType === 'tram'
+                    ? `w-8 h-8 rounded-full text-lg leading-none ${style.bgClass}`
+                    : style.markerType === 'treno'
+                      ? `w-6 h-6 rounded-full text-xs font-bold ${style.bgClass} ${style.textClass}`
+                      : `w-8 h-8 rounded-full text-lg leading-none ${style.bgClass}`;
+            return (
+              <Marker key={f.id} longitude={f.lng} latitude={f.lat} anchor="center">
+                <div
+                  className={`${baseClasses} ${markerClasses}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
                     handleMarkerClick(f);
-                  }
-                }}
-                aria-label={`Fermata ${f.nome}`}
-              >
-                {f.tipo === 'Metropolitana' ? '🚇' : f.tipo === 'Tram' ? '🚊' : f.tipo === 'Treno' ? '🚆' : '🚌'}
-              </div>
-            </Marker>
-          ))}
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleMarkerClick(f);
+                    }
+                  }}
+                  aria-label={`Fermata ${f.nome}`}
+                >
+                  {style.label}
+                </div>
+              </Marker>
+            );
+          })}
           {latitude != null && longitude != null && (
             <Marker longitude={longitude} latitude={latitude} anchor="center">
               <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-white shadow-lg" />
@@ -865,10 +941,10 @@ const Fermate: React.FC = () => {
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
                         {lineePerFermata[fermata.id].map((linea) => {
-                          const { base, color } = badgeLineaClasses(linea.nome, linea.tipo);
+                          const { base, color } = getBadgeStyle(linea.nome, linea.tipo);
                           return (
                             <span key={linea.nome} className={`${base} ${color}`}>
-                              {linea.nome}
+                              {badgeLabel(linea.nome)}
                             </span>
                           );
                         })}
