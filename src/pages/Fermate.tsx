@@ -167,7 +167,9 @@ function getMarkerStyle(
     const unique = [...new Set(sorted)];
     const best = unique[0];
     if (best && METRO_PRIORITY[best]) {
-      return { markerType: 'metro', ...METRO_PRIORITY[best], label: 'M', metroLines: unique };
+      // Se c'è una sola linea metro, mostra il nome specifico (M1, M2, ecc.)
+      const label = unique.length === 1 ? best : 'M';
+      return { markerType: 'metro', ...METRO_PRIORITY[best], label, metroLines: unique };
     }
     return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M', metroLines: unique };
   }
