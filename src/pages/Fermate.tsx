@@ -312,14 +312,32 @@ const Fermate: React.FC = () => {
           .select('stop_id, route_short_name, route_type')
           .in('stop_id', stopIds);
         if (!errLinee && lineeData?.length) {
-          const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
+          // First group by stop_id
+          const byStopId = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const row of lineeData) {
             const nome = row.route_short_name?.trim();
             if (!nome) continue;
             const tipo = row.route_type ?? 3;
-            if (!grouped.has(row.stop_id)) grouped.set(row.stop_id, []);
-            const arr = grouped.get(row.stop_id)!;
+            if (!byStopId.has(row.stop_id)) byStopId.set(row.stop_id, []);
+            const arr = byStopId.get(row.stop_id)!;
             if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
+          }
+          // Now merge sibling stop_ids (same stop_name) so each fermata shows all lines
+          const byName = new MapNative<string, { nome: string; tipo: number }[]>();
+          for (const f of fermateMappate) {
+            const nameKey = f.nome.trim().toLowerCase();
+            if (!byName.has(nameKey)) byName.set(nameKey, []);
+            const merged = byName.get(nameKey)!;
+            const stopLinee = byStopId.get(f.id) ?? [];
+            for (const l of stopLinee) {
+              if (!merged.some(m => m.nome === l.nome)) merged.push(l);
+            }
+          }
+          // Assign merged lines back to each fermata
+          const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
+          for (const f of fermateMappate) {
+            const nameKey = f.nome.trim().toLowerCase();
+            grouped.set(f.id, byName.get(nameKey) ?? []);
           }
           setLineePerFermata(Object.fromEntries(grouped));
         } else {
