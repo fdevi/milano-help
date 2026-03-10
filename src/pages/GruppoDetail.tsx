@@ -632,6 +632,28 @@ const GruppoDetail = () => {
           <div className="space-y-3">
             <div><Label>Nome</Label><Input value={editNome} onChange={(e) => setEditNome(e.target.value)} /></div>
             <div><Label>Descrizione</Label><Textarea value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>Immagine</Label>
+              <div className="flex gap-2">
+                <Input placeholder="URL immagine" value={editImmagine} onChange={(e) => setEditImmagine(e.target.value)} className="flex-1" />
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditShowAiPrompt(!editShowAiPrompt)} className="shrink-0 gap-1">
+                  <Sparkles className="w-4 h-4" /> AI
+                </Button>
+              </div>
+              {editShowAiPrompt && (
+                <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Input placeholder="Descrivi l'immagine..." value={editAiPrompt} onChange={(e) => setEditAiPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && generateEditImage()} className="flex-1" disabled={editIsGenerating} />
+                  <Button size="sm" onClick={generateEditImage} disabled={!editAiPrompt.trim() || editIsGenerating}>
+                    {editIsGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Genera"}
+                  </Button>
+                </div>
+              )}
+              {editImmagine && (
+                <div className="flex justify-center">
+                  <img src={editImmagine} alt="Anteprima" className="max-w-[150px] max-h-[150px] rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} onLoad={(e) => (e.currentTarget.style.display = "block")} />
+                </div>
+              )}
+            </div>
             <div><Label>Tipo</Label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={editTipo} onChange={(e) => setEditTipo(e.target.value as any)}>
                 <option value="pubblico">Pubblico</option><option value="privato">Privato</option>
