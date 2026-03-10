@@ -383,6 +383,13 @@ const GruppoDetail = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/gruppi")} className="shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Button>
+          {(gruppo as any).immagine ? (
+            <img src={(gruppo as any).immagine} alt={(gruppo as any).nome} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-primary font-bold text-sm">{(gruppo as any).nome?.slice(0, 2).toUpperCase()}</span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="font-heading font-bold text-foreground truncate">{(gruppo as any).nome}</h1>
