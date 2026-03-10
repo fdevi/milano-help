@@ -23,6 +23,7 @@ export interface Fermata {
   distanza: number;
   linee: LineaPassaggio[];
   route_type?: number;
+  stopIds: string[];
 }
 
 export interface LineaPassaggio {
