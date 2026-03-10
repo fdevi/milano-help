@@ -87,13 +87,22 @@ function colorePerRouteType(routeType: number | null | undefined): string {
   return '#6b7280';
 }
 
-function normalizzaOrario(t: string | null): string {
-  if (!t) return '';
+/** Normalizza orario GTFS (es. 25:30 → 01:30). Restituisce { display, minuti, isDomani } */
+function parseOrarioGtfs(t: string | null): { display: string; minuti: number; isDomani: boolean } | null {
+  if (!t) return null;
   const parts = t.trim().split(':');
   let h = parseInt(parts[0], 10);
   const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+  if (isNaN(h) || isNaN(m)) return null;
+  const isDomani = h >= 24;
+  const minuti = h * 60 + m; // keep raw for sorting
   if (h >= 24) h -= 24;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  return { display: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`, minuti, isDomani };
+}
+
+function normalizzaOrario(t: string | null): string {
+  const p = parseOrarioGtfs(t);
+  return p?.display ?? '';
 }
 
 function displayNomeLinea(nome: string, routeType: number | null | undefined): string {
