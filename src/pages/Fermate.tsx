@@ -584,7 +584,7 @@ const Fermate: React.FC = () => {
     } else {
       setLoadingLinee(true);
       setLineePerFermataSelezionata(null);
-      caricaLineePerFermata(f.id).then((data) => {
+      caricaLineePerFermata(f).then((data) => {
         setLineeCache((prev) => ({ ...prev, [f.id]: data }));
         setLineePerFermataSelezionata(data);
         setLoadingLinee(false);
