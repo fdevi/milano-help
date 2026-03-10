@@ -155,20 +155,20 @@ const METRO_PRIORITY: Record<string, { bgClass: string; textClass: string }> = {
 function getMarkerStyle(
   fermata: { id: string; nome: string; tipo: string },
   lineePerFermata: Record<string, { nome: string; tipo: number }[]>
-): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string } {
+): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string; metroLines?: string[] } {
   const linee = lineePerFermata[fermata.id] ?? [];
   const metroLinee = linee.filter((l) => l.tipo === 1);
   if (metroLinee.length > 0) {
-    // Sort by metro number (M1 < M2 < ... < M5) and pick first
     const sorted = metroLinee
       .map((ml) => displayNomeLinea(ml.nome, 1).toUpperCase())
       .filter((dn) => dn in METRO_PRIORITY)
       .sort();
-    const best = sorted[0];
+    const unique = [...new Set(sorted)];
+    const best = unique[0];
     if (best && METRO_PRIORITY[best]) {
-      return { markerType: 'metro', ...METRO_PRIORITY[best], label: 'M' };
+      return { markerType: 'metro', ...METRO_PRIORITY[best], label: 'M', metroLines: unique };
     }
-    return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M' };
+    return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M', metroLines: unique };
   }
   if (linee.some((l) => l.tipo === 3))
     return { markerType: 'bus', bgClass: 'bg-orange-500', textClass: 'text-black', label: 'BUS' };
@@ -177,6 +177,11 @@ function getMarkerStyle(
   if (linee.some((l) => l.tipo === 2))
     return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
   return { markerType: 'other', bgClass: 'bg-gray-100', textClass: '', label: '🚌' };
+}
+
+/** Estrae il nome base di una fermata rimuovendo suffissi metro (es. "zara m3 m5" → "zara") */
+function estraiNomeBase(nome: string): string {
+  return nome.trim().toLowerCase().replace(/\s+m[1-5](\s+m[1-5])*/gi, '').trim();
 }
 
 function aggiungiMinuti(orario: string, deltaMinuti: number): string {
@@ -322,22 +327,28 @@ const Fermate: React.FC = () => {
             const arr = byStopId.get(row.stop_id)!;
             if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
           }
-          // Now merge sibling stop_ids (same stop_name) so each fermata shows all lines
+          // Now merge sibling stop_ids (same stop_name OR same base name) so each fermata shows all lines
           const byName = new MapNative<string, { nome: string; tipo: number }[]>();
+          // Also group by base name to merge metro stops (e.g. 'ZARA' + 'zara m3 m5')
+          const byBaseName = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const f of fermateMappate) {
             const nameKey = f.nome.trim().toLowerCase();
+            const baseKey = estraiNomeBase(f.nome);
             if (!byName.has(nameKey)) byName.set(nameKey, []);
-            const merged = byName.get(nameKey)!;
+            if (!byBaseName.has(baseKey)) byBaseName.set(baseKey, []);
             const stopLinee = byStopId.get(f.id) ?? [];
             for (const l of stopLinee) {
-              if (!merged.some(m => m.nome === l.nome)) merged.push(l);
+              const nameArr = byName.get(nameKey)!;
+              if (!nameArr.some(m => m.nome === l.nome)) nameArr.push(l);
+              const baseArr = byBaseName.get(baseKey)!;
+              if (!baseArr.some(m => m.nome === l.nome)) baseArr.push(l);
             }
           }
-          // Assign merged lines back to each fermata
+          // Assign merged lines: use base name grouping (broader merge)
           const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const f of fermateMappate) {
-            const nameKey = f.nome.trim().toLowerCase();
-            grouped.set(f.id, byName.get(nameKey) ?? []);
+            const baseKey = estraiNomeBase(f.nome);
+            grouped.set(f.id, byBaseName.get(baseKey) ?? []);
           }
           setLineePerFermata(Object.fromEntries(grouped));
         } else {
@@ -359,18 +370,19 @@ const Fermate: React.FC = () => {
     const now = new Date();
     const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    // Find sibling stop_ids with same stop_name
+    // Find sibling stop_ids with same stop_name (+ base name for metro stops)
     const fermataCorrente = fermate.find(f => f.id === stopId);
     const nomeNorm = fermataCorrente?.nome?.trim().toLowerCase();
     let siblingIds: string[];
     if (nomeNorm) {
+      const nomeBase = estraiNomeBase(nomeNorm);
       // Collect all fermate loaded that share the same name
       const fromLoaded = fermate.filter(f => f.nome.trim().toLowerCase() === nomeNorm).map(f => f.id);
-      // Also query DB for stop_ids not in the loaded set (e.g. 'ZARA' uppercase)
+      // Query DB: exact name match + base name match (e.g. 'ZARA' for 'zara m3 m5')
       const { data: siblings } = await supabase
         .from('fermate_atm')
-        .select('stop_id')
-        .ilike('stop_name', nomeNorm);
+        .select('stop_id, stop_name')
+        .or(`stop_name.ilike.${nomeNorm},stop_name.ilike.${nomeBase}`);
       const fromDb = siblings?.map(s => s.stop_id) ?? [];
       siblingIds = [...new Set([...fromLoaded, ...fromDb])];
     } else {
@@ -749,24 +761,36 @@ const Fermate: React.FC = () => {
                       : `w-8 h-8 rounded-full text-lg leading-none ${style.bgClass}`;
             return (
               <Marker key={f.id} longitude={f.lng} latitude={f.lat} anchor="center">
-                <div
-                  className={`${baseClasses} ${markerClasses}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMarkerClick(f);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleMarkerClick(f);
-                    }
-                  }}
-                  aria-label={`Fermata ${f.nome}`}
-                >
-                  {style.label}
-                </div>
+                {style.markerType === 'metro' && style.metroLines && style.metroLines.length > 1 ? (
+                  <div
+                    className="flex gap-0.5 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); handleMarkerClick(f); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMarkerClick(f); } }}
+                    aria-label={`Fermata ${f.nome}`}
+                  >
+                    {style.metroLines.map(ml => {
+                      const mp = METRO_PRIORITY[ml];
+                      return (
+                        <div key={ml} className={`w-5 h-5 rounded-sm text-[9px] font-bold flex items-center justify-center shadow-md border border-gray-300 ${mp?.bgClass ?? 'bg-amber-500'} ${mp?.textClass ?? 'text-black'}`}>
+                          {ml}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    className={`${baseClasses} ${markerClasses}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); handleMarkerClick(f); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMarkerClick(f); } }}
+                    aria-label={`Fermata ${f.nome}`}
+                  >
+                    {style.label}
+                  </div>
+                )}
               </Marker>
             );
           })}
