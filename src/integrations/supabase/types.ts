@@ -1548,6 +1548,16 @@ export type Database = {
         Args: { _gruppo_id: string; _user_id: string }
         Returns: boolean
       }
+      prossimi_arrivi: {
+        Args: { _ora_corrente?: string; _stop_id: string }
+        Returns: {
+          arrival_time: string
+          route_short_name: string
+          route_type: number
+          trip_headsign: string
+          trip_id: string
+        }[]
+      }
       verify_email_by_address: { Args: { _email: string }; Returns: boolean }
     }
     Enums: {
