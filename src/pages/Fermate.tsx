@@ -925,12 +925,12 @@ const Fermate: React.FC = () => {
                                 </span>
                               </div>
                               {dir.orari.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                                   {dir.orari.map((o, i) => (
                                     <button
                                       key={`${o.trip_id}-${i}`}
                                       type="button"
-                                      className="px-3 py-1.5 border border-gray-300 rounded-full text-sm font-medium hover:bg-cyan-50 hover:border-cyan-400 transition-colors"
+                                      className="px-3 py-2 min-w-[3.5rem] min-h-[2.5rem] border border-gray-300 rounded-full text-sm font-medium hover:bg-cyan-50 hover:border-cyan-400 active:bg-cyan-100 transition-colors"
                                       onClick={() => handleOrarioClick(o.trip_id, o.orario, linea.nome, dir.nome, linea.route_type)}
                                     >
                                       {o.orario}
