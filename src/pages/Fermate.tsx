@@ -462,7 +462,7 @@ const Fermate: React.FC = () => {
         });
       }
       const linea = byRoute.get(routeKey)!;
-      const orari = filterFutureOrari(acc.items);
+      const orari = filterFutureOrari(acc.items, `${nome}→${headsign}`);
       linea.direzioni.push({
         nome: headsign ? `per ${headsign}` : '',
         orari,
