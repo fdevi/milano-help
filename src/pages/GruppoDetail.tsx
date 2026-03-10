@@ -36,8 +36,33 @@ const GruppoDetail = () => {
   const [editQuartiere, setEditQuartiere] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [editAiPrompt, setEditAiPrompt] = useState("");
+  const [editIsGenerating, setEditIsGenerating] = useState(false);
+  const [editShowAiPrompt, setEditShowAiPrompt] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const generateEditImage = async () => {
+    if (!editAiPrompt.trim()) return;
+    setEditIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-group-image", {
+        body: { prompt: editAiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        setEditImmagine(data.url);
+        setEditShowAiPrompt(false);
+        setEditAiPrompt("");
+        toast({ title: "Immagine generata!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Errore", description: err?.message || "Impossibile generare l'immagine.", variant: "destructive" });
+    } finally {
+      setEditIsGenerating(false);
+    }
+  };
 
   const { data: gruppo } = useQuery({
     queryKey: ["gruppo", id],
