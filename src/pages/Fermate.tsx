@@ -935,9 +935,6 @@ const Fermate: React.FC = () => {
                       role="button"
                       tabIndex={0}
                     >
-                      <span className="flex-shrink-0 text-xl leading-none" aria-hidden>
-                        {emojiForTipo(fermata.tipo)}
-                      </span>
                       <span className="font-semibold text-base text-gray-900 flex-1 min-w-0">
                         {fermata.nome}
                       </span>
@@ -946,9 +943,6 @@ const Fermate: React.FC = () => {
                           {fermata.distanza}mt
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap mt-0.5 mb-1">
-                      <span className="text-sm text-gray-500">{fermata.tipo}</span>
                     </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
