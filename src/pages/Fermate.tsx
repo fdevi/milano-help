@@ -386,7 +386,7 @@ const Fermate: React.FC = () => {
     const { data, error } = await (supabase as any).rpc('prossimi_arrivi_multi', {
       _stop_ids: siblingIds,
       _ora_corrente: '00:00',
-    });
+    }).limit(10000);
 
     if (error) {
       console.error('[Fermate] RPC prossimi_arrivi errore:', error);
