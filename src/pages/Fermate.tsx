@@ -383,26 +383,29 @@ const Fermate: React.FC = () => {
       }));
       setFermate(fermateMappate);
 
-      const stopIds = fermateMappate.map((f) => f.id).slice(0, 150);
-      console.log('[Fermate] stopIds per RPC fermate_con_linee:', stopIds.length, stopIds.slice(0, 5));
+      const stopIds = fermateMappate.map((f) => f.id).slice(0, 300);
+      console.log('[Fermate] Carico linee per', stopIds.length, 'fermate dalla lookup table');
       if (stopIds.length > 0) {
-        const { data: lineeData, error: errLinee } = await (supabase as unknown as { rpc: (name: string, params: { stop_ids: string[] }) => Promise<{ data: { stop_id: string; route_short_name: string; route_type: number | null }[] | null; error: unknown }> }).rpc('fermate_con_linee', { stop_ids: stopIds });
-        console.log('[Fermate] RPC fermate_con_linee risposta:', { righe: lineeData?.length ?? 0, errore: errLinee });
+        const { data: lineeData, error: errLinee } = await supabase
+          .from('fermate_linee_lookup')
+          .select('stop_id, route_short_name, route_type')
+          .in('stop_id', stopIds);
+        console.log('[Fermate] Lookup risposta:', { righe: lineeData?.length ?? 0, errore: errLinee });
         if (!errLinee && lineeData?.length) {
           const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const row of lineeData) {
-            const nomeNorm = normalizzaNomeLinea(row.route_short_name ?? '');
-            if (!nomeNorm) continue;
+            const nome = row.route_short_name?.trim();
+            if (!nome) continue;
             const tipo = row.route_type ?? 3;
             if (!grouped.has(row.stop_id)) grouped.set(row.stop_id, []);
             const arr = grouped.get(row.stop_id)!;
-            if (!arr.some((l) => l.nome === nomeNorm)) arr.push({ nome: nomeNorm, tipo });
+            if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
           }
           const result = Object.fromEntries(grouped);
           console.log('[Fermate] lineePerFermata salvate:', Object.keys(result).length, 'fermate con linee');
           setLineePerFermata(result);
         } else {
-          console.warn('[Fermate] RPC fermate_con_linee: nessun dato o errore', errLinee);
+          console.warn('[Fermate] Lookup: nessun dato o errore', errLinee);
           setLineePerFermata({});
         }
       } else {
