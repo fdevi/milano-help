@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Plus, MapPin, Lock, Globe, Search, UserPlus, Shield } from "lucide-react";
+import { Users, Plus, MapPin, Lock, Globe, Search, UserPlus, Shield, ImageIcon, Sparkles, Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
@@ -38,6 +39,31 @@ const Gruppi = () => {
   const [tipo, setTipo] = useState("pubblico");
   const [categoria, setCategoria] = useState("");
   const [quartiere, setQuartiere] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+
+  const generateImage = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-group-image", {
+        body: { prompt: aiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        setImmagine(data.url);
+        setShowAiPrompt(false);
+        setAiPrompt("");
+        toast({ title: "Immagine generata!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Errore", description: err?.message || "Impossibile generare l'immagine.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const { data: gruppi = [], isLoading } = useQuery({
     queryKey: ["gruppi"],
@@ -274,15 +300,28 @@ const Gruppi = () => {
               <Card key={g.id} className="hover:shadow-md transition-shadow h-full flex flex-col">
                 <Link to={`/gruppo/${g.id}`} className="block flex-1">
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-lg line-clamp-1">{g.nome}</CardTitle>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {user?.id === g.creatore_id && (
-                          <Badge variant="default" className="gap-1 text-xs">
-                            <Shield className="w-3 h-3" /> Admin
-                          </Badge>
-                        )}
-                        {g.tipo === "privato" ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
+                    <div className="flex items-center gap-3">
+                      {g.immagine ? (
+                        <img src={g.immagine} alt={g.nome} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-primary font-bold text-sm">
+                            {g.nome?.slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <CardTitle className="text-lg line-clamp-1">{g.nome}</CardTitle>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {user?.id === g.creatore_id && (
+                              <Badge variant="default" className="gap-1 text-xs">
+                                <Shield className="w-3 h-3" /> Admin
+                              </Badge>
+                            )}
+                            {g.tipo === "privato" ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -342,7 +381,61 @@ const Gruppi = () => {
           <div className="space-y-4">
             <Input placeholder="Nome del gruppo *" value={nome} onChange={(e) => setNome(e.target.value)} />
             <Textarea placeholder="Descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)} rows={3} />
-            <Input placeholder="URL immagine (opzionale)" value={immagine} onChange={(e) => setImmagine(e.target.value)} />
+            
+            {/* Image section */}
+            <div className="space-y-2">
+              <Label>Immagine del gruppo (opzionale)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="URL immagine" 
+                  value={immagine} 
+                  onChange={(e) => setImmagine(e.target.value)} 
+                  className="flex-1"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAiPrompt(!showAiPrompt)}
+                  className="shrink-0 gap-1"
+                >
+                  <Sparkles className="w-4 h-4" /> Genera con AI
+                </Button>
+              </div>
+              
+              {showAiPrompt && (
+                <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Input
+                    placeholder="Descrivi l'immagine (es. montagna con tramonto)"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && generateImage()}
+                    className="flex-1"
+                    disabled={isGenerating}
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={generateImage} 
+                    disabled={!aiPrompt.trim() || isGenerating}
+                  >
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Genera"}
+                  </Button>
+                </div>
+              )}
+
+              {immagine && (
+                <div className="flex justify-center">
+                  <img 
+                    src={immagine} 
+                    alt="Anteprima" 
+                    className="max-w-[200px] max-h-[200px] rounded-lg object-cover border"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                    onLoad={(e) => (e.currentTarget.style.display = "block")}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <Select value={tipo} onValueChange={setTipo}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

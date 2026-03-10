@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2, Reply, Smile, Heart } from "lucide-react";
+import { ArrowLeft, Send, Users, Lock, Globe, MapPin, UserPlus, LogOut, Check, X, Pencil, Trash2, Reply, Smile, Heart, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { sendPushNotification } from "@/lib/pushNotification";
@@ -36,8 +36,33 @@ const GruppoDetail = () => {
   const [editQuartiere, setEditQuartiere] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [editAiPrompt, setEditAiPrompt] = useState("");
+  const [editIsGenerating, setEditIsGenerating] = useState(false);
+  const [editShowAiPrompt, setEditShowAiPrompt] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const generateEditImage = async () => {
+    if (!editAiPrompt.trim()) return;
+    setEditIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-group-image", {
+        body: { prompt: editAiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        setEditImmagine(data.url);
+        setEditShowAiPrompt(false);
+        setEditAiPrompt("");
+        toast({ title: "Immagine generata!" });
+      }
+    } catch (err: any) {
+      toast({ title: "Errore", description: err?.message || "Impossibile generare l'immagine.", variant: "destructive" });
+    } finally {
+      setEditIsGenerating(false);
+    }
+  };
 
   const { data: gruppo } = useQuery({
     queryKey: ["gruppo", id],
@@ -358,6 +383,13 @@ const GruppoDetail = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/gruppi")} className="shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Button>
+          {(gruppo as any).immagine ? (
+            <img src={(gruppo as any).immagine} alt={(gruppo as any).nome} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-primary font-bold text-sm">{(gruppo as any).nome?.slice(0, 2).toUpperCase()}</span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="font-heading font-bold text-foreground truncate">{(gruppo as any).nome}</h1>
@@ -600,6 +632,28 @@ const GruppoDetail = () => {
           <div className="space-y-3">
             <div><Label>Nome</Label><Input value={editNome} onChange={(e) => setEditNome(e.target.value)} /></div>
             <div><Label>Descrizione</Label><Textarea value={editDescrizione} onChange={(e) => setEditDescrizione(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>Immagine</Label>
+              <div className="flex gap-2">
+                <Input placeholder="URL immagine" value={editImmagine} onChange={(e) => setEditImmagine(e.target.value)} className="flex-1" />
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditShowAiPrompt(!editShowAiPrompt)} className="shrink-0 gap-1">
+                  <Sparkles className="w-4 h-4" /> AI
+                </Button>
+              </div>
+              {editShowAiPrompt && (
+                <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Input placeholder="Descrivi l'immagine..." value={editAiPrompt} onChange={(e) => setEditAiPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && generateEditImage()} className="flex-1" disabled={editIsGenerating} />
+                  <Button size="sm" onClick={generateEditImage} disabled={!editAiPrompt.trim() || editIsGenerating}>
+                    {editIsGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Genera"}
+                  </Button>
+                </div>
+              )}
+              {editImmagine && (
+                <div className="flex justify-center">
+                  <img src={editImmagine} alt="Anteprima" className="max-w-[150px] max-h-[150px] rounded-lg object-cover border" onError={(e) => (e.currentTarget.style.display = "none")} onLoad={(e) => (e.currentTarget.style.display = "block")} />
+                </div>
+              )}
+            </div>
             <div><Label>Tipo</Label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={editTipo} onChange={(e) => setEditTipo(e.target.value as any)}>
                 <option value="pubblico">Pubblico</option><option value="privato">Privato</option>
