@@ -23,6 +23,7 @@ export interface Fermata {
   distanza: number;
   linee: LineaPassaggio[];
   route_type?: number;
+  stopIds: string[];
 }
 
 export interface LineaPassaggio {
@@ -299,26 +300,16 @@ const Fermate: React.FC = () => {
         .filter((f) => f.distanza <= raggioM)
         .sort((a, b) => a.distanza - b.distanza)
         .slice(0, 300);
-      const fermateMappate: Fermata[] = conDistanza.map((f) => ({
-        id: f.stop_id,
-        nome: f.stop_name!,
-        lat: f.stop_lat!,
-        lng: f.stop_lon!,
-        tipo: deduciTipoMezzo(f.stop_name),
-        distanza: f.distanza,
-        linee: [],
-      }));
-      setFermate(fermateMappate);
 
-      const stopIds = fermateMappate.map((f) => f.id).slice(0, 300);
-      if (stopIds.length > 0) {
+      // Fetch lines for all stop_ids
+      const allStopIds = conDistanza.map((f) => f.stop_id);
+      const byStopId = new MapNative<string, { nome: string; tipo: number }[]>();
+      if (allStopIds.length > 0) {
         const { data: lineeData, error: errLinee } = await supabase
           .from('fermate_linee_lookup')
           .select('stop_id, route_short_name, route_type')
-          .in('stop_id', stopIds);
+          .in('stop_id', allStopIds);
         if (!errLinee && lineeData?.length) {
-          // First group by stop_id
-          const byStopId = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const row of lineeData) {
             const nome = row.route_short_name?.trim();
             if (!nome) continue;
@@ -327,36 +318,55 @@ const Fermate: React.FC = () => {
             const arr = byStopId.get(row.stop_id)!;
             if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
           }
-          // Now merge sibling stop_ids (same stop_name OR same base name) so each fermata shows all lines
-          const byName = new MapNative<string, { nome: string; tipo: number }[]>();
-          // Also group by base name to merge metro stops (e.g. 'ZARA' + 'zara m3 m5')
-          const byBaseName = new MapNative<string, { nome: string; tipo: number }[]>();
-          for (const f of fermateMappate) {
-            const nameKey = f.nome.trim().toLowerCase();
-            const baseKey = estraiNomeBase(f.nome);
-            if (!byName.has(nameKey)) byName.set(nameKey, []);
-            if (!byBaseName.has(baseKey)) byBaseName.set(baseKey, []);
-            const stopLinee = byStopId.get(f.id) ?? [];
-            for (const l of stopLinee) {
-              const nameArr = byName.get(nameKey)!;
-              if (!nameArr.some(m => m.nome === l.nome)) nameArr.push(l);
-              const baseArr = byBaseName.get(baseKey)!;
-              if (!baseArr.some(m => m.nome === l.nome)) baseArr.push(l);
-            }
-          }
-          // Assign merged lines: use base name grouping (broader merge)
-          const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
-          for (const f of fermateMappate) {
-            const baseKey = estraiNomeBase(f.nome);
-            grouped.set(f.id, byBaseName.get(baseKey) ?? []);
-          }
-          setLineePerFermata(Object.fromEntries(grouped));
-        } else {
-          setLineePerFermata({});
         }
-      } else {
-        setLineePerFermata({});
       }
+
+      // Group stops by base name → one unified Fermata per group
+      const gruppi = new MapNative<string, {
+        stops: typeof conDistanza;
+        linee: { nome: string; tipo: number }[];
+      }>();
+      for (const f of conDistanza) {
+        const baseKey = estraiNomeBase(f.stop_name!);
+        if (!gruppi.has(baseKey)) gruppi.set(baseKey, { stops: [], linee: [] });
+        const g = gruppi.get(baseKey)!;
+        g.stops.push(f);
+        const stopLinee = byStopId.get(f.stop_id) ?? [];
+        for (const l of stopLinee) {
+          if (!g.linee.some(m => m.nome === l.nome)) g.linee.push(l);
+        }
+      }
+
+      // Build unified fermate array
+      const fermateUnificate: Fermata[] = [];
+      const lineePerFermataNew: Record<string, { nome: string; tipo: number }[]> = {};
+      gruppi.forEach((g) => {
+        // Pick representative stop: the one with the most lines, or closest
+        const rep = g.stops.reduce((best, s) => {
+          const bestLines = (byStopId.get(best.stop_id) ?? []).length;
+          const sLines = (byStopId.get(s.stop_id) ?? []).length;
+          return sLines > bestLines ? s : best;
+        }, g.stops[0]);
+        const stopIds = g.stops.map(s => s.stop_id);
+        const id = stopIds.join('|');
+        const fermata: Fermata = {
+          id,
+          nome: rep.stop_name!,
+          lat: rep.stop_lat!,
+          lng: rep.stop_lon!,
+          tipo: deduciTipoMezzo(rep.stop_name),
+          distanza: rep.distanza,
+          linee: [],
+          stopIds,
+        };
+        fermateUnificate.push(fermata);
+        lineePerFermataNew[id] = g.linee;
+      });
+
+      // Sort by distance
+      fermateUnificate.sort((a, b) => a.distanza - b.distanza);
+      setFermate(fermateUnificate);
+      setLineePerFermata(lineePerFermataNew);
     } else {
       setLineePerFermata({});
     }
@@ -365,29 +375,12 @@ const Fermate: React.FC = () => {
 
   /** Carica linee e prossimi orari per una fermata usando RPC ottimizzata.
    *  Cerca TUTTI gli stop_id con lo stesso stop_name per aggregare metro+bus. */
-  const caricaLineePerFermata = async (stopId: string): Promise<LineePerFermata> => {
+  const caricaLineePerFermata = async (fermata: Fermata): Promise<LineePerFermata> => {
     const empty: LineePerFermata = { linee: [] };
     const now = new Date();
     const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    // Find sibling stop_ids with same stop_name (+ base name for metro stops)
-    const fermataCorrente = fermate.find(f => f.id === stopId);
-    const nomeNorm = fermataCorrente?.nome?.trim().toLowerCase();
-    let siblingIds: string[];
-    if (nomeNorm) {
-      const nomeBase = estraiNomeBase(nomeNorm);
-      // Collect all fermate loaded that share the same name
-      const fromLoaded = fermate.filter(f => f.nome.trim().toLowerCase() === nomeNorm).map(f => f.id);
-      // Query DB: exact name match + base name match (e.g. 'ZARA' for 'zara m3 m5')
-      const { data: siblings } = await supabase
-        .from('fermate_atm')
-        .select('stop_id, stop_name')
-        .or(`stop_name.ilike.${nomeNorm},stop_name.ilike.${nomeBase}`);
-      const fromDb = siblings?.map(s => s.stop_id) ?? [];
-      siblingIds = [...new Set([...fromLoaded, ...fromDb])];
-    } else {
-      siblingIds = [stopId];
-    }
+    const siblingIds = fermata.stopIds;
 
     console.log('[Fermate] Chiamata RPC prossimi_arrivi_multi per stops', siblingIds);
     const { data, error } = await (supabase as any).rpc('prossimi_arrivi_multi', {
@@ -591,7 +584,7 @@ const Fermate: React.FC = () => {
     } else {
       setLoadingLinee(true);
       setLineePerFermataSelezionata(null);
-      caricaLineePerFermata(f.id).then((data) => {
+      caricaLineePerFermata(f).then((data) => {
         setLineeCache((prev) => ({ ...prev, [f.id]: data }));
         setLineePerFermataSelezionata(data);
         setLoadingLinee(false);
