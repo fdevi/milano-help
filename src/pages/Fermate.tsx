@@ -364,18 +364,19 @@ const Fermate: React.FC = () => {
     const now = new Date();
     const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    // Find sibling stop_ids with same stop_name
+    // Find sibling stop_ids with same stop_name (+ base name for metro stops)
     const fermataCorrente = fermate.find(f => f.id === stopId);
     const nomeNorm = fermataCorrente?.nome?.trim().toLowerCase();
     let siblingIds: string[];
     if (nomeNorm) {
+      const nomeBase = estraiNomeBase(nomeNorm);
       // Collect all fermate loaded that share the same name
       const fromLoaded = fermate.filter(f => f.nome.trim().toLowerCase() === nomeNorm).map(f => f.id);
-      // Also query DB for stop_ids not in the loaded set (e.g. 'ZARA' uppercase)
+      // Query DB: exact name match + base name match (e.g. 'ZARA' for 'zara m3 m5')
       const { data: siblings } = await supabase
         .from('fermate_atm')
-        .select('stop_id')
-        .ilike('stop_name', nomeNorm);
+        .select('stop_id, stop_name')
+        .or(`stop_name.ilike.${nomeNorm},stop_name.ilike.${nomeBase}`);
       const fromDb = siblings?.map(s => s.stop_id) ?? [];
       siblingIds = [...new Set([...fromLoaded, ...fromDb])];
     } else {
