@@ -801,7 +801,7 @@ const Fermate: React.FC = () => {
         </div>
 
         {sheetHeight > MIN_SHEET_HEIGHT && (
-          <div className="overflow-y-auto flex-1 min-h-0 px-4 pb-6 bg-white">
+          <div className="overflow-y-auto flex-1 min-h-0 px-3 sm:px-4 pb-6 bg-white">
             {/* Vista 1 – Lista fermate */}
             {vista === 'fermate' && (
               <>
