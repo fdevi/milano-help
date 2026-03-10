@@ -398,7 +398,8 @@ const Fermate: React.FC = () => {
     }
 
     console.log('[Fermate] RPC prossimi_arrivi: righe ricevute:', data.length);
-
+    const distinctRoutes = [...new Set(data.map((r: any) => r.route_short_name))];
+    console.log('[Fermate] Route distinte ricevute:', distinctRoutes);
     // Group by route+direction
     type Acc = { routeType: number; items: { orario: string; trip_id: string; minuti: number; isDomani: boolean }[] };
     const byKey = new MapNative<string, Acc>();
