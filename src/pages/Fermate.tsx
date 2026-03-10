@@ -312,14 +312,32 @@ const Fermate: React.FC = () => {
           .select('stop_id, route_short_name, route_type')
           .in('stop_id', stopIds);
         if (!errLinee && lineeData?.length) {
-          const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
+          // First group by stop_id
+          const byStopId = new MapNative<string, { nome: string; tipo: number }[]>();
           for (const row of lineeData) {
             const nome = row.route_short_name?.trim();
             if (!nome) continue;
             const tipo = row.route_type ?? 3;
-            if (!grouped.has(row.stop_id)) grouped.set(row.stop_id, []);
-            const arr = grouped.get(row.stop_id)!;
+            if (!byStopId.has(row.stop_id)) byStopId.set(row.stop_id, []);
+            const arr = byStopId.get(row.stop_id)!;
             if (!arr.some((l) => l.nome === nome)) arr.push({ nome, tipo });
+          }
+          // Now merge sibling stop_ids (same stop_name) so each fermata shows all lines
+          const byName = new MapNative<string, { nome: string; tipo: number }[]>();
+          for (const f of fermateMappate) {
+            const nameKey = f.nome.trim().toLowerCase();
+            if (!byName.has(nameKey)) byName.set(nameKey, []);
+            const merged = byName.get(nameKey)!;
+            const stopLinee = byStopId.get(f.id) ?? [];
+            for (const l of stopLinee) {
+              if (!merged.some(m => m.nome === l.nome)) merged.push(l);
+            }
+          }
+          // Assign merged lines back to each fermata
+          const grouped = new MapNative<string, { nome: string; tipo: number }[]>();
+          for (const f of fermateMappate) {
+            const nameKey = f.nome.trim().toLowerCase();
+            grouped.set(f.id, byName.get(nameKey) ?? []);
           }
           setLineePerFermata(Object.fromEntries(grouped));
         } else {
@@ -334,16 +352,34 @@ const Fermate: React.FC = () => {
     setLoadingFermate(false);
   };
 
-  /** Carica linee e prossimi orari per una fermata usando RPC ottimizzata */
+  /** Carica linee e prossimi orari per una fermata usando RPC ottimizzata.
+   *  Cerca TUTTI gli stop_id con lo stesso stop_name per aggregare metro+bus. */
   const caricaLineePerFermata = async (stopId: string): Promise<LineePerFermata> => {
     const empty: LineePerFermata = { linee: [] };
     const now = new Date();
     const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    console.log('[Fermate] Chiamata RPC prossimi_arrivi per stop', stopId);
-    // Fetch ALL times (no time filter) so we get all directions
-    const { data, error } = await (supabase as any).rpc('prossimi_arrivi', {
-      _stop_id: stopId,
+    // Find sibling stop_ids with same stop_name
+    const fermataCorrente = fermate.find(f => f.id === stopId);
+    const nomeNorm = fermataCorrente?.nome?.trim().toLowerCase();
+    let siblingIds: string[];
+    if (nomeNorm) {
+      // Collect all fermate loaded that share the same name
+      const fromLoaded = fermate.filter(f => f.nome.trim().toLowerCase() === nomeNorm).map(f => f.id);
+      // Also query DB for stop_ids not in the loaded set (e.g. 'ZARA' uppercase)
+      const { data: siblings } = await supabase
+        .from('fermate_atm')
+        .select('stop_id')
+        .ilike('stop_name', nomeNorm);
+      const fromDb = siblings?.map(s => s.stop_id) ?? [];
+      siblingIds = [...new Set([...fromLoaded, ...fromDb])];
+    } else {
+      siblingIds = [stopId];
+    }
+
+    console.log('[Fermate] Chiamata RPC prossimi_arrivi_multi per stops', siblingIds);
+    const { data, error } = await (supabase as any).rpc('prossimi_arrivi_multi', {
+      _stop_ids: siblingIds,
       _ora_corrente: '00:00',
     });
 
