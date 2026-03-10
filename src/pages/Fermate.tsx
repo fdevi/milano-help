@@ -1047,7 +1047,8 @@ const Fermate: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                      ))}
+                        );
+                      })}
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${fermata.lat},${fermata.lng}`}
                         target="_blank"
