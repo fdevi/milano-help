@@ -176,9 +176,9 @@ function normalizzaNomeLinea(nome: string): string {
   return senzaN || nome;
 }
 
-/** Testo da mostrare nel badge: usa nome normalizzato (es. NM3 → M3, NM5 → M5). */
-function badgeLabel(nome: string): string {
-  return normalizzaNomeLinea(nome) || nome;
+/** Testo da mostrare nel badge: usa displayNomeLinea. */
+function badgeLabel(nome: string, routeType: number | null | undefined): string {
+  return displayNomeLinea(nome, routeType);
 }
 
 type MarkerStyleType = 'metro' | 'bus' | 'tram' | 'treno' | 'other';
