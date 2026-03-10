@@ -87,13 +87,22 @@ function colorePerRouteType(routeType: number | null | undefined): string {
   return '#6b7280';
 }
 
-function normalizzaOrario(t: string | null): string {
-  if (!t) return '';
+/** Normalizza orario GTFS (es. 25:30 → 01:30). Restituisce { display, minuti, isDomani } */
+function parseOrarioGtfs(t: string | null): { display: string; minuti: number; isDomani: boolean } | null {
+  if (!t) return null;
   const parts = t.trim().split(':');
   let h = parseInt(parts[0], 10);
   const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+  if (isNaN(h) || isNaN(m)) return null;
+  const isDomani = h >= 24;
+  const minuti = h * 60 + m; // keep raw for sorting
   if (h >= 24) h -= 24;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  return { display: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`, minuti, isDomani };
+}
+
+function normalizzaOrario(t: string | null): string {
+  const p = parseOrarioGtfs(t);
+  return p?.display ?? '';
 }
 
 function displayNomeLinea(nome: string, routeType: number | null | undefined): string {
@@ -320,12 +329,13 @@ const Fermate: React.FC = () => {
   const caricaLineePerFermata = async (stopId: string): Promise<LineePerFermata> => {
     const empty: LineePerFermata = { linee: [] };
     const now = new Date();
-    const oraCorrente = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:00`;
+    const nowMinuti = now.getHours() * 60 + now.getMinutes();
 
-    console.log('[Fermate] Chiamata RPC prossimi_arrivi per stop', stopId, 'ora', oraCorrente);
+    console.log('[Fermate] Chiamata RPC prossimi_arrivi per stop', stopId);
+    // Fetch ALL times (no time filter) so we get all directions
     const { data, error } = await (supabase as any).rpc('prossimi_arrivi', {
       _stop_id: stopId,
-      _ora_corrente: oraCorrente,
+      _ora_corrente: '00:00',
     });
 
     if (error) {
@@ -339,28 +349,36 @@ const Fermate: React.FC = () => {
 
     console.log('[Fermate] RPC prossimi_arrivi: righe ricevute:', data.length);
 
-    // Group by route+direction, deduplicate by arrival_time (keep first trip per time)
-    type Acc = { routeType: number; items: OrarioConTrip[] };
+    // Group by route+direction
+    type Acc = { routeType: number; items: { orario: string; trip_id: string; minuti: number; isDomani: boolean }[] };
     const byKey = new MapNative<string, Acc>();
 
     for (const row of data) {
       const nome = row.route_short_name?.trim() ?? '';
       const headsign = row.trip_headsign?.trim() ?? '';
       const key = `${nome}|${headsign}`;
-      const orario = normalizzaOrario(row.arrival_time);
-      if (!orario) continue;
+      const parsed = parseOrarioGtfs(row.arrival_time);
+      if (!parsed) continue;
 
       if (!byKey.has(key)) {
         byKey.set(key, { routeType: row.route_type ?? 3, items: [] });
       }
       const acc = byKey.get(key)!;
-      // Deduplicate: same arrival_time = same scheduled time for different weekdays
-      if (!acc.items.some(i => i.orario === orario)) {
-        if (acc.items.length < 5) {
-          acc.items.push({ orario, trip_id: row.trip_id });
-        }
+      // Deduplicate same display time
+      if (!acc.items.some(i => i.orario === parsed.display)) {
+        acc.items.push({ orario: parsed.display, trip_id: row.trip_id, minuti: parsed.minuti, isDomani: parsed.isDomani });
       }
     }
+
+    // For each direction, filter to show future times first, then tomorrow's
+    const filterFutureOrari = (items: Acc['items']): OrarioConTrip[] => {
+      // Split into "today future" and "tomorrow/past"
+      const future = items.filter(i => !i.isDomani && i.minuti >= nowMinuti);
+      const tomorrow = items.filter(i => i.isDomani || i.minuti < nowMinuti);
+      // Take first 5 future, or if none, first 5 tomorrow
+      const selected = future.length > 0 ? future.slice(0, 5) : tomorrow.slice(0, 5);
+      return selected.map(i => ({ orario: i.orario, trip_id: i.trip_id }));
+    };
 
     // Group directions under same route
     const byRoute = new MapNative<string, LineaConDirezioni>();
@@ -377,9 +395,10 @@ const Fermate: React.FC = () => {
         });
       }
       const linea = byRoute.get(routeKey)!;
+      const orari = filterFutureOrari(acc.items);
       linea.direzioni.push({
         nome: headsign ? `per ${headsign}` : '',
-        orari: acc.items,
+        orari,
       });
     });
 
@@ -782,7 +801,7 @@ const Fermate: React.FC = () => {
         </div>
 
         {sheetHeight > MIN_SHEET_HEIGHT && (
-          <div className="overflow-y-auto flex-1 min-h-0 px-4 pb-6 bg-white">
+          <div className="overflow-y-auto flex-1 min-h-0 px-3 sm:px-4 pb-6 bg-white">
             {/* Vista 1 – Lista fermate */}
             {vista === 'fermate' && (
               <>
@@ -794,10 +813,10 @@ const Fermate: React.FC = () => {
                 {fermate.map((fermata) => (
                   <div
                     key={fermata.id}
-                    className="mb-4 pb-3 border-b border-gray-100 last:border-0"
+                    className="mb-2 pb-2 border-b border-gray-100 last:border-0"
                   >
                     <div
-                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded"
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-1 px-1 py-1.5 rounded active:bg-gray-100"
                       onClick={() => handleMarkerClick(fermata)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -808,29 +827,29 @@ const Fermate: React.FC = () => {
                       role="button"
                       tabIndex={0}
                     >
-                      <span className="font-semibold text-base text-gray-900 flex-1 min-w-0">
+                      <span className="font-semibold text-sm sm:text-base text-gray-900 flex-1 min-w-0">
                         {fermata.nome}
                       </span>
                       {fermata.distanza > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white flex-shrink-0">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-teal-500 text-white flex-shrink-0">
                           {fermata.distanza}mt
                         </span>
                       )}
                     </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
+                      <div className="flex flex-wrap gap-1 mt-0.5 mb-0.5">
                         {lineePerFermata[fermata.id].map((linea) => {
                           const dn = displayNomeLinea(linea.nome, linea.tipo);
                           const { base, color } = getBadgeStyle(dn, linea.tipo);
                           return (
-                            <span key={linea.nome} className={`${base} ${color}`}>
+                            <span key={linea.nome} className={`${base} ${color} !w-7 !h-7 !text-[10px] sm:!w-8 sm:!h-8 sm:!text-xs`}>
                               {dn}
                             </span>
                           );
                         })}
                       </div>
                     )}
-                    <p className="text-sm text-cyan-600 py-1.5">Vedi linee e orari</p>
+                    <p className="text-xs sm:text-sm text-cyan-600 py-1">Vedi linee e orari</p>
                   </div>
                 ))}
                 </>
@@ -906,12 +925,12 @@ const Fermate: React.FC = () => {
                                 </span>
                               </div>
                               {dir.orari.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                                   {dir.orari.map((o, i) => (
                                     <button
                                       key={`${o.trip_id}-${i}`}
                                       type="button"
-                                      className="px-3 py-1.5 border border-gray-300 rounded-full text-sm font-medium hover:bg-cyan-50 hover:border-cyan-400 transition-colors"
+                                      className="px-3 py-2 min-w-[3.5rem] min-h-[2.5rem] border border-gray-300 rounded-full text-sm font-medium hover:bg-cyan-50 hover:border-cyan-400 active:bg-cyan-100 transition-colors"
                                       onClick={() => handleOrarioClick(o.trip_id, o.orario, linea.nome, dir.nome, linea.route_type)}
                                     >
                                       {o.orario}
