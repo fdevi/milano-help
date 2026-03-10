@@ -168,19 +168,6 @@ function getBadgeStyle(displayName: string, routeType: number | null | undefined
   // Altro
   return { base: circle, color: 'bg-gray-500 text-white' };
 }
-
-/** Normalizza il nome della linea: rimuove prefisso "N" (es. NM3 → M3, NM4 → M4, NM5 → M5). Usato in lineePerFermata e badge. */
-function normalizzaNomeLinea(nome: string): string {
-  if (!nome) return '';
-  const senzaN = nome.replace(/^N/i, '').trim();
-  return senzaN || nome;
-}
-
-/** Testo da mostrare nel badge: usa displayNomeLinea. */
-function badgeLabel(nome: string, routeType: number | null | undefined): string {
-  return displayNomeLinea(nome, routeType);
-}
-
 type MarkerStyleType = 'metro' | 'bus' | 'tram' | 'treno' | 'other';
 
 /** Stile marker mappa: priorità metro > bus > tram > treno > altro. Usa displayNomeLinea per match esatto. */
