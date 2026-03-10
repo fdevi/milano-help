@@ -421,17 +421,29 @@ const Fermate: React.FC = () => {
     }
 
     // For each direction, filter to show future times first, then tomorrow's
-    const filterFutureOrari = (items: Acc['items']): OrarioConTrip[] => {
+    const filterFutureOrari = (items: Acc['items'], debugKey?: string): OrarioConTrip[] => {
       // Sort all items by raw minuti first
       const sorted = [...items].sort((a, b) => a.minuti - b.minuti);
-      // Split into "today future" and "tomorrow/past"
-      const future = sorted.filter(i => !i.isDomani && i.minuti >= nowMinuti);
-      // Tomorrow = isDomani items (24:xx+) sorted by minuti, then past-today items
-      const domani = sorted.filter(i => i.isDomani).sort((a, b) => a.minuti - b.minuti);
-      const passati = sorted.filter(i => !i.isDomani && i.minuti < nowMinuti);
-      const tomorrow = [...domani, ...passati];
-      // Take first 5 future, or if none, first 5 tomorrow
-      const selected = future.length > 0 ? future.slice(0, 5) : tomorrow.slice(0, 5);
+      
+      // Orari GTFS possono superare 24:00 (es. 25:30 = 01:30 del giorno dopo).
+      // nowMinuti è in range 0-1439. Per confronto corretto, consideriamo
+      // "futuro" = orari con minuti >= nowMinuti (sia oggi che domani/24h+)
+      const nowMin = nowMinuti; // 0-1439
+      
+      // Tutti gli orari futuri: quelli >= nowMinuti (oggi) o quelli > 24h (isDomani, sempre "futuri" se > nowMinuti normalizzato)
+      const future = sorted.filter(i => i.minuti >= nowMin);
+      // Passati: orari < nowMinuti (saranno mostrati come "domani" se non ci sono futuri)
+      const passati = sorted.filter(i => i.minuti < nowMin);
+      
+      if (debugKey) {
+        console.log(`[filterFuture] ${debugKey}: nowMinuti=${nowMin}, totale=${sorted.length}, futuri=${future.length}, passati=${passati.length}`);
+        if (future.length > 0) {
+          console.log(`[filterFuture] ${debugKey}: primi 3 futuri:`, future.slice(0, 3).map(i => `${i.orario}(${i.minuti}min)`));
+        }
+      }
+      
+      // Take first 5 future, or if none, first 5 from passati (= tomorrow)
+      const selected = future.length > 0 ? future.slice(0, 5) : passati.slice(0, 5);
       return selected.map(i => ({ orario: i.orario, trip_id: i.trip_id }));
     };
 
