@@ -183,40 +183,37 @@ function badgeLabel(nome: string, routeType: number | null | undefined): string 
 
 type MarkerStyleType = 'metro' | 'bus' | 'tram' | 'treno' | 'other';
 
-/** Stile marker mappa: priorità metro > bus > tram > treno > altro. */
+/** Stile marker mappa: priorità metro > bus > tram > treno > altro. Usa displayNomeLinea per match esatto. */
 function getMarkerStyle(
   fermata: { id: string; nome: string; tipo: string },
   lineePerFermata: Record<string, { nome: string; tipo: number }[]>
 ): { markerType: MarkerStyleType; bgClass: string; textClass: string; label: string } {
   const linee = lineePerFermata[fermata.id] ?? [];
-  const find = (pred: (l: { nome: string; tipo: number }) => boolean) => linee.find(pred);
-  const n = (nome: string) => nome.trim().toUpperCase();
 
-  // 1. Metro: colore da nome linea (M1/M2/M3/M4/M5), priorità in ordine; altrimenti route_type 1 → amber
-  for (const [key, bg, text] of [
-    ['M1', 'bg-red-600', 'text-white'],
-    ['M2', 'bg-green-600', 'text-white'],
-    ['M3', 'bg-yellow-400', 'text-black'],
-    ['M4', 'bg-blue-600', 'text-white'],
-    ['M5', 'bg-purple-600', 'text-white'],
-  ] as const) {
-    if (find((l) => n(l.nome).includes(key)))
-      return { markerType: 'metro', bgClass: bg, textClass: text, label: 'M' };
-  }
-  if (find((l) => l.tipo === 1))
+  // Metro: cerca linee con route_type=1
+  const metroLinee = linee.filter((l) => l.tipo === 1);
+  if (metroLinee.length > 0) {
+    // Trova la prima metro M1-M5 per il colore del marker
+    for (const ml of metroLinee) {
+      const dn = displayNomeLinea(ml.nome, 1).toUpperCase();
+      if (dn === 'M1') return { markerType: 'metro', bgClass: 'bg-red-600', textClass: 'text-white', label: 'M' };
+      if (dn === 'M2') return { markerType: 'metro', bgClass: 'bg-green-600', textClass: 'text-white', label: 'M' };
+      if (dn === 'M3') return { markerType: 'metro', bgClass: 'bg-yellow-400', textClass: 'text-black', label: 'M' };
+      if (dn === 'M4') return { markerType: 'metro', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'M' };
+      if (dn === 'M5') return { markerType: 'metro', bgClass: 'bg-purple-600', textClass: 'text-white', label: 'M' };
+    }
     return { markerType: 'metro', bgClass: 'bg-amber-500', textClass: 'text-black', label: 'M' };
-  // 2. Bus (route_type === 3): rettangolo arancione con "BUS"
-  if (find((l) => l.tipo === 3 || n(l.nome).includes('BUS')))
+  }
+  // Bus (route_type === 3)
+  if (linee.some((l) => l.tipo === 3))
     return { markerType: 'bus', bgClass: 'bg-orange-500', textClass: 'text-black', label: 'BUS' };
-  // 3. Tram (route_type === 0): cerchio verde chiaro con emoji 🚊
-  if (find((l) => l.tipo === 0 || n(l.nome).includes('TRAM')))
+  // Tram (route_type === 0)
+  if (linee.some((l) => l.tipo === 0))
     return { markerType: 'tram', bgClass: 'bg-green-100', textClass: '', label: '🚊' };
-  // 4. Treno (route_type === 2): cerchio blu con "T"
-  if (find((l) => l.tipo === 2) || n(fermata.nome).includes('TRENO') || n(fermata.nome).includes('STAZIONE') || n(fermata.nome).includes('FS'))
+  // Treno (route_type === 2)
+  if (linee.some((l) => l.tipo === 2))
     return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
-  // 5. Fallback
-  if (fermata.tipo === 'Treno')
-    return { markerType: 'treno', bgClass: 'bg-blue-600', textClass: 'text-white', label: 'T' };
+  // Fallback
   return { markerType: 'other', bgClass: 'bg-gray-100', textClass: '', label: '🚌' };
 }
 
