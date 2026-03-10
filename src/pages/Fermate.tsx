@@ -947,10 +947,11 @@ const Fermate: React.FC = () => {
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
                         {lineePerFermata[fermata.id].map((linea) => {
-                          const { base, color } = getBadgeStyle(linea.nome, linea.tipo);
+                          const dn = displayNomeLinea(linea.nome, linea.tipo);
+                          const { base, color } = getBadgeStyle(dn, linea.tipo);
                           return (
                             <span key={linea.nome} className={`${base} ${color}`}>
-                              {badgeLabel(linea.nome)}
+                              {dn}
                             </span>
                           );
                         })}
