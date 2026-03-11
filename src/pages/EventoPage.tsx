@@ -467,11 +467,11 @@ const EventoPage = () => {
               </div>
 
               {/* Description */}
-              {evento.descrizione && (() => {
-                // Extract URL from description for external events
-                const urlMatch = evento.descrizione.match(/🔗\s*(https?:\/\/\S+)/);
+              {(() => {
+                const autoDesc = getAutoDescription(evento);
+                const urlMatch = evento.descrizione?.match(/🔗\s*(https?:\/\/\S+)/);
                 const externalUrl = urlMatch?.[1];
-                const cleanDesc = evento.descrizione.replace(/\n*🔗\s*https?:\/\/\S+/, '').trim();
+                const cleanDesc = autoDesc.replace(/\n*🔗\s*https?:\/\/\S+/, '').trim();
                 
                 const hasRealDescription = cleanDesc.length > 80 && cleanDesc !== "Info e biglietti disponibili sul sito ufficiale.";
 
