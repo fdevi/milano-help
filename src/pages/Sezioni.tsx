@@ -137,6 +137,11 @@ const AnnuncioCardComponent = ({ annuncio }: { annuncio: AnnuncioCard }) => {
               <ImageIcon className="w-10 h-10 text-muted-foreground/30" />
             </div>
           )}
+          {annuncio.immagini && annuncio.immagini.length > 1 && (
+            <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+              1/{annuncio.immagini.length}
+            </span>
+          )}
           {statoBadge}
           {annuncio.categoria_label && (
             <Badge className="absolute top-2 right-2 bg-primary/90 text-primary-foreground text-[10px]">
