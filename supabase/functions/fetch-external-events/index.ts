@@ -2,15 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const TICKETMASTER_API_KEY = Deno.env.get('TICKETMASTER_API_KEY')!
-const PREDICTHQ_API_KEY = Deno.env.get('PREDICTHQ_API_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const ADMIN_USER_ID = '51aeacbc-1497-440c-8edb-23845ce077d3'
 const NOTIFY_EMAIL = 'info@milanohelp.it'
-const MILAN_LAT = 45.464194
-const MILAN_LON = 9.189634
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,7 +81,7 @@ function mapTicketmasterEvent(ev: TicketmasterEvent) {
 async function fetchTicketmasterEvents(): Promise<TicketmasterEvent[]> {
   const now = new Date()
   const startDateTime = now.toISOString().split('.')[0] + 'Z'
-  const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+  const endDate = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)
   const endDateTime = endDate.toISOString().split('.')[0] + 'Z'
 
   const allEvents: TicketmasterEvent[] = []
@@ -120,126 +117,10 @@ async function fetchTicketmasterEvents(): Promise<TicketmasterEvent[]> {
   return allEvents
 }
 
-// ─── PredictHQ ───
-
-interface PredictHQEvent {
-  id: string
-  title: string
-  description?: string
-  start: string
-  end?: string
-  location?: [number, number] // [lon, lat]
-  category?: string
-  labels?: string[]
-  entities?: Array<{
-    entity_id?: string
-    name?: string
-    type?: string
-    formatted_address?: string
-  }>
-}
-
-const PHQ_CATEGORY_MAP: Record<string, string> = {
-  'concerts': 'Musica',
-  'festivals': 'Festival',
-  'performing-arts': 'Teatro',
-  'sports': 'Sport',
-  'community': 'Comunità',
-  'conferences': 'Conferenze',
-  'expos': 'Fiere',
-  'observances': 'Altro',
-  'public-holidays': 'Altro',
-  'school-holidays': 'Altro',
-  'academic': 'Altro',
-}
-
-function mapPredictHQEvent(ev: PredictHQEvent) {
-  if (!ev.start || !ev.title) return null
-
-  const lat = ev.location?.[1] ?? MILAN_LAT
-  const lon = ev.location?.[0] ?? MILAN_LON
-  const venueName = ev.entities?.find(e => e.type === 'venue')?.name
-  const categoria = PHQ_CATEGORY_MAP[ev.category || ''] || ev.category || 'Altro'
-
-  let descrizione = ev.description?.trim() || ''
-  if (!descrizione) descrizione = 'Evento importato da PredictHQ.'
-
-  return {
-    external_id: `predicthq_${ev.id}`,
-    fonte_esterna: 'predicthq',
-    titolo: ev.title,
-    descrizione,
-    data: ev.start,
-    fine: ev.end || null,
-    luogo: venueName || 'Milano',
-    lat,
-    lon,
-    immagine: null,
-    prezzo: null,
-    gratuito: true,
-    categoria,
-    stato: 'attivo',
-    organizzatore_id: ADMIN_USER_ID,
-  }
-}
-
-async function fetchPredictHQEvents(): Promise<PredictHQEvent[]> {
-  const now = new Date()
-  const startGte = now.toISOString().split('T')[0]
-  const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-  const startLte = endDate.toISOString().split('T')[0]
-
-  const allEvents: PredictHQEvent[] = []
-  let offset = 0
-  const limit = 50
-  const maxPages = 5
-
-  for (let page = 0; page < maxPages; page++) {
-    const params = new URLSearchParams({
-      'within': `20km@${MILAN_LAT},${MILAN_LON}`,
-      'start.gte': startGte,
-      'start.lte': startLte,
-      'limit': String(limit),
-      'offset': String(offset),
-      'sort': 'start',
-    })
-
-    const url = `https://api.predicthq.com/v1/events/?${params}`
-    console.log(`📡 Fetching PredictHQ page ${page} (offset ${offset})...`)
-
-    try {
-      const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${PREDICTHQ_API_KEY}` },
-      })
-
-      if (!res.ok) {
-        const errText = await res.text()
-        console.error(`❌ PredictHQ API error: ${res.status}`, errText)
-        break
-      }
-
-      const data = await res.json()
-      const events: PredictHQEvent[] = data?.results || []
-      allEvents.push(...events)
-
-      // Check if there are more pages
-      if (!data?.next || events.length < limit) break
-      offset += limit
-    } catch (err) {
-      console.error(`❌ PredictHQ fetch error:`, err)
-      break
-    }
-  }
-
-  console.log(`✅ PredictHQ: trovati ${allEvents.length} eventi`)
-  return allEvents
-}
-
 // ─── Email riepilogo ───
 
-async function sendSummaryEmail(tmCount: number, phqCount: number) {
-  const total = tmCount + phqCount
-  if (total === 0) {
+async function sendSummaryEmail(tmCount: number) {
+  if (tmCount === 0) {
     console.log('📭 Nessun nuovo evento, email non inviata')
     return
   }
@@ -253,9 +134,8 @@ async function sendSummaryEmail(tmCount: number, phqCount: number) {
       <p>Ecco il riepilogo dell'importazione automatica di oggi:</p>
       <ul>
         <li><strong>Ticketmaster:</strong> ${tmCount} nuovi eventi</li>
-        <li><strong>PredictHQ:</strong> ${phqCount} nuovi eventi</li>
-        <li><strong>Totale:</strong> ${total} nuovi eventi</li>
       </ul>
+      <p>Finestra di importazione: <strong>60 giorni</strong>.</p>
       <p>Tutti gli eventi sono stati pubblicati come <strong>attivi</strong> sulla piattaforma.</p>
       <p style="color: #666; font-size: 12px; margin-top: 30px;">Milano Help - Importazione automatica eventi</p>
     </body>
@@ -272,7 +152,7 @@ async function sendSummaryEmail(tmCount: number, phqCount: number) {
       body: JSON.stringify({
         from: 'Milano Help <noreply@milanohelp.it>',
         to: [NOTIFY_EMAIL],
-        subject: `📅 Importazione eventi: ${total} nuovi (TM: ${tmCount}, PHQ: ${phqCount})`,
+        subject: `📅 Importazione eventi: ${tmCount} nuovi da Ticketmaster`,
         html,
       }),
     })
@@ -302,53 +182,40 @@ serve(async (req) => {
     const existingIds = new Set((existingEvents || []).map(e => e.external_id))
     console.log(`📋 ${existingIds.size} eventi esterni già presenti nel DB`)
 
-    // 2. Fetch from both sources in parallel
-    const [tmEvents, phqEvents] = await Promise.all([
-      fetchTicketmasterEvents(),
-      fetchPredictHQEvents(),
-    ])
+    // 2. Fetch from Ticketmaster
+    const tmEvents = await fetchTicketmasterEvents()
 
-    // 3. Map and filter new events per source
+    // 3. Map and filter new events
     const newTmEvents = tmEvents
       .map(mapTicketmasterEvent)
       .filter((e): e is NonNullable<typeof e> => e !== null && !existingIds.has(e.external_id))
 
-    const newPhqEvents = phqEvents
-      .map(mapPredictHQEvent)
-      .filter((e): e is NonNullable<typeof e> => e !== null && !existingIds.has(e.external_id))
-
-    const allNewEvents = [...newTmEvents, ...newPhqEvents]
-    console.log(`🆕 ${allNewEvents.length} nuovi eventi da inserire (TM: ${newTmEvents.length}, PHQ: ${newPhqEvents.length})`)
+    console.log(`🆕 ${newTmEvents.length} nuovi eventi da inserire`)
 
     // 4. Insert in batches
     let tmInserted = 0
-    let phqInserted = 0
     const batchSize = 20
 
-    for (let i = 0; i < allNewEvents.length; i += batchSize) {
-      const batch = allNewEvents.slice(i, i + batchSize)
+    for (let i = 0; i < newTmEvents.length; i += batchSize) {
+      const batch = newTmEvents.slice(i, i + batchSize)
       const { error } = await supabase.from('eventi').insert(batch)
       if (error) {
         console.error(`❌ Errore inserimento batch ${i}:`, error)
       } else {
-        for (const ev of batch) {
-          if (ev.fonte_esterna === 'ticketmaster') tmInserted++
-          else if (ev.fonte_esterna === 'predicthq') phqInserted++
-        }
+        tmInserted += batch.length
       }
     }
 
-    console.log(`✅ Inseriti ${tmInserted + phqInserted} nuovi eventi (TM: ${tmInserted}, PHQ: ${phqInserted})`)
+    console.log(`✅ Inseriti ${tmInserted} nuovi eventi Ticketmaster`)
 
     // 5. Send summary email
-    await sendSummaryEmail(tmInserted, phqInserted)
+    await sendSummaryEmail(tmInserted)
 
     return new Response(
       JSON.stringify({
         success: true,
         ticketmaster: { fetched: tmEvents.length, inserted: tmInserted },
-        predicthq: { fetched: phqEvents.length, inserted: phqInserted },
-        total_inserted: tmInserted + phqInserted,
+        total_inserted: tmInserted,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
