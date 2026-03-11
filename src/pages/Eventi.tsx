@@ -205,10 +205,11 @@ const Eventi = () => {
             .eq('user_id', evento.organizzatore_id)
             .single();
           
+          const isExternal = !!evento.fonte_esterna;
           return {
             ...evento,
-            organizzatore_nome: profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente',
-            organizzatore_avatar: profilo?.avatar_url
+            organizzatore_nome: isExternal ? 'Milano Help' : (profilo ? `${profilo.nome || ''} ${profilo.cognome || ''}`.trim() || 'Utente' : 'Utente'),
+            organizzatore_avatar: isExternal ? null : profilo?.avatar_url
           };
         })
       );

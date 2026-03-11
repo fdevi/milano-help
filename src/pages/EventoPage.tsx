@@ -353,8 +353,9 @@ const EventoPage = () => {
     );
   }
 
-  const orgName = organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente";
-  const orgInitials = orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const isExternalEvent = !!(evento as any)?.fonte_esterna;
+  const orgName = isExternalEvent ? "Milano Help" : (organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente");
+  const orgInitials = isExternalEvent ? "MH" : orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   const confermati = partecipantiCounts?.confermati || 0;
   const forseCnt = partecipantiCounts?.forse || 0;
   const maxReached = !!(evento?.max_partecipanti && confermati >= evento.max_partecipanti);
@@ -459,12 +460,31 @@ const EventoPage = () => {
               </div>
 
               {/* Description */}
-              {evento.descrizione && (
-                <div className="bg-card border rounded-xl p-5">
-                  <h2 className="font-heading font-bold text-foreground mb-3">Descrizione</h2>
-                  <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{evento.descrizione}</p>
-                </div>
-              )}
+              {evento.descrizione && (() => {
+                // Extract URL from description for external events
+                const urlMatch = evento.descrizione.match(/🔗\s*(https?:\/\/\S+)/);
+                const externalUrl = urlMatch?.[1];
+                const cleanDesc = evento.descrizione.replace(/\n*🔗\s*https?:\/\/\S+/, '').trim();
+                
+                return (
+                  <div className="bg-card border rounded-xl p-5">
+                    <h2 className="font-heading font-bold text-foreground mb-3">Descrizione</h2>
+                    {cleanDesc && (
+                      <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{cleanDesc}</p>
+                    )}
+                    {externalUrl && isExternalEvent && (
+                      <a
+                        href={externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-primary hover:underline"
+                      >
+                        🔗 Leggi tutto sull'evento e acquista biglietti
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Comments */}
               <div id="commenti" className="bg-card border rounded-xl p-5">
@@ -671,20 +691,36 @@ const EventoPage = () => {
 
               {/* Organizer card */}
               <div className="bg-card border rounded-xl p-5">
-                <h3 className="font-heading font-bold text-foreground mb-4">Organizzato da</h3>
+                <h3 className="font-heading font-bold text-foreground mb-4">
+                  {isExternalEvent ? "Fonte" : "Organizzato da"}
+                </h3>
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12">
-                    {organizzatore?.avatar_url && <AvatarImage src={organizzatore.avatar_url} />}
-                    <AvatarFallback>{orgInitials}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-foreground">{orgName}</p>
-                    {organizzatore?.quartiere && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {organizzatore.quartiere}
-                      </p>
-                    )}
-                  </div>
+                  {isExternalEvent ? (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                        <span className="text-amber-500 font-bold text-sm">⭐</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Evento ufficiale</p>
+                        <p className="text-xs text-muted-foreground">A cura di Milano Help</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Avatar className="w-12 h-12">
+                        {organizzatore?.avatar_url && <AvatarImage src={organizzatore.avatar_url} />}
+                        <AvatarFallback>{orgInitials}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-foreground">{orgName}</p>
+                        {organizzatore?.quartiere && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {organizzatore.quartiere}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
