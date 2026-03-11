@@ -32,6 +32,8 @@ const AnnuncioPage = () => {
   const [segnalaMotivo, setSegnalaMotivo] = useState("");
   const [segnalaNote, setSegnalaNote] = useState("");
   const [sending, setSending] = useState(false);
+  const [showSharePopup, setShowSharePopup] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Fetch annuncio
   const { data: annuncio, isLoading, error } = useQuery({
