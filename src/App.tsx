@@ -110,7 +110,7 @@ const App = () => (
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
-            <Route path="/eventi" element={<Navigate to="/categoria/evento" replace />} />
+            <Route path="/eventi" element={<Eventi />} />
             <Route path="/evento/:id" element={<EventoPage />} />
             <Route path="/nuovo-annuncio" element={<ProtectedRoute><NuovoAnnuncio /></ProtectedRoute>} />
             <Route path="/nuovo-evento" element={<ProtectedRoute><NuovoEvento /></ProtectedRoute>} />
