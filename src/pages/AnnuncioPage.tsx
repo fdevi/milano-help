@@ -464,6 +464,10 @@ const AnnuncioPage = () => {
                     <Flag className="w-4 h-4 mr-2" /> Segnala
                   </Button>
                 )}
+
+                <Button variant="outline" className="w-full" onClick={handleShare}>
+                  <Share2 className="w-4 h-4 mr-2" /> Condividi
+                </Button>
               </div>
 
               {/* Author card */}
