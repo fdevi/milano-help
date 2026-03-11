@@ -264,6 +264,40 @@ const NuovoAnnuncio = () => {
             </div>
           )}
 
+          {/* Condizione (per "In vendita") */}
+          {isInVendita && (
+            <div>
+              <Label>Condizione *</Label>
+              <RadioGroup value={condizione} onValueChange={setCondizione} className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="nuovo" id="cond-nuovo" />
+                  <Label htmlFor="cond-nuovo" className="font-normal">Nuovo</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="usato" id="cond-usato" />
+                  <Label htmlFor="cond-usato" className="font-normal">Usato</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Tipo operazione (per "Immobili") */}
+          {isImmobili && (
+            <div>
+              <Label>Tipo operazione *</Label>
+              <RadioGroup value={tipoOperazione} onValueChange={setTipoOperazione} className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="vendita" id="op-vendita" />
+                  <Label htmlFor="op-vendita" className="font-normal">Vendita</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="locazione" id="op-locazione" />
+                  <Label htmlFor="op-locazione" className="font-normal">Locazione</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
           {/* Contatti */}
           <div className="space-y-2">
             <Label>Contatti visibili nell'annuncio</Label>
