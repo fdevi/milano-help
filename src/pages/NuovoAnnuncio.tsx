@@ -81,6 +81,8 @@ const NuovoAnnuncio = () => {
 
   const selectedCat = categorie.find((c) => c.id === categoriaId);
   const richiedePrezzo = selectedCat?.richiede_prezzo ?? false;
+  const isInVendita = selectedCat?.nome === "in_vendita" || selectedCat?.label?.toLowerCase().includes("vendita");
+  const isImmobili = selectedCat?.nome === "immobili" || selectedCat?.label?.toLowerCase().includes("immobil");
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
