@@ -262,13 +262,75 @@ const Eventi = () => {
     }
   };
 
-  const filtered = eventiReali.filter((e) => {
-    // Filtro "I tuoi eventi": applicare solo se c'è un utente loggato, altrimenti mostriamo tutti (evita lista vuota)
-    if (showMyEvents && user?.id && e.organizzatore_id !== user.id) return false;
-    // Filtro categoria: confronto case-insensitive e gestione null
-    if (selectedCategory && (e.categoria == null || String(e.categoria).toLowerCase() !== selectedCategory.toLowerCase())) return false;
-    return true;
-  });
+  // Extract unique categories from DB data
+  const dbCategories = useMemo(() => {
+    const cats = new Set<string>();
+    eventiReali.forEach((e) => {
+      if (e.categoria) cats.add(e.categoria);
+    });
+    return Array.from(cats).sort();
+  }, [eventiReali]);
+
+  const filtered = useMemo(() => {
+    const now = new Date();
+    const q = searchQuery.toLowerCase().trim();
+
+    let results = eventiReali.filter((e) => {
+      if (showMyEvents && user?.id && e.organizzatore_id !== user.id) return false;
+      if (selectedCategory && (e.categoria == null || String(e.categoria).toLowerCase() !== selectedCategory.toLowerCase())) return false;
+
+      // Search filter
+      if (q) {
+        const inTitle = e.titolo?.toLowerCase().includes(q);
+        const inDesc = e.descrizione?.toLowerCase().includes(q);
+        if (!inTitle && !inDesc) return false;
+      }
+
+      // Price filter
+      if (priceFilter === "gratuito" && !e.gratuito) return false;
+      if (priceFilter === "pagamento" && e.gratuito) return false;
+
+      // Date filter
+      if (dateFilter !== "tutti") {
+        const eventDate = new Date(e.data);
+        if (dateFilter === "oggi") {
+          if (eventDate.toDateString() !== now.toDateString()) return false;
+        } else if (dateFilter === "weekend") {
+          const dayOfWeek = now.getDay();
+          const saturday = new Date(now);
+          saturday.setDate(now.getDate() + (6 - dayOfWeek));
+          saturday.setHours(0, 0, 0, 0);
+          const sunday = new Date(saturday);
+          sunday.setDate(saturday.getDate() + 1);
+          sunday.setHours(23, 59, 59, 999);
+          if (eventDate < saturday || eventDate > sunday) return false;
+        } else if (dateFilter === "settimana") {
+          const weekEnd = new Date(now);
+          weekEnd.setDate(now.getDate() + 7);
+          if (eventDate < now || eventDate > weekEnd) return false;
+        } else if (dateFilter === "mese") {
+          const monthEnd = new Date(now);
+          monthEnd.setDate(now.getDate() + 30);
+          if (eventDate < now || eventDate > monthEnd) return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Sorting
+    if (sortBy === "rilevanza" && q) {
+      results.sort((a, b) => {
+        const aTitle = a.titolo?.toLowerCase().includes(q) ? 0 : 1;
+        const bTitle = b.titolo?.toLowerCase().includes(q) ? 0 : 1;
+        return aTitle - bTitle;
+      });
+    } else {
+      results.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+    }
+
+    return results;
+  }, [eventiReali, showMyEvents, user?.id, selectedCategory, searchQuery, priceFilter, dateFilter, sortBy]);
 
   const upcomingMy = eventiReali
     .filter((e) => e.organizzatore_id === user?.id)
