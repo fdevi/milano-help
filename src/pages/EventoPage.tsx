@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import ExpandableText from "@/components/ExpandableText";
+import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
 
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
