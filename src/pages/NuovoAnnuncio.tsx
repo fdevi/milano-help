@@ -143,6 +143,8 @@ const NuovoAnnuncio = () => {
         prezzo: richiedePrezzo && prezzo ? parseFloat(prezzo) : null,
         mostra_email: mostraEmail,
         mostra_telefono: mostraTelefono,
+        condizione: isInVendita && condizione ? condizione : null,
+        tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
       };
 
       const { data: annuncio, error } = await (supabase as any)
