@@ -179,6 +179,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
         </div>
       </div>
     </Card>
+    </Link>
   );
 };
 

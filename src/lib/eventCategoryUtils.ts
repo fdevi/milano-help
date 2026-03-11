@@ -32,29 +32,58 @@ export function getCategoryStyle(categoria: string | null | undefined) {
   return CATEGORY_MAP[key] || DEFAULT;
 }
 
+/** Build a Google Maps link from coordinates */
+export function getMapsLink(lat?: number | null, lon?: number | null, luogo?: string | null): string | null {
+  if (lat && lon) {
+    return `https://maps.google.com/?q=${lat},${lon}`;
+  }
+  if (luogo) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(luogo + " Milano")}`;
+  }
+  return null;
+}
+
+/** Build a Google search link for an event */
+export function getSearchLink(titolo: string): string {
+  return `https://www.google.com/search?q=${encodeURIComponent(titolo + " Milano evento")}`;
+}
+
 export function getAutoDescription(evento: {
   categoria?: string | null;
   data?: string | null;
   descrizione?: string | null;
   fonte_esterna?: string | null;
+  luogo?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  titolo?: string | null;
 }): string {
   const desc = evento.descrizione?.trim();
-  // If description is empty or generic PredictHQ placeholder
+  // If description is meaningful and not a PredictHQ placeholder, use it
   if (
-    !desc ||
-    desc.toLowerCase().includes("sourced from predicthq") ||
-    desc.length < 10
+    desc &&
+    desc.length >= 10 &&
+    !desc.toLowerCase().includes("sourced from predicthq")
   ) {
-    const cat = evento.categoria || "generico";
-    const dataFormatted = evento.data
-      ? new Date(evento.data).toLocaleDateString("it-IT", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : "";
-    return `Evento di categoria "${cat}" a Milano.${dataFormatted ? ` Data: ${dataFormatted}.` : ""} Per maggiori dettagli, visita il sito dell'organizzatore.`;
+    return desc;
   }
-  return desc;
+
+  // Build a richer auto-description
+  const cat = evento.categoria || "generico";
+  const parts: string[] = [];
+
+  const dataFormatted = evento.data
+    ? new Date(evento.data).toLocaleDateString("it-IT", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+
+  parts.push(`Evento di categoria "${cat}" a Milano.`);
+  if (dataFormatted) parts.push(`📅 Data: ${dataFormatted}.`);
+  if (evento.luogo) parts.push(`📍 Luogo: ${evento.luogo}.`);
+
+  return parts.join(" ");
 }
