@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   ArrowLeft,
   Loader2,
@@ -47,6 +48,8 @@ const ModificaAnnuncio = () => {
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [condizione, setCondizione] = useState("");
+  const [tipoOperazione, setTipoOperazione] = useState("");
 
   // Fetch annuncio data
   const { data: annuncio, isLoading: loadingAnnuncio } = useQuery({
@@ -73,6 +76,8 @@ const ModificaAnnuncio = () => {
       setMostraEmail(annuncio.mostra_email ?? false);
       setMostraTelefono(annuncio.mostra_telefono ?? false);
       setExistingImages((annuncio.immagini as string[])?.filter(Boolean) || []);
+      setCondizione((annuncio as any).condizione || "");
+      setTipoOperazione((annuncio as any).tipo_operazione || "");
       setLoaded(true);
     }
   }, [annuncio, loaded]);
@@ -109,6 +114,8 @@ const ModificaAnnuncio = () => {
 
   const selectedCat = categorie.find((c) => c.id === categoriaId);
   const richiedePrezzo = selectedCat?.richiede_prezzo ?? false;
+  const isInVendita = selectedCat?.nome === "in_vendita" || selectedCat?.label?.toLowerCase().includes("vendita");
+  const isImmobili = selectedCat?.nome === "immobili" || selectedCat?.label?.toLowerCase().includes("immobil");
 
   const totalImages = existingImages.length + newImages.length;
 
@@ -172,6 +179,8 @@ const ModificaAnnuncio = () => {
         mostra_telefono: mostraTelefono,
         immagini: allImages,
         stato: "in_moderazione",
+        condizione: isInVendita && condizione ? condizione : null,
+        tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
       };
 
       const { error } = await (supabase as any)
@@ -290,6 +299,40 @@ const ModificaAnnuncio = () => {
                 onChange={(e) => setPrezzo(e.target.value)}
                 placeholder="0.00"
               />
+            </div>
+          )}
+
+          {/* Condizione (per "In vendita") */}
+          {isInVendita && (
+            <div>
+              <Label>Condizione *</Label>
+              <RadioGroup value={condizione} onValueChange={setCondizione} className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="nuovo" id="cond-nuovo" />
+                  <Label htmlFor="cond-nuovo" className="font-normal">Nuovo</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="usato" id="cond-usato" />
+                  <Label htmlFor="cond-usato" className="font-normal">Usato</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Tipo operazione (per "Immobili") */}
+          {isImmobili && (
+            <div>
+              <Label>Tipo operazione *</Label>
+              <RadioGroup value={tipoOperazione} onValueChange={setTipoOperazione} className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="vendita" id="op-vendita" />
+                  <Label htmlFor="op-vendita" className="font-normal">Vendita</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="locazione" id="op-locazione" />
+                  <Label htmlFor="op-locazione" className="font-normal">Locazione</Label>
+                </div>
+              </RadioGroup>
             </div>
           )}
 

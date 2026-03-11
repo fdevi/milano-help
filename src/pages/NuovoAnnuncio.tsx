@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   ArrowLeft,
   Loader2,
@@ -44,6 +45,8 @@ const NuovoAnnuncio = () => {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [condizione, setCondizione] = useState("");
+  const [tipoOperazione, setTipoOperazione] = useState("");
 
   // Fetch user profile to get quartiere
   const { data: userProfile } = useQuery({
@@ -78,6 +81,8 @@ const NuovoAnnuncio = () => {
 
   const selectedCat = categorie.find((c) => c.id === categoriaId);
   const richiedePrezzo = selectedCat?.richiede_prezzo ?? false;
+  const isInVendita = selectedCat?.nome === "in_vendita" || selectedCat?.label?.toLowerCase().includes("vendita");
+  const isImmobili = selectedCat?.nome === "immobili" || selectedCat?.label?.toLowerCase().includes("immobil");
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -138,6 +143,8 @@ const NuovoAnnuncio = () => {
         prezzo: richiedePrezzo && prezzo ? parseFloat(prezzo) : null,
         mostra_email: mostraEmail,
         mostra_telefono: mostraTelefono,
+        condizione: isInVendita && condizione ? condizione : null,
+        tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
       };
 
       const { data: annuncio, error } = await (supabase as any)
@@ -254,6 +261,40 @@ const NuovoAnnuncio = () => {
                 onChange={(e) => setPrezzo(e.target.value)}
                 placeholder="0.00"
               />
+            </div>
+          )}
+
+          {/* Condizione (per "In vendita") */}
+          {isInVendita && (
+            <div>
+              <Label>Condizione *</Label>
+              <RadioGroup value={condizione} onValueChange={setCondizione} className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="nuovo" id="cond-nuovo" />
+                  <Label htmlFor="cond-nuovo" className="font-normal">Nuovo</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="usato" id="cond-usato" />
+                  <Label htmlFor="cond-usato" className="font-normal">Usato</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Tipo operazione (per "Immobili") */}
+          {isImmobili && (
+            <div>
+              <Label>Tipo operazione *</Label>
+              <RadioGroup value={tipoOperazione} onValueChange={setTipoOperazione} className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="vendita" id="op-vendita" />
+                  <Label htmlFor="op-vendita" className="font-normal">Vendita</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="locazione" id="op-locazione" />
+                  <Label htmlFor="op-locazione" className="font-normal">Locazione</Label>
+                </div>
+              </RadioGroup>
             </div>
           )}
 

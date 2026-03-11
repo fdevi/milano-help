@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn } from "lucide-react";
+import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn, Share2, Copy, Check } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,8 @@ const AnnuncioPage = () => {
   const [segnalaMotivo, setSegnalaMotivo] = useState("");
   const [segnalaNote, setSegnalaNote] = useState("");
   const [sending, setSending] = useState(false);
+  const [showSharePopup, setShowSharePopup] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Fetch annuncio
   const { data: annuncio, isLoading, error } = useQuery({
@@ -227,6 +229,25 @@ const AnnuncioPage = () => {
     setSegnalaNote("");
   };
 
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/annuncio/${id}` : '';
+  const shareText = annuncio ? `${annuncio.titolo} - Milano Help` : '';
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareText, url: shareUrl });
+      } catch {}
+    } else {
+      setShowSharePopup(true);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   // Not found / not active states
   if (!isLoading && (error || !annuncio)) {
     return (
@@ -362,6 +383,24 @@ const AnnuncioPage = () => {
                     <Heart className={`w-4 h-4 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
                     {annuncio.mi_piace || 0} Mi piace
                   </button>
+                  <button onClick={handleShare} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Share2 className="w-4 h-4" /> Condividi
+                  </button>
+                </div>
+                {/* Condition & operation badges */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(annuncio as any).condizione === "nuovo" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-500 text-white">Nuovo</span>
+                  )}
+                  {(annuncio as any).condizione === "usato" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-orange-500 text-black">Usato</span>
+                  )}
+                  {(annuncio as any).tipo_operazione === "vendita" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-500 text-white">Vendita</span>
+                  )}
+                  {(annuncio as any).tipo_operazione === "locazione" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-purple-500 text-white">Locazione</span>
+                  )}
                 </div>
                 {annuncio.prezzo != null && (
                   <p className="text-2xl font-bold text-primary mb-2">€{annuncio.prezzo.toFixed(2)}</p>
@@ -425,6 +464,10 @@ const AnnuncioPage = () => {
                     <Flag className="w-4 h-4 mr-2" /> Segnala
                   </Button>
                 )}
+
+                <Button variant="outline" className="w-full" onClick={handleShare}>
+                  <Share2 className="w-4 h-4 mr-2" /> Condividi
+                </Button>
               </div>
 
               {/* Author card */}
@@ -531,7 +574,51 @@ const AnnuncioPage = () => {
         </div>
       )}
 
-      {/* Segnala dialog */}
+      {/* Share popup (desktop fallback) */}
+      <Dialog open={showSharePopup} onOpenChange={setShowSharePopup}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Condividi annuncio</DialogTitle>
+            <DialogDescription>Scegli come condividere questo annuncio.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              💬 WhatsApp
+            </a>
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              📘 Facebook
+            </a>
+            <a
+              href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              🐦 Twitter
+            </a>
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              {copied ? <><Check className="w-4 h-4 text-green-500" /> Copiato!</> : <><Copy className="w-4 h-4" /> Copia link</>}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            📸 Per Instagram, condividi da mobile: l'app apparirà tra le opzioni di condivisione.
+          </p>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showSegnala} onOpenChange={setShowSegnala}>
         <DialogContent>
           <DialogHeader>
