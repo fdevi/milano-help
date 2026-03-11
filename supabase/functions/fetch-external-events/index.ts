@@ -14,25 +14,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// ─── Ticketmaster ───
+
 interface TicketmasterEvent {
   id: string
   name: string
   dates?: {
-    start?: {
-      dateTime?: string
-      localDate?: string
-    }
-    end?: {
-      dateTime?: string
-    }
+    start?: { dateTime?: string; localDate?: string }
+    end?: { dateTime?: string }
   }
   _embedded?: {
     venues?: Array<{
       name?: string
-      location?: {
-        latitude?: string
-        longitude?: string
-      }
+      location?: { latitude?: string; longitude?: string }
       city?: { name?: string }
     }>
   }
@@ -51,31 +45,25 @@ function mapTicketmasterEvent(ev: TicketmasterEvent) {
   const venue = ev._embedded?.venues?.[0]
   const startDate = ev.dates?.start?.dateTime || ev.dates?.start?.localDate
   const endDate = ev.dates?.end?.dateTime || null
-
   if (!startDate) return null
 
-  const bestImage = ev.images
-    ?.sort((a, b) => (b.width || 0) - (a.width || 0))?.[0]?.url || null
-
+  const bestImage = ev.images?.sort((a, b) => (b.width || 0) - (a.width || 0))?.[0]?.url || null
   const priceMin = ev.priceRanges?.[0]?.min
   const isGratuito = !priceMin || priceMin === 0
-
   const classification = ev.classifications?.[0]
   const categoria = classification?.genre?.name || classification?.segment?.name || 'Altro'
 
   let descrizione = ''
   if (ev.info) descrizione += ev.info
   if (ev.pleaseNote) descrizione += (descrizione ? '\n\n' : '') + ev.pleaseNote
-  if (!descrizione.trim()) {
-    descrizione = 'Info e biglietti disponibili sul sito ufficiale.'
-  }
+  if (!descrizione.trim()) descrizione = 'Info e biglietti disponibili sul sito ufficiale.'
   if (ev.url) descrizione += `\n\n🔗 ${ev.url}`
 
   return {
     external_id: `ticketmaster_${ev.id}`,
     fonte_esterna: 'ticketmaster',
     titolo: ev.name,
-    descrizione: descrizione || null,
+    descrizione,
     data: startDate,
     fine: endDate,
     luogo: venue?.name || 'Milano',
@@ -110,11 +98,9 @@ async function fetchTicketmasterEvents(): Promise<TicketmasterEvent[]> {
       `&sort=date,asc`
 
     console.log(`📡 Fetching Ticketmaster page ${page}...`)
-
     const res = await fetch(url)
     if (!res.ok) {
-      const errText = await res.text()
-      console.error(`❌ Ticketmaster API error: ${res.status}`, errText)
+      console.error(`❌ Ticketmaster API error: ${res.status}`, await res.text())
       break
     }
 
@@ -130,6 +116,8 @@ async function fetchTicketmasterEvents(): Promise<TicketmasterEvent[]> {
   console.log(`✅ Ticketmaster: trovati ${allEvents.length} eventi`)
   return allEvents
 }
+
+// ─── Email riepilogo ───
 
 async function sendSummaryEmail(ticketmasterCount: number) {
   if (ticketmasterCount === 0) {
@@ -174,6 +162,8 @@ async function sendSummaryEmail(ticketmasterCount: number) {
   }
 }
 
+// ─── Handler ───
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -182,7 +172,7 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 1. Fetch existing external IDs to avoid duplicates
+    // 1. Fetch existing external IDs
     const { data: existingEvents } = await supabase
       .from('eventi')
       .select('external_id')
