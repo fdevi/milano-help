@@ -27,6 +27,7 @@ const AnnuncioPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentImage, setCurrentImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showSegnala, setShowSegnala] = useState(false);
   const [segnalaMotivo, setSegnalaMotivo] = useState("");
   const [segnalaNote, setSegnalaNote] = useState("");
