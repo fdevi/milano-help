@@ -464,7 +464,7 @@ const AnnuncioPage = () => {
                       <Link key={a.id} to={`/annuncio/${a.id}`} className="flex gap-3 group">
                         <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                           {a.immagini?.[0] ? (
-                            <img src={a.immagini[0]} alt={a.titolo} className="w-full h-full object-cover" />
+                            <img src={a.immagini[0]} alt={a.titolo} loading="lazy" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <CatIcon className="w-5 h-5 text-muted-foreground/40" />
