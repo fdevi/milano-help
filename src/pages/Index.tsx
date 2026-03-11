@@ -460,7 +460,7 @@ const Index = () => {
             <Card className="p-12 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-muted-foreground mb-2">Nessun evento in programma</p>
-              <Link to="/eventi">
+              <Link to="/categoria/evento">
                 <Button variant="link">Scopri tutti gli eventi</Button>
               </Link>
             </Card>
