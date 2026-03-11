@@ -436,7 +436,16 @@ const EventoPage = () => {
                     )}
                   </p>
                   <p className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" /> {evento.luogo}
+                    <MapPin className="w-4 h-4" /> 
+                    {evento.luogo}
+                    {(() => {
+                      const mapsUrl = getMapsLink((evento as any).lat, (evento as any).lon, evento.luogo);
+                      return mapsUrl ? (
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm ml-1" onClick={(e) => e.stopPropagation()}>
+                          📍 Apri su Google Maps
+                        </a>
+                      ) : null;
+                    })()}
                   </p>
                 </div>
 
