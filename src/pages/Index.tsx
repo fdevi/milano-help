@@ -452,7 +452,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground/60 mb-4">
                 {(errorEventi as Error)?.message || "Errore di connessione"}
               </p>
-              <Link to="/eventi">
+              <Link to="/categoria/evento">
                 <Button variant="outline">Vai agli eventi</Button>
               </Link>
             </Card>
