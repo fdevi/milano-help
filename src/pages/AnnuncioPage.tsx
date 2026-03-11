@@ -489,6 +489,48 @@ const AnnuncioPage = () => {
         ) : null}
       </div>
 
+      {/* Lightbox */}
+      {lightboxOpen && images.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="w-8 h-8" />
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p - 1 + images.length) % images.length); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10"
+              >
+                <ChevronLeft className="w-10 h-10" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p + 1) % images.length); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10"
+              >
+                <ChevronRight className="w-10 h-10" />
+              </button>
+            </>
+          )}
+          <img
+            src={images[currentImage]}
+            alt={annuncio?.titolo}
+            className="max-w-[95vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {images.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
+              {currentImage + 1} / {images.length}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Segnala dialog */}
       <Dialog open={showSegnala} onOpenChange={setShowSegnala}>
         <DialogContent>
