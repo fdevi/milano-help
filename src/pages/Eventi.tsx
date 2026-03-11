@@ -186,8 +186,11 @@ const Eventi = () => {
   const [showMyEvents, setShowMyEvents] = useState(false);
   const [dateFilter, setDateFilter] = useState("tutti");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priceFilter, setPriceFilter] = useState("tutti"); // tutti | gratuito | pagamento
+  const [sortBy, setSortBy] = useState("data"); // data | rilevanza
   const queryClient = useQueryClient();
-  const { toast } = useToast(); 
+  const { toast } = useToast();
 
   // Carica eventi reali dal database
   const { data: eventiReali = [], isLoading } = useQuery({
