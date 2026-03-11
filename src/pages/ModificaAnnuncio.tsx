@@ -48,6 +48,8 @@ const ModificaAnnuncio = () => {
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [condizione, setCondizione] = useState("");
+  const [tipoOperazione, setTipoOperazione] = useState("");
 
   // Fetch annuncio data
   const { data: annuncio, isLoading: loadingAnnuncio } = useQuery({
