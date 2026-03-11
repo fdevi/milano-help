@@ -155,7 +155,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
           <h3 className="font-heading font-bold text-foreground group-hover:text-primary transition-colors">{event.titolo}</h3>
         </div>
 
-        <p className="text-sm text-muted-foreground line-clamp-2">{event.descrizione}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{getAutoDescription(event)}</p>
 
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="w-3 h-3 shrink-0" />
