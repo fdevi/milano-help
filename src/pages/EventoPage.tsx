@@ -353,8 +353,9 @@ const EventoPage = () => {
     );
   }
 
-  const orgName = organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente";
-  const orgInitials = orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const isExternalEvent = !!(evento as any)?.fonte_esterna;
+  const orgName = isExternalEvent ? "Milano Help" : (organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente");
+  const orgInitials = isExternalEvent ? "MH" : orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   const confermati = partecipantiCounts?.confermati || 0;
   const forseCnt = partecipantiCounts?.forse || 0;
   const maxReached = !!(evento?.max_partecipanti && confermati >= evento.max_partecipanti);
