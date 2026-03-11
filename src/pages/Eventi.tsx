@@ -79,6 +79,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
   const canEdit = isAdmin || event.organizzatore_id === user?.id;
 
   return (
+    <Link to={`/evento/${event.id}`} className="block">
     <Card className="overflow-hidden shadow-card hover:shadow-card-hover transition-shadow group relative">
       {/* Menu azioni (visibile solo se può modificare) */}
       {canEdit && (
@@ -178,6 +179,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
         </div>
       </div>
     </Card>
+    </Link>
   );
 };
 

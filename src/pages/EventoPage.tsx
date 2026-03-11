@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import ExpandableText from "@/components/ExpandableText";
-import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
+import { getCategoryStyle, getAutoDescription, getMapsLink, getSearchLink } from "@/lib/eventCategoryUtils";
 
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -436,7 +436,16 @@ const EventoPage = () => {
                     )}
                   </p>
                   <p className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" /> {evento.luogo}
+                    <MapPin className="w-4 h-4" /> 
+                    {evento.luogo}
+                    {(() => {
+                      const mapsUrl = getMapsLink((evento as any).lat, (evento as any).lon, evento.luogo);
+                      return mapsUrl ? (
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm ml-1" onClick={(e) => e.stopPropagation()}>
+                          📍 Apri su Google Maps
+                        </a>
+                      ) : null;
+                    })()}
                   </p>
                 </div>
 
@@ -483,7 +492,7 @@ const EventoPage = () => {
                     ) : cleanDesc ? (
                       <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{cleanDesc}</p>
                     ) : null}
-                    {externalUrl && isExternalEvent && (
+                    {externalUrl && isExternalEvent ? (
                       <a
                         href={externalUrl}
                         target="_blank"
@@ -492,6 +501,27 @@ const EventoPage = () => {
                       >
                         🔗 Leggi tutto sull'evento e acquista biglietti
                       </a>
+                    ) : isExternalEvent && (
+                      <div className="flex flex-wrap gap-3 mt-3">
+                        {getMapsLink((evento as any).lat, (evento as any).lon, evento.luogo) && (
+                          <a
+                            href={getMapsLink((evento as any).lat, (evento as any).lon, evento.luogo)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                          >
+                            📍 Apri su Google Maps
+                          </a>
+                        )}
+                        <a
+                          href={getSearchLink(evento.titolo)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                        >
+                          🔍 Cerca su Google
+                        </a>
+                      </div>
                     )}
                   </div>
                 );
