@@ -423,7 +423,9 @@ export type Database = {
           created_at: string | null
           data: string
           descrizione: string | null
+          external_id: string | null
           fine: string | null
+          fonte_esterna: string | null
           gratuito: boolean | null
           id: string
           immagine: string | null
@@ -446,7 +448,9 @@ export type Database = {
           created_at?: string | null
           data: string
           descrizione?: string | null
+          external_id?: string | null
           fine?: string | null
+          fonte_esterna?: string | null
           gratuito?: boolean | null
           id?: string
           immagine?: string | null
@@ -469,7 +473,9 @@ export type Database = {
           created_at?: string | null
           data?: string
           descrizione?: string | null
+          external_id?: string | null
           fine?: string | null
+          fonte_esterna?: string | null
           gratuito?: boolean | null
           id?: string
           immagine?: string | null
