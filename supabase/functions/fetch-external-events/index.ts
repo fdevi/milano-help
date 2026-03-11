@@ -84,7 +84,7 @@ function mapTicketmasterEvent(ev: TicketmasterEvent) {
 async function fetchTicketmasterEvents(): Promise<TicketmasterEvent[]> {
   const now = new Date()
   const startDateTime = now.toISOString().split('.')[0] + 'Z'
-  const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+  const endDate = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)
   const endDateTime = endDate.toISOString().split('.')[0] + 'Z'
 
   const allEvents: TicketmasterEvent[] = []
