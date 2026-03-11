@@ -229,6 +229,25 @@ const AnnuncioPage = () => {
     setSegnalaNote("");
   };
 
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/annuncio/${id}` : '';
+  const shareText = annuncio ? `${annuncio.titolo} - Milano Help` : '';
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareText, url: shareUrl });
+      } catch {}
+    } else {
+      setShowSharePopup(true);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   // Not found / not active states
   if (!isLoading && (error || !annuncio)) {
     return (
