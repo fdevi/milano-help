@@ -467,12 +467,16 @@ const EventoPage = () => {
                 const externalUrl = urlMatch?.[1];
                 const cleanDesc = evento.descrizione.replace(/\n*🔗\s*https?:\/\/\S+/, '').trim();
                 
+                const hasRealDescription = cleanDesc.length > 80 && cleanDesc !== "Info e biglietti disponibili sul sito ufficiale.";
+
                 return (
                   <div className="bg-card border rounded-xl p-5">
                     <h2 className="font-heading font-bold text-foreground mb-3">Descrizione</h2>
-                    {cleanDesc && (
+                    {hasRealDescription ? (
+                      <ExpandableText text={cleanDesc} lines={5} />
+                    ) : cleanDesc ? (
                       <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{cleanDesc}</p>
-                    )}
+                    ) : null}
                     {externalUrl && isExternalEvent && (
                       <a
                         href={externalUrl}
