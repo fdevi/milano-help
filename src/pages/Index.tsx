@@ -375,7 +375,7 @@ const Index = () => {
                     transition={{ delay: index * 0.05 }}
                   >
                     {cat.nome === 'evento' ? (
-                      <Link to="/eventi">
+                      <Link to="/categoria/evento">
                         <Card className="p-5 hover:shadow-lg transition-all group hover:-translate-y-1 cursor-pointer">
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform">
