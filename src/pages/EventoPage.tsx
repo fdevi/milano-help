@@ -492,7 +492,7 @@ const EventoPage = () => {
                     ) : cleanDesc ? (
                       <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{cleanDesc}</p>
                     ) : null}
-                    {externalUrl && isExternalEvent && (
+                    {externalUrl && isExternalEvent ? (
                       <a
                         href={externalUrl}
                         target="_blank"
@@ -501,6 +501,27 @@ const EventoPage = () => {
                       >
                         🔗 Leggi tutto sull'evento e acquista biglietti
                       </a>
+                    ) : isExternalEvent && (
+                      <div className="flex flex-wrap gap-3 mt-3">
+                        {getMapsLink((evento as any).lat, (evento as any).lon, evento.luogo) && (
+                          <a
+                            href={getMapsLink((evento as any).lat, (evento as any).lon, evento.luogo)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                          >
+                            📍 Apri su Google Maps
+                          </a>
+                        )}
+                        <a
+                          href={getSearchLink(evento.titolo)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                        >
+                          🔍 Cerca su Google
+                        </a>
+                      </div>
                     )}
                   </div>
                 );
