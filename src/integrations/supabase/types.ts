@@ -41,6 +41,7 @@ export type Database = {
       annunci: {
         Row: {
           categoria_id: string | null
+          condizione: string | null
           created_at: string
           data_scadenza: string | null
           descrizione: string | null
@@ -56,6 +57,7 @@ export type Database = {
           proroghe_effettuate: number
           quartiere: string | null
           stato: string
+          tipo_operazione: string | null
           titolo: string
           updated_at: string
           user_id: string
@@ -63,6 +65,7 @@ export type Database = {
         }
         Insert: {
           categoria_id?: string | null
+          condizione?: string | null
           created_at?: string
           data_scadenza?: string | null
           descrizione?: string | null
@@ -78,6 +81,7 @@ export type Database = {
           proroghe_effettuate?: number
           quartiere?: string | null
           stato?: string
+          tipo_operazione?: string | null
           titolo: string
           updated_at?: string
           user_id: string
@@ -85,6 +89,7 @@ export type Database = {
         }
         Update: {
           categoria_id?: string | null
+          condizione?: string | null
           created_at?: string
           data_scadenza?: string | null
           descrizione?: string | null
@@ -100,6 +105,7 @@ export type Database = {
           proroghe_effettuate?: number
           quartiere?: string | null
           stato?: string
+          tipo_operazione?: string | null
           titolo?: string
           updated_at?: string
           user_id?: string
