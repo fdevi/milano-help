@@ -391,9 +391,14 @@ const EventoPage = () => {
                   <img src={evento.immagine} alt={evento.titolo} className="w-full h-72 sm:h-96 object-cover" />
                 </div>
               ) : (
-                <div className="h-72 sm:h-96 bg-muted rounded-xl flex items-center justify-center">
-                  <Calendar className="w-16 h-16 text-muted-foreground/30" />
-                </div>
+                (() => {
+                  const style = getCategoryStyle(evento.categoria);
+                  return (
+                    <div className={`h-72 sm:h-96 rounded-xl flex items-center justify-center ${style.bg}`}>
+                      <span className="text-7xl">{style.emoji}</span>
+                    </div>
+                  );
+                })()
               )}
 
               {/* Title and meta */}

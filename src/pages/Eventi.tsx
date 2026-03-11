@@ -362,10 +362,22 @@ const Eventi = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Search & Filters */}
         <div className="space-y-3 mb-6">
-          {/* Date filter pills */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca eventi per titolo o descrizione..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Filter row */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Date filter pills */}
             <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
             {DATE_FILTERS.map((f) => (
               <Button
@@ -379,30 +391,57 @@ const Eventi = () => {
               </Button>
             ))}
           </div>
-          {/* Category pills */}
-          <div className="flex items-center gap-2 flex-wrap">
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Category dropdown */}
             <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Button
-              variant={!selectedCategory ? "default" : "outline"}
-              size="sm"
-              className="h-7 text-xs rounded-full"
-              onClick={() => setSelectedCategory(null)}
+            <Select
+              value={selectedCategory || "tutte"}
+              onValueChange={(v) => setSelectedCategory(v === "tutte" ? null : v)}
             >
-              Tutte
-            </Button>
-            {CATEGORIES.map((c) => (
-              <Button
-                key={c}
-                variant={selectedCategory === c ? "default" : "outline"}
-                size="sm"
-                className="h-7 text-xs rounded-full"
-                onClick={() => setSelectedCategory(selectedCategory === c ? null : c)}
-              >
-                {c}
-              </Button>
-            ))}
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tutte">Tutte le categorie</SelectItem>
+                {dbCategories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {getCategoryStyle(c).emoji} {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Price filter */}
+            <Select value={priceFilter} onValueChange={setPriceFilter}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="Prezzo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tutti">Tutti i prezzi</SelectItem>
+                <SelectItem value="gratuito">🆓 Gratuito</SelectItem>
+                <SelectItem value="pagamento">💰 A pagamento</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <ArrowUpDown className="w-3 h-3 mr-1" />
+                <SelectValue placeholder="Ordina" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="data">Data più vicina</SelectItem>
+                <SelectItem value="rilevanza">Rilevanza ricerca</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
+
+        {/* Results count */}
+        <p className="text-xs text-muted-foreground mb-4">
+          {filtered.length} eventi trovati
+        </p>
 
         {/* Main content */}
         <div className="flex gap-6">
