@@ -124,6 +124,11 @@ const Servizi = () => {
                             <Briefcase className="w-10 h-10 text-muted-foreground/30" />
                           </div>
                         )}
+                        {s.immagini && s.immagini.length > 1 && (
+                          <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+                            1/{s.immagini.length}
+                          </span>
+                        )}
                         {s.categoria_nome && (
                           <Badge className="absolute top-2 right-2 bg-primary/90 text-primary-foreground text-[10px]">{s.categoria_nome}</Badge>
                         )}

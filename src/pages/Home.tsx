@@ -372,9 +372,14 @@ const Home = () => {
                           <Link to={`/annuncio/${a.id}`}>
                             <div className="relative h-40 bg-muted">
                               {cover ? (
-                                <img src={cover} alt={a.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <img src={cover} alt={a.titolo} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                               ) : (
                                 <div className="flex items-center justify-center h-full"><ImageIcon className="w-10 h-10 text-muted-foreground/30" /></div>
+                              )}
+                              {a.immagini && a.immagini.length > 1 && (
+                                <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+                                  1/{a.immagini.length}
+                                </span>
                               )}
                               <Badge variant={s.variant} className="absolute top-2 right-2 text-xs">{s.label}</Badge>
                             </div>

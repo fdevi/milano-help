@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone } from "lucide-react";
+import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ const AnnuncioPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentImage, setCurrentImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showSegnala, setShowSegnala] = useState(false);
   const [segnalaMotivo, setSegnalaMotivo] = useState("");
   const [segnalaNote, setSegnalaNote] = useState("");
@@ -290,8 +291,17 @@ const AnnuncioPage = () => {
                   <img
                     src={images[currentImage]}
                     alt={annuncio.titolo}
-                    className="w-full h-72 sm:h-96 object-cover"
+                    loading="lazy"
+                    className="w-full max-h-[300px] md:max-h-[500px] object-contain bg-muted cursor-pointer"
+                    onClick={() => setLightboxOpen(true)}
                   />
+                  {/* Zoom hint */}
+                  <button
+                    onClick={() => setLightboxOpen(true)}
+                    className="absolute top-3 right-3 bg-background/80 rounded-full p-2 hover:bg-background transition-colors"
+                  >
+                    <ZoomIn className="w-4 h-4 text-foreground" />
+                  </button>
                   {images.length > 1 && (
                     <>
                       <button
@@ -315,11 +325,15 @@ const AnnuncioPage = () => {
                           />
                         ))}
                       </div>
+                      {/* Photo counter badge */}
+                      <Badge className="absolute bottom-3 right-3 bg-background/80 text-foreground text-xs">
+                        {currentImage + 1}/{images.length}
+                      </Badge>
                     </>
                   )}
                 </div>
               ) : (
-                <div className="h-72 sm:h-96 bg-muted rounded-xl flex items-center justify-center">
+                <div className="h-48 sm:h-72 bg-muted rounded-xl flex items-center justify-center">
                   <CatIcon className="w-16 h-16 text-muted-foreground/30" />
                 </div>
               )}
@@ -450,7 +464,7 @@ const AnnuncioPage = () => {
                       <Link key={a.id} to={`/annuncio/${a.id}`} className="flex gap-3 group">
                         <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                           {a.immagini?.[0] ? (
-                            <img src={a.immagini[0]} alt={a.titolo} className="w-full h-full object-cover" />
+                            <img src={a.immagini[0]} alt={a.titolo} loading="lazy" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <CatIcon className="w-5 h-5 text-muted-foreground/40" />
@@ -474,6 +488,48 @@ const AnnuncioPage = () => {
           </motion.div>
         ) : null}
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && images.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="w-8 h-8" />
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p - 1 + images.length) % images.length); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10"
+              >
+                <ChevronLeft className="w-10 h-10" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p + 1) % images.length); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10"
+              >
+                <ChevronRight className="w-10 h-10" />
+              </button>
+            </>
+          )}
+          <img
+            src={images[currentImage]}
+            alt={annuncio?.titolo}
+            className="max-w-[95vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {images.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
+              {currentImage + 1} / {images.length}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Segnala dialog */}
       <Dialog open={showSegnala} onOpenChange={setShowSegnala}>

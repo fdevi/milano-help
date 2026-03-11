@@ -91,7 +91,7 @@ const ServizioPage = () => {
         {servizio.immagini && servizio.immagini.length > 0 && (
           <div className="grid grid-cols-2 gap-2 mb-6 rounded-lg overflow-hidden">
             {servizio.immagini.map((img: string, i: number) => (
-              <img key={i} src={img} alt={servizio.titolo} className="w-full h-48 object-cover" />
+              <img key={i} src={img} alt={servizio.titolo} loading="lazy" className="w-full max-h-[300px] md:max-h-[400px] object-contain bg-muted rounded-lg" />
             ))}
           </div>
         )}
