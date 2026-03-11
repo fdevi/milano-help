@@ -112,8 +112,13 @@ const EventCard = ({ event, isParticipating, onDelete }: {
           {event.gratuito ? "Gratuito" : `€${event.prezzo}`}
         </Badge>
         {/* Status badge */}
-        <div className="absolute bottom-3 left-3">
+        <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
           <EventStatusBadge dataInizio={event.data} dataFine={event.fine} />
+          {event.fonte_esterna && (
+            <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5">
+              ⭐ Ufficiale
+            </Badge>
+          )}
         </div>
         {isParticipating && (
           <Badge className="absolute bottom-3 right-3 bg-primary/90 text-primary-foreground text-xs">

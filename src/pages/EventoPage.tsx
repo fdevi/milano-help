@@ -401,6 +401,11 @@ const EventoPage = () => {
                     <Calendar className="w-3 h-3" /> Evento
                   </Badge>
                   <EventStatusBadge dataInizio={evento.data} dataFine={(evento as any).fine} />
+                  {(evento as any).fonte_esterna && (
+                    <Badge className="bg-amber-500 text-white gap-1">
+                      ⭐ Evento ufficiale
+                    </Badge>
+                  )}
                   {evento.gratuito ? (
                     <Badge className="bg-primary text-primary-foreground">Gratuito</Badge>
                   ) : evento.prezzo != null ? (
