@@ -574,7 +574,51 @@ const AnnuncioPage = () => {
         </div>
       )}
 
-      {/* Segnala dialog */}
+      {/* Share popup (desktop fallback) */}
+      <Dialog open={showSharePopup} onOpenChange={setShowSharePopup}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Condividi annuncio</DialogTitle>
+            <DialogDescription>Scegli come condividere questo annuncio.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              💬 WhatsApp
+            </a>
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              📘 Facebook
+            </a>
+            <a
+              href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              🐦 Twitter
+            </a>
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
+            >
+              {copied ? <><Check className="w-4 h-4 text-green-500" /> Copiato!</> : <><Copy className="w-4 h-4" /> Copia link</>}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            📸 Per Instagram, condividi da mobile: l'app apparirà tra le opzioni di condivisione.
+          </p>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showSegnala} onOpenChange={setShowSegnala}>
         <DialogContent>
           <DialogHeader>
