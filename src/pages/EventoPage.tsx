@@ -18,6 +18,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import ExpandableText from "@/components/ExpandableText";
 
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
