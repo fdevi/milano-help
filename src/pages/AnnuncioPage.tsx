@@ -383,6 +383,24 @@ const AnnuncioPage = () => {
                     <Heart className={`w-4 h-4 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
                     {annuncio.mi_piace || 0} Mi piace
                   </button>
+                  <button onClick={handleShare} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Share2 className="w-4 h-4" /> Condividi
+                  </button>
+                </div>
+                {/* Condition & operation badges */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(annuncio as any).condizione === "nuovo" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-500 text-white">Nuovo</span>
+                  )}
+                  {(annuncio as any).condizione === "usato" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-orange-500 text-black">Usato</span>
+                  )}
+                  {(annuncio as any).tipo_operazione === "vendita" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-500 text-white">Vendita</span>
+                  )}
+                  {(annuncio as any).tipo_operazione === "locazione" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-purple-500 text-white">Locazione</span>
+                  )}
                 </div>
                 {annuncio.prezzo != null && (
                   <p className="text-2xl font-bold text-primary mb-2">€{annuncio.prezzo.toFixed(2)}</p>
