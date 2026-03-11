@@ -1,7 +1,7 @@
 import { useToast } from "@/hooks/use-toast";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,12 +17,22 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import AuthLayout from "@/components/AuthLayout";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -32,16 +42,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
 
 const DATE_FILTERS = [
   { label: "Tutti", value: "tutti" },
   { label: "Oggi", value: "oggi" },
   { label: "Weekend", value: "weekend" },
-  { label: "Settimana", value: "settimana" },
+  { label: "Prossimi 7 gg", value: "settimana" },
   { label: "Mese", value: "mese" },
 ];
-
-const CATEGORIES = ["Social", "Workshop", "Mercatino", "Sport", "Cultura", "Volontariato"];
 
 function formatEventDate(iso: string) {
   const d = new Date(iso);
@@ -98,9 +107,14 @@ const EventCard = ({ event, isParticipating, onDelete }: {
         {event.immagine ? (
           <img src={event.immagine} alt={event.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/10 to-primary/5">
-            <CalendarDays className="w-12 h-12 text-primary/30" />
-          </div>
+          (() => {
+            const style = getCategoryStyle(event.categoria);
+            return (
+              <div className={`flex items-center justify-center h-full ${style.bg}`}>
+                <span className="text-5xl">{style.emoji}</span>
+              </div>
+            );
+          })()
         )}
         {/* Date badge */}
         <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center shadow-sm">
@@ -141,7 +155,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
           <h3 className="font-heading font-bold text-foreground group-hover:text-primary transition-colors">{event.titolo}</h3>
         </div>
 
-        <p className="text-sm text-muted-foreground line-clamp-2">{event.descrizione}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{getAutoDescription(event)}</p>
 
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="w-3 h-3 shrink-0" />
@@ -172,8 +186,11 @@ const Eventi = () => {
   const [showMyEvents, setShowMyEvents] = useState(false);
   const [dateFilter, setDateFilter] = useState("tutti");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priceFilter, setPriceFilter] = useState("tutti"); // tutti | gratuito | pagamento
+  const [sortBy, setSortBy] = useState("data"); // data | rilevanza
   const queryClient = useQueryClient();
-  const { toast } = useToast(); 
+  const { toast } = useToast();
 
   // Carica eventi reali dal database
   const { data: eventiReali = [], isLoading } = useQuery({
@@ -245,13 +262,75 @@ const Eventi = () => {
     }
   };
 
-  const filtered = eventiReali.filter((e) => {
-    // Filtro "I tuoi eventi": applicare solo se c'è un utente loggato, altrimenti mostriamo tutti (evita lista vuota)
-    if (showMyEvents && user?.id && e.organizzatore_id !== user.id) return false;
-    // Filtro categoria: confronto case-insensitive e gestione null
-    if (selectedCategory && (e.categoria == null || String(e.categoria).toLowerCase() !== selectedCategory.toLowerCase())) return false;
-    return true;
-  });
+  // Extract unique categories from DB data
+  const dbCategories = useMemo(() => {
+    const cats = new Set<string>();
+    eventiReali.forEach((e) => {
+      if (e.categoria) cats.add(e.categoria);
+    });
+    return Array.from(cats).sort();
+  }, [eventiReali]);
+
+  const filtered = useMemo(() => {
+    const now = new Date();
+    const q = searchQuery.toLowerCase().trim();
+
+    let results = eventiReali.filter((e) => {
+      if (showMyEvents && user?.id && e.organizzatore_id !== user.id) return false;
+      if (selectedCategory && (e.categoria == null || String(e.categoria).toLowerCase() !== selectedCategory.toLowerCase())) return false;
+
+      // Search filter
+      if (q) {
+        const inTitle = e.titolo?.toLowerCase().includes(q);
+        const inDesc = e.descrizione?.toLowerCase().includes(q);
+        if (!inTitle && !inDesc) return false;
+      }
+
+      // Price filter
+      if (priceFilter === "gratuito" && !e.gratuito) return false;
+      if (priceFilter === "pagamento" && e.gratuito) return false;
+
+      // Date filter
+      if (dateFilter !== "tutti") {
+        const eventDate = new Date(e.data);
+        if (dateFilter === "oggi") {
+          if (eventDate.toDateString() !== now.toDateString()) return false;
+        } else if (dateFilter === "weekend") {
+          const dayOfWeek = now.getDay();
+          const saturday = new Date(now);
+          saturday.setDate(now.getDate() + (6 - dayOfWeek));
+          saturday.setHours(0, 0, 0, 0);
+          const sunday = new Date(saturday);
+          sunday.setDate(saturday.getDate() + 1);
+          sunday.setHours(23, 59, 59, 999);
+          if (eventDate < saturday || eventDate > sunday) return false;
+        } else if (dateFilter === "settimana") {
+          const weekEnd = new Date(now);
+          weekEnd.setDate(now.getDate() + 7);
+          if (eventDate < now || eventDate > weekEnd) return false;
+        } else if (dateFilter === "mese") {
+          const monthEnd = new Date(now);
+          monthEnd.setDate(now.getDate() + 30);
+          if (eventDate < now || eventDate > monthEnd) return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Sorting
+    if (sortBy === "rilevanza" && q) {
+      results.sort((a, b) => {
+        const aTitle = a.titolo?.toLowerCase().includes(q) ? 0 : 1;
+        const bTitle = b.titolo?.toLowerCase().includes(q) ? 0 : 1;
+        return aTitle - bTitle;
+      });
+    } else {
+      results.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+    }
+
+    return results;
+  }, [eventiReali, showMyEvents, user?.id, selectedCategory, searchQuery, priceFilter, dateFilter, sortBy]);
 
   const upcomingMy = eventiReali
     .filter((e) => e.organizzatore_id === user?.id)
@@ -283,10 +362,22 @@ const Eventi = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Search & Filters */}
         <div className="space-y-3 mb-6">
-          {/* Date filter pills */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca eventi per titolo o descrizione..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Filter row */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Date filter pills */}
             <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
             {DATE_FILTERS.map((f) => (
               <Button
@@ -300,30 +391,57 @@ const Eventi = () => {
               </Button>
             ))}
           </div>
-          {/* Category pills */}
-          <div className="flex items-center gap-2 flex-wrap">
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Category dropdown */}
             <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Button
-              variant={!selectedCategory ? "default" : "outline"}
-              size="sm"
-              className="h-7 text-xs rounded-full"
-              onClick={() => setSelectedCategory(null)}
+            <Select
+              value={selectedCategory || "tutte"}
+              onValueChange={(v) => setSelectedCategory(v === "tutte" ? null : v)}
             >
-              Tutte
-            </Button>
-            {CATEGORIES.map((c) => (
-              <Button
-                key={c}
-                variant={selectedCategory === c ? "default" : "outline"}
-                size="sm"
-                className="h-7 text-xs rounded-full"
-                onClick={() => setSelectedCategory(selectedCategory === c ? null : c)}
-              >
-                {c}
-              </Button>
-            ))}
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tutte">Tutte le categorie</SelectItem>
+                {dbCategories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {getCategoryStyle(c).emoji} {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Price filter */}
+            <Select value={priceFilter} onValueChange={setPriceFilter}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="Prezzo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tutti">Tutti i prezzi</SelectItem>
+                <SelectItem value="gratuito">🆓 Gratuito</SelectItem>
+                <SelectItem value="pagamento">💰 A pagamento</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <ArrowUpDown className="w-3 h-3 mr-1" />
+                <SelectValue placeholder="Ordina" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="data">Data più vicina</SelectItem>
+                <SelectItem value="rilevanza">Rilevanza ricerca</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
+
+        {/* Results count */}
+        <p className="text-xs text-muted-foreground mb-4">
+          {filtered.length} eventi trovati
+        </p>
 
         {/* Main content */}
         <div className="flex gap-6">

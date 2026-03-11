@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import ExpandableText from "@/components/ExpandableText";
+import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
 
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -391,9 +392,14 @@ const EventoPage = () => {
                   <img src={evento.immagine} alt={evento.titolo} className="w-full h-72 sm:h-96 object-cover" />
                 </div>
               ) : (
-                <div className="h-72 sm:h-96 bg-muted rounded-xl flex items-center justify-center">
-                  <Calendar className="w-16 h-16 text-muted-foreground/30" />
-                </div>
+                (() => {
+                  const style = getCategoryStyle(evento.categoria);
+                  return (
+                    <div className={`h-72 sm:h-96 rounded-xl flex items-center justify-center ${style.bg}`}>
+                      <span className="text-7xl">{style.emoji}</span>
+                    </div>
+                  );
+                })()
               )}
 
               {/* Title and meta */}
@@ -461,11 +467,11 @@ const EventoPage = () => {
               </div>
 
               {/* Description */}
-              {evento.descrizione && (() => {
-                // Extract URL from description for external events
-                const urlMatch = evento.descrizione.match(/🔗\s*(https?:\/\/\S+)/);
+              {(() => {
+                const autoDesc = getAutoDescription(evento);
+                const urlMatch = evento.descrizione?.match(/🔗\s*(https?:\/\/\S+)/);
                 const externalUrl = urlMatch?.[1];
-                const cleanDesc = evento.descrizione.replace(/\n*🔗\s*https?:\/\/\S+/, '').trim();
+                const cleanDesc = autoDesc.replace(/\n*🔗\s*https?:\/\/\S+/, '').trim();
                 
                 const hasRealDescription = cleanDesc.length > 80 && cleanDesc !== "Info e biglietti disponibili sul sito ufficiale.";
 
