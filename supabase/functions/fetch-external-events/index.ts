@@ -66,7 +66,10 @@ function mapTicketmasterEvent(ev: TicketmasterEvent) {
   let descrizione = ''
   if (ev.info) descrizione += ev.info
   if (ev.pleaseNote) descrizione += (descrizione ? '\n\n' : '') + ev.pleaseNote
-  if (ev.url) descrizione += (descrizione ? '\n\n' : '') + `🔗 Biglietti: ${ev.url}`
+  if (!descrizione.trim()) {
+    descrizione = 'Info e biglietti disponibili sul sito ufficiale.'
+  }
+  if (ev.url) descrizione += `\n\n🔗 ${ev.url}`
 
   return {
     external_id: `ticketmaster_${ev.id}`,
