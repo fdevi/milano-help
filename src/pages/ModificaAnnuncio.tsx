@@ -179,6 +179,8 @@ const ModificaAnnuncio = () => {
         mostra_telefono: mostraTelefono,
         immagini: allImages,
         stato: "in_moderazione",
+        condizione: isInVendita && condizione ? condizione : null,
+        tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
       };
 
       const { error } = await (supabase as any)
