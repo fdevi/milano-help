@@ -1,7 +1,7 @@
 import { useToast } from "@/hooks/use-toast";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,12 +17,22 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import AuthLayout from "@/components/AuthLayout";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -32,16 +42,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
 
 const DATE_FILTERS = [
   { label: "Tutti", value: "tutti" },
   { label: "Oggi", value: "oggi" },
   { label: "Weekend", value: "weekend" },
-  { label: "Settimana", value: "settimana" },
+  { label: "Prossimi 7 gg", value: "settimana" },
   { label: "Mese", value: "mese" },
 ];
-
-const CATEGORIES = ["Social", "Workshop", "Mercatino", "Sport", "Cultura", "Volontariato"];
 
 function formatEventDate(iso: string) {
   const d = new Date(iso);
