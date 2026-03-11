@@ -107,9 +107,14 @@ const EventCard = ({ event, isParticipating, onDelete }: {
         {event.immagine ? (
           <img src={event.immagine} alt={event.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/10 to-primary/5">
-            <CalendarDays className="w-12 h-12 text-primary/30" />
-          </div>
+          (() => {
+            const style = getCategoryStyle(event.categoria);
+            return (
+              <div className={`flex items-center justify-center h-full ${style.bg}`}>
+                <span className="text-5xl">{style.emoji}</span>
+              </div>
+            );
+          })()
         )}
         {/* Date badge */}
         <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center shadow-sm">
