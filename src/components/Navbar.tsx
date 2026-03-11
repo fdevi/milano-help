@@ -126,6 +126,7 @@ const Navbar = () => {
             ) : (
               <>
                 <Link to="/how-it-works" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Come Funziona</Link>
+                <Link to="/categoria/evento" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Eventi</Link>
                 <Link to="/login" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Accedi</Link>
                 <Link to="/registrati" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm font-semibold text-primary">Registrati</Link>
               </>
