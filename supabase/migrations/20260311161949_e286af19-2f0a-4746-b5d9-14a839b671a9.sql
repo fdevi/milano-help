@@ -1,0 +1,1 @@
+DELETE FROM eventi WHERE fonte_esterna = 'ticketmaster';
