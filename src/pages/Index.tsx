@@ -375,7 +375,7 @@ const Index = () => {
                     transition={{ delay: index * 0.05 }}
                   >
                     {cat.nome === 'evento' ? (
-                      <Link to="/eventi">
+                      <Link to="/categoria/evento">
                         <Card className="p-5 hover:shadow-lg transition-all group hover:-translate-y-1 cursor-pointer">
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform">
@@ -452,7 +452,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground/60 mb-4">
                 {(errorEventi as Error)?.message || "Errore di connessione"}
               </p>
-              <Link to="/eventi">
+              <Link to="/categoria/evento">
                 <Button variant="outline">Vai agli eventi</Button>
               </Link>
             </Card>
@@ -460,7 +460,7 @@ const Index = () => {
             <Card className="p-12 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-muted-foreground mb-2">Nessun evento in programma</p>
-              <Link to="/eventi">
+              <Link to="/categoria/evento">
                 <Button variant="link">Scopri tutti gli eventi</Button>
               </Link>
             </Card>
@@ -472,7 +472,7 @@ const Index = () => {
                 ))}
               </div>
               <div className="text-center mt-8">
-                <Link to="/eventi">
+                <Link to="/categoria/evento">
                   <Button variant="outline" size="lg" className="gap-2">
                     Vedi tutti gli eventi <ArrowRight className="w-4 h-4" />
                   </Button>
