@@ -291,8 +291,17 @@ const AnnuncioPage = () => {
                   <img
                     src={images[currentImage]}
                     alt={annuncio.titolo}
-                    className="w-full h-72 sm:h-96 object-cover"
+                    loading="lazy"
+                    className="w-full max-h-[300px] md:max-h-[500px] object-contain bg-muted cursor-pointer"
+                    onClick={() => setLightboxOpen(true)}
                   />
+                  {/* Zoom hint */}
+                  <button
+                    onClick={() => setLightboxOpen(true)}
+                    className="absolute top-3 right-3 bg-background/80 rounded-full p-2 hover:bg-background transition-colors"
+                  >
+                    <ZoomIn className="w-4 h-4 text-foreground" />
+                  </button>
                   {images.length > 1 && (
                     <>
                       <button
@@ -316,11 +325,15 @@ const AnnuncioPage = () => {
                           />
                         ))}
                       </div>
+                      {/* Photo counter badge */}
+                      <Badge className="absolute bottom-3 right-3 bg-background/80 text-foreground text-xs">
+                        {currentImage + 1}/{images.length}
+                      </Badge>
                     </>
                   )}
                 </div>
               ) : (
-                <div className="h-72 sm:h-96 bg-muted rounded-xl flex items-center justify-center">
+                <div className="h-48 sm:h-72 bg-muted rounded-xl flex items-center justify-center">
                   <CatIcon className="w-16 h-16 text-muted-foreground/30" />
                 </div>
               )}
