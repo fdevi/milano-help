@@ -45,6 +45,8 @@ const NuovoAnnuncio = () => {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [condizione, setCondizione] = useState("");
+  const [tipoOperazione, setTipoOperazione] = useState("");
 
   // Fetch user profile to get quartiere
   const { data: userProfile } = useQuery({
