@@ -76,6 +76,8 @@ const ModificaAnnuncio = () => {
       setMostraEmail(annuncio.mostra_email ?? false);
       setMostraTelefono(annuncio.mostra_telefono ?? false);
       setExistingImages((annuncio.immagini as string[])?.filter(Boolean) || []);
+      setCondizione((annuncio as any).condizione || "");
+      setTipoOperazione((annuncio as any).tipo_operazione || "");
       setLoaded(true);
     }
   }, [annuncio, loaded]);
