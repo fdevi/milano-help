@@ -621,6 +621,73 @@ export type Database = {
           },
         ]
       }
+      eventi_preferiti: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_preferiti_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eventi_promemoria: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          notificato: boolean
+          orario_promemoria: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          notificato?: boolean
+          orario_promemoria: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          notificato?: boolean
+          orario_promemoria?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_promemoria_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fermate_atm: {
         Row: {
           stop_id: string

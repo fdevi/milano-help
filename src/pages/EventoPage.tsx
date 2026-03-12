@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, KeyboardEvent } from "react";
-import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye, Link as LinkIcon, Mail, Share2, Check, HelpCircle, Reply, X, Smile } from "lucide-react";
+import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye, Link as LinkIcon, Mail, Share2, Check, HelpCircle, Reply, X, Smile, Bell, Star, Bookmark, ThumbsUp } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import EmojiPicker from "emoji-picker-react";
@@ -20,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import ExpandableText from "@/components/ExpandableText";
 import { getCategoryStyle, getAutoDescription, getMapsLink, getSearchLink } from "@/lib/eventCategoryUtils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import RicordameloSheet from "@/components/RicordameloSheet";
 
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +33,8 @@ const EventoPage = () => {
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showRicordamelo, setShowRicordamelo] = useState(false);
+  const [savingReminder, setSavingReminder] = useState(false);
   const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch evento
@@ -172,6 +176,53 @@ const EventoPage = () => {
     enabled: !!id,
   });
 
+  // Check favorite status
+  const { data: userFavorite } = useQuery({
+    queryKey: ["evento_preferito", id, user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("eventi_preferiti")
+        .select("id")
+        .eq("evento_id", id!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!id && !!user,
+  });
+
+  // Check interested status
+  const { data: userInteressato } = useQuery({
+    queryKey: ["evento_interessato", id, user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("eventi_promemoria")
+        .select("id")
+        .eq("evento_id", id!)
+        .eq("user_id", user!.id)
+        .eq("tipo", "interessato")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!id && !!user,
+  });
+
+  // Check ricordamelo status
+  const { data: userRicordamelo } = useQuery({
+    queryKey: ["evento_ricordamelo", id, user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("eventi_promemoria")
+        .select("id")
+        .eq("evento_id", id!)
+        .eq("user_id", user!.id)
+        .eq("tipo", "ricordamelo")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!id && !!user,
+  });
+
   // Incrementa visualizzazioni (una sola volta per sessione)
   useEffect(() => {
     if (!evento?.id) return;
@@ -238,7 +289,6 @@ const EventoPage = () => {
       const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
       const preview = testoTroncato.length > 50 ? testoTroncato.slice(0, 50) + "…" : testoTroncato;
 
-      // Notify evento author
       if (evento.organizzatore_id !== user.id) {
         await supabase.from("notifiche").insert({
           user_id: evento.organizzatore_id,
@@ -252,7 +302,6 @@ const EventoPage = () => {
         sendPushNotification(evento.organizzatore_id, "Nuovo commento sul tuo evento", `${nomeUtente} ha commentato il tuo evento "${evento.titolo}": "${preview}"`, `/evento/${evento.id}`);
       }
 
-      // Notify parent comment author (if replying)
       if (replyTo?.id) {
         const parentComment = commenti.find((c: any) => c.id === replyTo.id);
         if (parentComment && parentComment.user_id !== user.id) {
@@ -280,22 +329,18 @@ const EventoPage = () => {
     if (!user) { navigate("/login"); return; }
     if (!evento) return;
 
-    // Se l'utente ha già lo stesso stato, rimuovi
     if (userPartecipazione === stato) {
       await (supabase as any).from("eventi_partecipanti").delete().eq("evento_id", evento.id).eq("user_id", user.id);
     } else {
-      // Upsert: inserisci o aggiorna
       if (userPartecipazione) {
         await (supabase as any).from("eventi_partecipanti").update({ stato }).eq("evento_id", evento.id).eq("user_id", user.id);
       } else {
-        // Check max partecipanti
         if (stato === "confermato" && evento.max_partecipanti && partecipantiCounts && partecipantiCounts.confermati >= evento.max_partecipanti) {
           toast({ title: "Posti esauriti", description: "Il numero massimo di partecipanti è stato raggiunto.", variant: "destructive" });
           return;
         }
         await (supabase as any).from("eventi_partecipanti").insert({ evento_id: evento.id, user_id: user.id, stato });
 
-        // Notifica al creatore
         if (evento.organizzatore_id !== user.id && stato === "confermato") {
           const { data: profilo } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
           const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
@@ -314,6 +359,88 @@ const EventoPage = () => {
     }
     queryClient.invalidateQueries({ queryKey: ["evento_partecipazione", id] });
     queryClient.invalidateQueries({ queryKey: ["evento_partecipanti_counts", id] });
+  };
+
+  const toggleFavorite = async () => {
+    if (!user) { navigate("/login"); return; }
+    if (!evento) return;
+
+    if (userFavorite) {
+      await (supabase as any).from("eventi_preferiti").delete().eq("evento_id", evento.id).eq("user_id", user.id);
+      toast({ title: "Rimosso dai preferiti" });
+    } else {
+      await (supabase as any).from("eventi_preferiti").insert({ evento_id: evento.id, user_id: user.id });
+      toast({ title: "Aggiunto ai preferiti ⭐" });
+    }
+    queryClient.invalidateQueries({ queryKey: ["evento_preferito", id] });
+  };
+
+  const toggleInteressato = async () => {
+    if (!user) { navigate("/login"); return; }
+    if (!evento) return;
+
+    if (userInteressato) {
+      await (supabase as any).from("eventi_promemoria").delete().eq("evento_id", evento.id).eq("user_id", user.id).eq("tipo", "interessato");
+      toast({ title: "Interesse rimosso" });
+    } else {
+      // Set reminder to 24h before event
+      const eventDate = new Date(evento.data);
+      const reminderTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
+      const now = new Date();
+      if (reminderTime <= now) {
+        // Event is less than 24h away, set reminder to 1h before
+        const fallback = new Date(eventDate.getTime() - 60 * 60 * 1000);
+        if (fallback <= now) {
+          toast({ title: "Evento troppo vicino", description: "L'evento sta per iniziare, non è possibile impostare un promemoria.", variant: "destructive" });
+          return;
+        }
+        await (supabase as any).from("eventi_promemoria").insert({
+          evento_id: evento.id, user_id: user.id, tipo: "interessato",
+          orario_promemoria: fallback.toISOString(),
+        });
+      } else {
+        await (supabase as any).from("eventi_promemoria").insert({
+          evento_id: evento.id, user_id: user.id, tipo: "interessato",
+          orario_promemoria: reminderTime.toISOString(),
+        });
+      }
+      toast({ title: "Sei interessato! ⭐", description: "Riceverai una notifica 24h prima dell'evento." });
+    }
+    queryClient.invalidateQueries({ queryKey: ["evento_interessato", id] });
+  };
+
+  const handleRicordamelo = async (minutesBefore: number) => {
+    if (!user || !evento) return;
+    setSavingReminder(true);
+
+    const eventDate = new Date(evento.data);
+    const reminderTime = new Date(eventDate.getTime() - minutesBefore * 60 * 1000);
+    const now = new Date();
+
+    if (reminderTime <= now) {
+      toast({ title: "Tempo già trascorso", description: "Il promemoria selezionato è nel passato.", variant: "destructive" });
+      setSavingReminder(false);
+      return;
+    }
+
+    // Upsert: delete existing ricordamelo and insert new
+    await (supabase as any).from("eventi_promemoria").delete().eq("evento_id", evento.id).eq("user_id", user.id).eq("tipo", "ricordamelo");
+    await (supabase as any).from("eventi_promemoria").insert({
+      evento_id: evento.id, user_id: user.id, tipo: "ricordamelo",
+      orario_promemoria: reminderTime.toISOString(),
+    });
+
+    setSavingReminder(false);
+    setShowRicordamelo(false);
+    toast({ title: "Promemoria impostato! 🔔", description: `Riceverai una notifica ${minutesBefore >= 1440 ? `${minutesBefore / 1440} giorno/i` : minutesBefore >= 60 ? `${minutesBefore / 60} ora/e` : `${minutesBefore} minuti`} prima.` });
+    queryClient.invalidateQueries({ queryKey: ["evento_ricordamelo", id] });
+  };
+
+  const removeRicordamelo = async () => {
+    if (!user || !evento) return;
+    await (supabase as any).from("eventi_promemoria").delete().eq("evento_id", evento.id).eq("user_id", user.id).eq("tipo", "ricordamelo");
+    toast({ title: "Promemoria rimosso" });
+    queryClient.invalidateQueries({ queryKey: ["evento_ricordamelo", id] });
   };
 
   const handleShare = (type: string) => {
@@ -449,28 +576,103 @@ const EventoPage = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4 flex-wrap">
-                  <button onClick={toggleLike} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <Heart className={`w-5 h-5 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
-                    {likeCount} Mi piace
-                  </button>
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <MessageCircle className="w-5 h-5" /> {commenti.length} Commenti
-                  </span>
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Eye className="w-5 h-5" /> {evento.visualizzazioni || 0} Visualizzazioni
-                  </span>
-                </div>
+                {/* === ICON ACTION BAR === */}
+                <TooltipProvider delayDuration={200}>
+                  <div className="flex items-center gap-1 py-3 border-y border-border my-4">
+                    {/* Like */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button onClick={toggleLike} className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors hover:bg-muted ${userLiked ? "text-destructive" : "text-muted-foreground"}`}>
+                          <Heart className={`w-5 h-5 ${userLiked ? "fill-current" : ""}`} />
+                          <span className="text-[10px] font-medium">{likeCount || ""}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Mi piace</TooltipContent>
+                    </Tooltip>
 
-                {/* Partecipanti counter */}
-                <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Check className="w-4 h-4 text-emerald-500" />
-                    {evento.max_partecipanti ? `${confermati}/${evento.max_partecipanti}` : confermati} confermati
+                    {/* Parteciperò */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handlePartecipazione("confermato")}
+                          disabled={maxReached && userPartecipazione !== "confermato"}
+                          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors hover:bg-muted ${userPartecipazione === "confermato" ? "text-emerald-500" : "text-muted-foreground"} disabled:opacity-40`}
+                        >
+                          <ThumbsUp className={`w-5 h-5 ${userPartecipazione === "confermato" ? "fill-current" : ""}`} />
+                          <span className="text-[10px] font-medium">{confermati || ""}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{maxReached && userPartecipazione !== "confermato" ? "Posti esauriti" : "Parteciperò"}</TooltipContent>
+                    </Tooltip>
+
+                    {/* Forse */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handlePartecipazione("forse")}
+                          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors hover:bg-muted ${userPartecipazione === "forse" ? "text-amber-500" : "text-muted-foreground"}`}
+                        >
+                          <HelpCircle className={`w-5 h-5 ${userPartecipazione === "forse" ? "fill-current" : ""}`} />
+                          <span className="text-[10px] font-medium">{forseCnt || ""}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Forse</TooltipContent>
+                    </Tooltip>
+
+                    {/* Ricordamelo */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => {
+                            if (!user) { navigate("/login"); return; }
+                            if (userRicordamelo) { removeRicordamelo(); } else { setShowRicordamelo(true); }
+                          }}
+                          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors hover:bg-muted ${userRicordamelo ? "text-primary" : "text-muted-foreground"}`}
+                        >
+                          <Bell className={`w-5 h-5 ${userRicordamelo ? "fill-current" : ""}`} />
+                          <span className="text-[10px] font-medium">{userRicordamelo ? "✓" : ""}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{userRicordamelo ? "Rimuovi promemoria" : "Ricordamelo"}</TooltipContent>
+                    </Tooltip>
+
+                    {/* Sono interessato */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={toggleInteressato}
+                          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors hover:bg-muted ${userInteressato ? "text-yellow-500" : "text-muted-foreground"}`}
+                        >
+                          <Star className={`w-5 h-5 ${userInteressato ? "fill-current" : ""}`} />
+                          <span className="text-[10px] font-medium">{userInteressato ? "✓" : ""}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{userInteressato ? "Non più interessato" : "Sono interessato"}</TooltipContent>
+                    </Tooltip>
+
+                    {/* Preferiti */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={toggleFavorite}
+                          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors hover:bg-muted ${userFavorite ? "text-primary" : "text-muted-foreground"}`}
+                        >
+                          <Bookmark className={`w-5 h-5 ${userFavorite ? "fill-current" : ""}`} />
+                          <span className="text-[10px] font-medium">{userFavorite ? "✓" : ""}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{userFavorite ? "Rimuovi dai preferiti" : "Salva nei preferiti"}</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <MessageCircle className="w-4 h-4" /> {commenti.length} Commenti
                   </span>
-                  <span className="flex items-center gap-1">
-                    <HelpCircle className="w-4 h-4 text-amber-500" />
-                    {forseCnt} forse
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="w-4 h-4" /> {evento.visualizzazioni || 0} Visualizzazioni
                   </span>
                 </div>
               </div>
@@ -565,7 +767,6 @@ const EventoPage = () => {
                           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          {/* Reply preview (WhatsApp style) */}
                           {parentComment && (
                             <div className="bg-muted/60 rounded-lg px-3 py-1.5 mb-1 text-xs border-l-3 border-primary/50">
                               <span className="font-semibold text-primary">{parentNome}</span>
@@ -659,48 +860,6 @@ const EventoPage = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Participation */}
-              <div className="bg-card border rounded-xl p-5 space-y-3">
-                <h3 className="font-heading font-bold text-foreground mb-2">Partecipa</h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant={userPartecipazione === "confermato" ? "default" : "outline"}
-                    className="flex-1"
-                    onClick={() => handlePartecipazione("confermato")}
-                    disabled={maxReached && userPartecipazione !== "confermato"}
-                  >
-                    <Check className="w-4 h-4 mr-1.5" />
-                    Parteciperò
-                  </Button>
-                  <Button
-                    variant={userPartecipazione === "forse" ? "default" : "outline"}
-                    className="flex-1"
-                    onClick={() => handlePartecipazione("forse")}
-                  >
-                    <HelpCircle className="w-4 h-4 mr-1.5" />
-                    Forse
-                  </Button>
-                </div>
-                {maxReached && userPartecipazione !== "confermato" && (
-                  <p className="text-xs text-destructive text-center">Posti esauriti</p>
-                )}
-                <div className="text-sm text-muted-foreground text-center">
-                  ✅ {evento.max_partecipanti ? `${confermati}/${evento.max_partecipanti}` : confermati} confermati · ❓ {forseCnt} forse
-                </div>
-              </div>
-
-              {/* Like button */}
-              <div className="bg-card border rounded-xl p-5">
-                <Button
-                  variant={userLiked ? "default" : "outline"}
-                  className="w-full"
-                  onClick={toggleLike}
-                >
-                  <Heart className={`w-4 h-4 mr-2 ${userLiked ? "fill-current" : ""}`} />
-                  Mi piace {likeCount > 0 ? `(${likeCount})` : ""}
-                </Button>
-              </div>
-
               {/* Share */}
               <div className="bg-card border rounded-xl p-5">
                 <h3 className="font-heading font-bold text-foreground mb-3 flex items-center gap-2">
@@ -793,6 +952,14 @@ const EventoPage = () => {
           </motion.div>
         ) : null}
       </div>
+
+      {/* Ricordamelo bottom sheet */}
+      <RicordameloSheet
+        open={showRicordamelo}
+        onOpenChange={setShowRicordamelo}
+        onSelect={handleRicordamelo}
+        loading={savingReminder}
+      />
 
       <Footer />
     </div>
