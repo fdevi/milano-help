@@ -440,7 +440,7 @@ const Home = () => {
                           <Calendar className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <Link to={`/eventi`} className="hover:underline">
+                          <Link to={`/evento/${evento.id}`} className="hover:underline">
                             <h4 className="font-medium text-foreground line-clamp-2">{evento.titolo}</h4>
                           </Link>
                           <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} className="mb-1" />
