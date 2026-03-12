@@ -291,7 +291,8 @@ const Home = () => {
             ) : (
               <div className="space-y-4">
                 {feedData.map((item: any) => (
-                  <Card key={`${item.tipo}-${item.id}`} className="p-4 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = item.link}>
+                  <Link key={`${item.tipo}-${item.id}`} to={item.link}>
+                  <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer">
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.tipo === 'evento' ? 'bg-secondary/10' : 'bg-primary/10'}`}>
                         {item.tipo === 'evento' ? <Calendar className="w-5 h-5 text-secondary" /> : <MessageCircle className="w-5 h-5 text-primary" />}
