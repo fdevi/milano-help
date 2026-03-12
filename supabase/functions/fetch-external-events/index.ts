@@ -392,6 +392,8 @@ serve(async (req) => {
     // 4. AI enhancement for short descriptions
     const allNew = [...newTmEvents, ...newSgEvents]
     await enhanceBatch(allNew)
+
+    // 5. Insert in batches
     let tmInserted = 0, sgInserted = 0
     const batchSize = 20
 

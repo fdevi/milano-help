@@ -27,3 +27,7 @@ project_id = "oiljiebciwtjlrtqicty"
     verify_jwt = false
   [functions.send-event-reminders]
     verify_jwt = false
+  [functions.enhance-event-description]
+    verify_jwt = false
+  [functions.cleanup-eventi-terminati]
+    verify_jwt = false
