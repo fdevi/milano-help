@@ -17,6 +17,7 @@ const navItems = [
   { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci" },
   { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", badgeTipo: "moderazione" as const },
   { to: "/admin/eventi", icon: Calendar, label: "Eventi", badgeTipo: "eventi" as const },
+  { to: "/admin/importazioni", icon: Download, label: "Importazioni" },
   { to: "/admin/log", icon: ScrollText, label: "Log Attività" },
 ];
 
