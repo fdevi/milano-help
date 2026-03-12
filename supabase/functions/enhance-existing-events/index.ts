@@ -13,6 +13,13 @@ const BATCH_SIZE = 3;
 const BATCH_DELAY_MS = 2000;
 
 async function enhanceDescription(titolo: string, categoria: string | null, luogo: string, data: string, descrizione_originale: string | null): Promise<string | null> {
+  // Extract link from original description
+  const linkMatch = (descrizione_originale || "").match(/\n\n🔗\s*(https?:\/\/\S+)/);
+  const originalLink = linkMatch ? linkMatch[1] : null;
+
+  // Clean description (remove link part) for AI prompt
+  const cleanDesc = (descrizione_originale || "").replace(/\n\n🔗.*$/s, "").trim();
+
   let dataFormatted = data || "";
   try {
     if (data) {
@@ -23,9 +30,9 @@ async function enhanceDescription(titolo: string, categoria: string | null, luog
     }
   } catch { /* keep original */ }
 
-  const hasOriginal = descrizione_originale && descrizione_originale.trim().length > 10;
+  const hasOriginal = cleanDesc.length > 10;
   const prompt = hasOriginal
-    ? `Riscrivi e arricchisci questa descrizione di un evento per renderla più coinvolgente e informativa. Mantieni un tono amichevole e invitante.\n\nEvento: "${titolo}"\nCategoria: ${categoria || "Evento"}\nLuogo: ${luogo || "Milano"}\nData: ${dataFormatted}\nDescrizione originale: "${descrizione_originale}"\n\nScrivi 2-3 frasi coinvolgenti in italiano. Non usare hashtag. Non inventare dettagli non presenti. Non includere link.`
+    ? `Riscrivi e arricchisci questa descrizione di un evento per renderla più coinvolgente e informativa. Mantieni un tono amichevole e invitante.\n\nEvento: "${titolo}"\nCategoria: ${categoria || "Evento"}\nLuogo: ${luogo || "Milano"}\nData: ${dataFormatted}\nDescrizione originale: "${cleanDesc}"\n\nScrivi 2-3 frasi coinvolgenti in italiano. Non usare hashtag. Non inventare dettagli non presenti. Non includere link.`
     : `Scrivi una breve descrizione coinvolgente per questo evento, in italiano. Tono amichevole e invitante.\n\nEvento: "${titolo}"\nCategoria: ${categoria || "Evento"}\nLuogo: ${luogo || "Milano"}\nData: ${dataFormatted}\n\nScrivi 2-3 frasi coinvolgenti. Non usare hashtag. Non inventare dettagli specifici come orari o prezzi. Non includere link.`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -50,7 +57,13 @@ async function enhanceDescription(titolo: string, categoria: string | null, luog
 
   const result = await response.json();
   const text = result.choices?.[0]?.message?.content?.trim() || "";
-  return text.length >= 20 ? text : null;
+  if (text.length < 20) return null;
+
+  // Re-append original link if present
+  if (originalLink) {
+    return text + `\n\n🔗 ${originalLink}`;
+  }
+  return text;
 }
 
 serve(async (req) => {
@@ -59,7 +72,6 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Parse optional limit and offset from request body
     let limit = 10;
     let offset = 0;
     try {
@@ -68,7 +80,6 @@ serve(async (req) => {
       if (body.offset) offset = body.offset;
     } catch { /* no body, use defaults */ }
 
-    // Get events from external sources with pagination
     const { data: events, error } = await supabase
       .from("eventi")
       .select("id, titolo, categoria, luogo, data, descrizione")
@@ -106,7 +117,6 @@ serve(async (req) => {
         else if (r.status === "rejected") { failed++; console.error("Batch error:", r.reason); }
       }
 
-      // Delay between batches
       if (i + BATCH_SIZE < allEvents.length) {
         await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
       }
