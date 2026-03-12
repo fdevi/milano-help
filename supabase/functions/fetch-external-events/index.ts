@@ -412,7 +412,35 @@ serve(async (req) => {
 
     console.log(`✅ Inseriti TM: ${tmInserted}, SG: ${sgInserted}`)
 
-    // 5. Email
+    // 5b. Log importazione
+    const tmScartati = tmEvents.length - newTmEvents.length
+    const sgScartati = sgEvents.length - newSgEvents.length
+
+    const logEntries = []
+    if (tmEvents.length > 0 || tmInserted > 0) {
+      logEntries.push({
+        fonte: 'ticketmaster',
+        eventi_trovati: tmEvents.length,
+        eventi_inseriti: tmInserted,
+        eventi_scartati: tmScartati,
+        dettaglio: { filtrati_qualita: tmEvents.length - newTmEvents.length - (tmEvents.length - tmEvents.map(mapTicketmasterEvent).filter(Boolean).length), duplicati: newTmEvents.length > 0 ? 0 : 0 },
+      })
+    }
+    if (sgEvents.length > 0 || sgInserted > 0) {
+      logEntries.push({
+        fonte: 'seatgeek',
+        eventi_trovati: sgEvents.length,
+        eventi_inseriti: sgInserted,
+        eventi_scartati: sgScartati,
+        dettaglio: {},
+      })
+    }
+    if (logEntries.length > 0) {
+      const { error: logError } = await supabase.from('importazioni_log').insert(logEntries)
+      if (logError) console.error('⚠️ Log insert error:', logError)
+    }
+
+    // 6. Email
     await sendSummaryEmail(tmInserted, sgInserted)
 
     return new Response(JSON.stringify({
