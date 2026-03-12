@@ -742,7 +742,7 @@ const Profilo = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium line-clamp-2">{ev.titolo}</p>
+                            <Link to={`/evento/${ev.id}`} className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors">{ev.titolo}</Link>
                             <EventStatusBadge dataInizio={ev.data} dataFine={ev.fine} />
                           </div>
                           <p className="text-xs text-muted-foreground">
