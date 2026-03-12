@@ -9,8 +9,8 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const BATCH_SIZE = 5;
-const BATCH_DELAY_MS = 1500;
+const BATCH_SIZE = 3;
+const BATCH_DELAY_MS = 2000;
 
 async function enhanceDescription(titolo: string, categoria: string | null, luogo: string, data: string, descrizione_originale: string | null): Promise<string | null> {
   let dataFormatted = data || "";
@@ -59,27 +59,32 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get events with short descriptions from external sources
+    // Parse optional limit and offset from request body
+    let limit = 10;
+    let offset = 0;
+    try {
+      const body = await req.json();
+      if (body.limit) limit = body.limit;
+      if (body.offset) offset = body.offset;
+    } catch { /* no body, use defaults */ }
+
+    // Get events from external sources with pagination
     const { data: events, error } = await supabase
       .from("eventi")
       .select("id, titolo, categoria, luogo, data, descrizione")
       .not("fonte_esterna", "is", null)
-      .or("descrizione.is.null,descrizione.lt.100");
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    // Filter in JS for LENGTH < 100 since .lt compares lexicographically
-    const shortEvents = (events || []).filter(
-      (e: any) => !e.descrizione || e.descrizione.length < 100
-    );
-
-    console.log(`Found ${shortEvents.length} events to enhance`);
+    const allEvents = events || [];
+    console.log(`Processing ${allEvents.length} events (offset: ${offset}, limit: ${limit})`);
 
     let enhanced = 0;
     let failed = 0;
 
-    for (let i = 0; i < shortEvents.length; i += BATCH_SIZE) {
-      const batch = shortEvents.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < allEvents.length; i += BATCH_SIZE) {
+      const batch = allEvents.slice(i, i + BATCH_SIZE);
 
       const results = await Promise.allSettled(
         batch.map(async (ev: any) => {
@@ -102,12 +107,12 @@ serve(async (req) => {
       }
 
       // Delay between batches
-      if (i + BATCH_SIZE < shortEvents.length) {
+      if (i + BATCH_SIZE < allEvents.length) {
         await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
       }
     }
 
-    const summary = { total: shortEvents.length, enhanced, failed };
+    const summary = { total: allEvents.length, enhanced, failed };
     console.log("Enhancement complete:", summary);
 
     return new Response(JSON.stringify(summary), {
