@@ -22,7 +22,7 @@ const corsHeaders = {
 
 function hasQuality(ev: { immagine: string | null; descrizione: string | null }): boolean {
   if (!ev.immagine) return false
-  if (!ev.descrizione || ev.descrizione.length < MIN_DESCRIPTION_LENGTH) return false
+  // Description can be short - AI will enhance it later
   return true
 }
 
