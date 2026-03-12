@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Search, Heart, LogOut } from "lucide-react";
+import { Search, LogOut } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
