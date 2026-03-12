@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar, Mail, Megaphone
+  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar, Mail, Megaphone, Download
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
