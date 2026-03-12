@@ -334,6 +334,7 @@ const Home = () => {
                       </div>
                     </div>
                   </Card>
+                  </Link>
                 ))}
               </div>
             )}
