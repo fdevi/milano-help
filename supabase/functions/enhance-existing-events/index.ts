@@ -59,16 +59,26 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get ALL events from external sources
+    // Parse optional limit and offset from request body
+    let limit = 10;
+    let offset = 0;
+    try {
+      const body = await req.json();
+      if (body.limit) limit = body.limit;
+      if (body.offset) offset = body.offset;
+    } catch { /* no body, use defaults */ }
+
+    // Get events from external sources with pagination
     const { data: events, error } = await supabase
       .from("eventi")
       .select("id, titolo, categoria, luogo, data, descrizione")
-      .not("fonte_esterna", "is", null);
+      .not("fonte_esterna", "is", null)
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
     const allEvents = events || [];
-    console.log(`Found ${allEvents.length} external events to enhance`);
+    console.log(`Processing ${allEvents.length} events (offset: ${offset}, limit: ${limit})`);
 
     let enhanced = 0;
     let failed = 0;
