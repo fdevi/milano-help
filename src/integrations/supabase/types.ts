@@ -866,6 +866,36 @@ export type Database = {
           },
         ]
       }
+      importazioni_log: {
+        Row: {
+          created_at: string
+          dettaglio: Json | null
+          eventi_inseriti: number
+          eventi_scartati: number
+          eventi_trovati: number
+          fonte: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          dettaglio?: Json | null
+          eventi_inseriti?: number
+          eventi_scartati?: number
+          eventi_trovati?: number
+          fonte: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          dettaglio?: Json | null
+          eventi_inseriti?: number
+          eventi_scartati?: number
+          eventi_trovati?: number
+          fonte?: string
+          id?: string
+        }
+        Relationships: []
+      }
       impostazioni: {
         Row: {
           chiave: string
