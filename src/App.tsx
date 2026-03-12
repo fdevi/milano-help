@@ -44,6 +44,7 @@ import Eventi from "./pages/Eventi";
 import EventoPage from "./pages/EventoPage";
 import AdminEventi from "./pages/admin/AdminEventi";
 import AdminAnnunci from "./pages/admin/AdminAnnunci";
+import AdminImportazioni from "./pages/admin/AdminImportazioni";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
