@@ -172,7 +172,7 @@ const Home = () => {
             id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
             data: e.data, fine: e.fine, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
             partecipanti: e.partecipanti, created_at: e.created_at,
-            autore, link: `/eventi`
+            autore, link: `/evento/${e.id}`
           };
         }) || [])
       ];
