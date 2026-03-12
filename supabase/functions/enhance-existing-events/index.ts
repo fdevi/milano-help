@@ -9,8 +9,8 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const BATCH_SIZE = 5;
-const BATCH_DELAY_MS = 1500;
+const BATCH_SIZE = 3;
+const BATCH_DELAY_MS = 2000;
 
 async function enhanceDescription(titolo: string, categoria: string | null, luogo: string, data: string, descrizione_originale: string | null): Promise<string | null> {
   let dataFormatted = data || "";
