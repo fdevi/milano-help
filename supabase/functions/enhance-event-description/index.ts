@@ -21,6 +21,13 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY non configurata");
 
+    // Extract link from original description before cleaning
+    const linkMatch = (descrizione_originale || "").match(/\n\n🔗\s*(https?:\/\/\S+)/);
+    const originalLink = linkMatch ? linkMatch[1] : null;
+
+    // Clean description (remove link part) for AI processing
+    const cleanDesc = (descrizione_originale || "").replace(/\n\n🔗.*$/s, "").trim();
+
     // Format date nicely
     let dataFormatted = data || "";
     try {
@@ -36,7 +43,7 @@ serve(async (req) => {
       }
     } catch { /* keep original */ }
 
-    const hasOriginal = descrizione_originale && descrizione_originale.trim().length > 10;
+    const hasOriginal = cleanDesc.length > 10;
 
     const prompt = hasOriginal
       ? `Riscrivi e arricchisci questa descrizione di un evento per renderla più coinvolgente e informativa. Mantieni un tono amichevole e invitante.
@@ -45,7 +52,7 @@ Evento: "${titolo}"
 Categoria: ${categoria || "Evento"}
 Luogo: ${luogo || "Milano"}
 Data: ${dataFormatted}
-Descrizione originale: "${descrizione_originale}"
+Descrizione originale: "${cleanDesc}"
 
 Scrivi 2-3 frasi coinvolgenti in italiano. Non usare hashtag. Non inventare dettagli non presenti. Non includere link.`
       : `Scrivi una breve descrizione coinvolgente per questo evento, in italiano. Tono amichevole e invitante.
@@ -100,13 +107,18 @@ Scrivi 2-3 frasi coinvolgenti. Non usare hashtag. Non inventare dettagli specifi
     }
 
     const result = await response.json();
-    const generatedText = result.choices?.[0]?.message?.content?.trim() || "";
+    let generatedText = result.choices?.[0]?.message?.content?.trim() || "";
 
     if (!generatedText || generatedText.length < 20) {
       return new Response(JSON.stringify({ error: "Descrizione generata troppo corta", descrizione: null }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Re-append original link if present
+    if (originalLink) {
+      generatedText += `\n\n🔗 ${originalLink}`;
     }
 
     return new Response(JSON.stringify({ descrizione: generatedText }), {
