@@ -73,8 +73,8 @@ serve(async (req) => {
     let enhanced = 0;
     let failed = 0;
 
-    for (let i = 0; i < shortEvents.length; i += BATCH_SIZE) {
-      const batch = shortEvents.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < allEvents.length; i += BATCH_SIZE) {
+      const batch = allEvents.slice(i, i + BATCH_SIZE);
 
       const results = await Promise.allSettled(
         batch.map(async (ev: any) => {
@@ -97,12 +97,12 @@ serve(async (req) => {
       }
 
       // Delay between batches
-      if (i + BATCH_SIZE < shortEvents.length) {
+      if (i + BATCH_SIZE < allEvents.length) {
         await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
       }
     }
 
-    const summary = { total: shortEvents.length, enhanced, failed };
+    const summary = { total: allEvents.length, enhanced, failed };
     console.log("Enhancement complete:", summary);
 
     return new Response(JSON.stringify(summary), {
