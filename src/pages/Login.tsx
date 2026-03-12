@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -103,8 +104,8 @@ const Login = () => {
           className="w-full max-w-md"
         >
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-6 h-6 text-primary-foreground" />
+            <div className="mx-auto mb-4 flex justify-center">
+              <Logo variant="symbol" size="lg" />
             </div>
             <h1 className="font-heading font-extrabold text-2xl text-foreground mb-1">Bentornato!</h1>
             <p className="text-sm text-muted-foreground">Accedi al tuo account Milano Help</p>
