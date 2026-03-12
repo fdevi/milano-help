@@ -7,9 +7,11 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!
 const ADMIN_USER_ID = '51aeacbc-1497-440c-8edb-23845ce077d3'
 const NOTIFY_EMAIL = 'info@milanohelp.it'
 const MIN_DESCRIPTION_LENGTH = 50
+const AI_ENHANCE_THRESHOLD = 100
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
