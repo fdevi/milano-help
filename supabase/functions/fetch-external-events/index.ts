@@ -389,8 +389,9 @@ serve(async (req) => {
 
     console.log(`🆕 TM: ${newTmEvents.length}, SG: ${newSgEvents.length} nuovi eventi di qualità`)
 
-    // 4. Insert in batches
+    // 4. AI enhancement for short descriptions
     const allNew = [...newTmEvents, ...newSgEvents]
+    await enhanceBatch(allNew)
     let tmInserted = 0, sgInserted = 0
     const batchSize = 20
 
