@@ -7,9 +7,11 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!
 const ADMIN_USER_ID = '51aeacbc-1497-440c-8edb-23845ce077d3'
 const NOTIFY_EMAIL = 'info@milanohelp.it'
 const MIN_DESCRIPTION_LENGTH = 50
+const AI_ENHANCE_THRESHOLD = 100
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +22,7 @@ const corsHeaders = {
 
 function hasQuality(ev: { immagine: string | null; descrizione: string | null }): boolean {
   if (!ev.immagine) return false
-  if (!ev.descrizione || ev.descrizione.length < MIN_DESCRIPTION_LENGTH) return false
+  // Description can be short - AI will enhance it later
   return true
 }
 
@@ -246,6 +248,82 @@ async function fetchAllSeatGeekEvents(): Promise<SeatGeekEvent[]> {
   return all
 }
 
+// ─── AI Enhancement ───
+
+async function enhanceDescription(ev: { titolo: string; categoria: string; luogo: string; data: string; descrizione: string }): Promise<string> {
+  // Strip links from description for length check
+  const cleanDesc = ev.descrizione.replace(/\n\n🔗.*$/s, '').trim()
+  if (cleanDesc.length >= AI_ENHANCE_THRESHOLD) return ev.descrizione
+
+  try {
+    const prompt = cleanDesc.length > 10
+      ? `Riscrivi e arricchisci questa descrizione di un evento. Tono amichevole e invitante, in italiano, 2-3 frasi. No hashtag, no link, no dettagli inventati.\n\nEvento: "${ev.titolo}"\nCategoria: ${ev.categoria}\nLuogo: ${ev.luogo}\nDescrizione originale: "${cleanDesc}"`
+      : `Scrivi una breve descrizione coinvolgente per questo evento, in italiano. 2-3 frasi. No hashtag, no link, no dettagli inventati.\n\nEvento: "${ev.titolo}"\nCategoria: ${ev.categoria}\nLuogo: ${ev.luogo}`
+
+    const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-lite',
+        messages: [
+          { role: 'system', content: 'Sei un copywriter per eventi culturali a Milano. Scrivi descrizioni brevi e coinvolgenti in italiano. Massimo 300 caratteri.' },
+          { role: 'user', content: prompt },
+        ],
+      }),
+    })
+
+    if (!res.ok) {
+      console.warn(`⚠️ AI enhancement failed (${res.status}) for: ${ev.titolo}`)
+      return ev.descrizione
+    }
+
+    const data = await res.json()
+    const generated = data.choices?.[0]?.message?.content?.trim()
+    if (generated && generated.length >= 20) {
+      // Re-append link if present
+      const linkMatch = ev.descrizione.match(/\n\n🔗.*$/)
+      return generated + (linkMatch ? linkMatch[0] : '')
+    }
+  } catch (err) {
+    console.warn(`⚠️ AI error for "${ev.titolo}":`, err)
+  }
+
+  return ev.descrizione
+}
+
+async function enhanceBatch(events: Array<any>): Promise<void> {
+  const toEnhance = events.filter(ev => {
+    const clean = (ev.descrizione || '').replace(/\n\n🔗.*$/s, '').trim()
+    return clean.length < AI_ENHANCE_THRESHOLD
+  })
+
+  if (toEnhance.length === 0) return
+  console.log(`🤖 Arricchimento AI per ${toEnhance.length} eventi con descrizione corta...`)
+
+  // Process in small batches to avoid rate limits
+  const batchSize = 5
+  for (let i = 0; i < toEnhance.length; i += batchSize) {
+    const batch = toEnhance.slice(i, i + batchSize)
+    const enhanced = await Promise.all(
+      batch.map(ev => enhanceDescription({
+        titolo: ev.titolo,
+        categoria: ev.categoria || 'Evento',
+        luogo: ev.luogo,
+        data: ev.data,
+        descrizione: ev.descrizione || '',
+      }))
+    )
+    batch.forEach((ev, idx) => { ev.descrizione = enhanced[idx] })
+
+    // Small delay between batches to avoid rate limiting
+    if (i + batchSize < toEnhance.length) {
+      await new Promise(r => setTimeout(r, 1000))
+    }
+  }
+
+  console.log(`✅ AI enhancement completato per ${toEnhance.length} eventi`)
+}
+
 // ─── Email riepilogo ───
 
 async function sendSummaryEmail(tmCount: number, sgCount: number) {
@@ -311,8 +389,11 @@ serve(async (req) => {
 
     console.log(`🆕 TM: ${newTmEvents.length}, SG: ${newSgEvents.length} nuovi eventi di qualità`)
 
-    // 4. Insert in batches
+    // 4. AI enhancement for short descriptions
     const allNew = [...newTmEvents, ...newSgEvents]
+    await enhanceBatch(allNew)
+
+    // 5. Insert in batches
     let tmInserted = 0, sgInserted = 0
     const batchSize = 20
 
