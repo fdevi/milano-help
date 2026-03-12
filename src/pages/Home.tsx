@@ -172,7 +172,7 @@ const Home = () => {
             id: e.id, tipo: 'evento' as const, titolo: e.titolo, descrizione: e.descrizione,
             data: e.data, fine: e.fine, luogo: e.luogo, gratuito: e.gratuito, prezzo: e.prezzo,
             partecipanti: e.partecipanti, created_at: e.created_at,
-            autore, link: `/eventi`
+            autore, link: `/evento/${e.id}`
           };
         }) || [])
       ];
@@ -291,7 +291,8 @@ const Home = () => {
             ) : (
               <div className="space-y-4">
                 {feedData.map((item: any) => (
-                  <Card key={`${item.tipo}-${item.id}`} className="p-4 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = item.link}>
+                  <Link key={`${item.tipo}-${item.id}`} to={item.link}>
+                  <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer">
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.tipo === 'evento' ? 'bg-secondary/10' : 'bg-primary/10'}`}>
                         {item.tipo === 'evento' ? <Calendar className="w-5 h-5 text-secondary" /> : <MessageCircle className="w-5 h-5 text-primary" />}
@@ -333,6 +334,7 @@ const Home = () => {
                       </div>
                     </div>
                   </Card>
+                  </Link>
                 ))}
               </div>
             )}
@@ -438,7 +440,7 @@ const Home = () => {
                           <Calendar className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <Link to={`/eventi`} className="hover:underline">
+                          <Link to={`/evento/${evento.id}`} className="hover:underline">
                             <h4 className="font-medium text-foreground line-clamp-2">{evento.titolo}</h4>
                           </Link>
                           <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} className="mb-1" />
