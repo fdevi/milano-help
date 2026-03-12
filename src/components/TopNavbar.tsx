@@ -41,11 +41,9 @@ const TopNavbar = () => {
     <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card/95 backdrop-blur-md border-b border-border">
       <div className="h-full flex items-center justify-between px-4 max-w-[1600px] mx-auto">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-            <Heart className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-heading font-extrabold text-lg text-foreground hidden sm:inline">
-            MILANO <span className="text-gradient-primary">HELP</span>
+          <Logo variant="symbol" size="sm" />
+          <span className="hidden sm:inline">
+            <Logo variant="text" size={12} />
           </span>
         </Link>
 
