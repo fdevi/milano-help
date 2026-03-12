@@ -59,21 +59,16 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get events with short descriptions from external sources
+    // Get ALL events from external sources
     const { data: events, error } = await supabase
       .from("eventi")
       .select("id, titolo, categoria, luogo, data, descrizione")
-      .not("fonte_esterna", "is", null)
-      .or("descrizione.is.null,descrizione.lt.100");
+      .not("fonte_esterna", "is", null);
 
     if (error) throw error;
 
-    // Filter in JS for LENGTH < 100 since .lt compares lexicographically
-    const shortEvents = (events || []).filter(
-      (e: any) => !e.descrizione || e.descrizione.length < 100
-    );
-
-    console.log(`Found ${shortEvents.length} events to enhance`);
+    const allEvents = events || [];
+    console.log(`Found ${allEvents.length} external events to enhance`);
 
     let enhanced = 0;
     let failed = 0;
