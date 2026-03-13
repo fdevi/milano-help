@@ -242,6 +242,8 @@ const Fermate: React.FC = () => {
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { latitude, longitude, requestPosition, loading: geoLoading } = useGeolocation();
+  const { isFavorite, toggle: toggleFavorite } = useFermatePreferite();
+  const { toast } = useToast();
 
   // Geocoder search via Mapbox
   const handleSearchChange = useCallback((value: string) => {
