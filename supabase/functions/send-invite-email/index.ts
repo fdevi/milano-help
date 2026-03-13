@@ -37,6 +37,9 @@ Deno.serve(async (req) => {
 
     const html = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="text-align:center; margin-bottom:24px;">
+    <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+  </div>
   <h2 style="color: #10b981;">Unisciti a Milano Help</h2>
   <p>Ciao! <strong>${inviterName}</strong> ti invita a far parte di Milano Help, la community del tuo quartiere.</p>
   <p>Su Milano Help puoi:</p>

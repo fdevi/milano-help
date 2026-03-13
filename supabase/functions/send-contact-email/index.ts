@@ -49,11 +49,17 @@ Deno.serve(async (req) => {
         subject: isInvito ? oggetto : `[Milano Help] ${oggetto}`,
         html: isInvito
           ? `
+          <div style="text-align:center; margin-bottom:24px;">
+            <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+          </div>
           <h2>Invito su Milano Help</h2>
           <p>${messaggio.replace(/\n/g, '<br/>')}</p>
           <p><small>Questo invito ti è stato inviato da ${nome} tramite Milano Help.</small></p>
         `
           : `
+          <div style="text-align:center; margin-bottom:24px;">
+            <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+          </div>
           <h2>Nuovo messaggio dal form "Contattaci"</h2>
           <p><strong>Nome:</strong> ${nome}</p>
           <p><strong>Email:</strong> ${email}</p>
