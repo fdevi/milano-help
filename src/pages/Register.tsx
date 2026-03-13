@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Heart,
   User,
   MapPin,
   Shield,
@@ -34,6 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import Navbar from "@/components/Navbar";
+import Logo from "@/components/Logo";
 import { useFotoProfilo } from "@/hooks/useFotoProfilo";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useReverseGeocode } from "@/hooks/useReverseGeocode";
