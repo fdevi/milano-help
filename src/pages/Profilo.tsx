@@ -503,17 +503,14 @@ const Profilo = () => {
                     {preferitiFermate.map((pref) => (
                       <li key={pref.id}>
                         <Link
-                          to={`/fermate?fermata=${pref.fermataId}`}
+                          to={`/fermate?fermata=${pref.stop_id}`}
                           className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-sm transition-all"
                         >
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <Train className="w-5 h-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">{pref.fermata?.nome ?? pref.fermataId}</p>
-                            {pref.fermata?.linee && pref.fermata.linee.length > 0 && (
-                              <p className="text-xs text-muted-foreground">Linee: {pref.fermata.linee.join(", ")}</p>
-                            )}
+                            <p className="text-sm font-medium">{pref.stop_name ?? pref.stop_id}</p>
                           </div>
                           <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                         </Link>
