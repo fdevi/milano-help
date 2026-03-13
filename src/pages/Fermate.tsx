@@ -7,6 +7,8 @@ import { ChevronDown, ArrowLeft, MapPin, LocateFixed, Heart, Search, Star } from
 import { Link } from 'react-router-dom';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
+import { useFermatePreferite } from '@/hooks/useFermatePreferite';
+import { useToast } from '@/hooks/use-toast';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
