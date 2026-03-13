@@ -10,9 +10,9 @@ interface LogoProps {
 }
 
 const sizeMap: Record<LogoSize, number> = {
-  sm: 32,
-  md: 48,
-  lg: 72,
+  sm: 48,   // 48px per footer
+  md: 64,   // 64px per navbar
+  lg: 96,   // 96px per login
 };
 
 const variantSrc: Record<LogoVariant, string> = {

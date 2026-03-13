@@ -41,7 +41,7 @@ const TopNavbar = () => {
     <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-card/95 backdrop-blur-md border-b border-border">
       <div className="h-full flex items-center justify-between px-4 max-w-[1600px] mx-auto">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <Logo variant="horizontal" size={36} />
+          <Logo variant="horizontal" size="md" />
         </Link>
 
         <div className="flex-1 max-w-md mx-4">
