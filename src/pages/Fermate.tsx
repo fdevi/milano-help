@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Map, { Marker, NavigationControl, Source, Layer } from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { ChevronDown, ArrowLeft, MapPin, LocateFixed, Heart, Search } from 'lucide-react';
+import { ChevronDown, ArrowLeft, MapPin, LocateFixed, Heart, Search, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
