@@ -85,6 +85,9 @@ serve(async (req) => {
         </head>
         <body>
           <div class="container">
+            <div style="text-align:center; margin-bottom:24px;">
+              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+            </div>
             <h2>Richiesta di reset password</h2>
             <p>Hai richiesto di reimpostare la password per il tuo account Milano Help.</p>
             <p>Clicca sul pulsante qui sotto per scegliere una nuova password:</p>
