@@ -23,8 +23,8 @@ const wideSizeMap: Record<LogoSize, number> = {
 
 const variantSrc: Record<LogoVariant, string> = {
   symbol: "/logo/logo.svg",
-  full: "/logo/logo-con-scritta.svg",
-  horizontal: "/logo/logo-orizzontale.svg",
+  full: "/logo/logo-email-header.png",
+  horizontal: "/logo/logo-email-header.png",
   text: "/logo/scritta-only.svg",
 };
 
