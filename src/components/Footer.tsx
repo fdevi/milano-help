@@ -6,10 +6,11 @@ const Footer = () => {
     <footer className="bg-gray-900 text-gray-300 border-t border-gray-800">
       <div className="container mx-auto max-w-6xl px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Logo */}
-          <a href="/" className="flex items-center gap-2 mb-4">
-            <Logo variant="horizontal" size="sm" />
-          </a>
+          {/* Logo e descrizione */}
+          <div className="col-span-1 md:col-span-1">
+            <a href="/" className="flex items-center gap-2 mb-4">
+              <Logo variant="horizontal" size="sm" />
+            </a>
             <p className="text-sm text-gray-400 mb-4">
               La community del tuo quartiere. Connetti, aiuta e cresci insieme ai tuoi vicini.
             </p>
