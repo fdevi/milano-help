@@ -15,6 +15,12 @@ const sizeMap: Record<LogoSize, number> = {
   lg: 48,
 };
 
+const wideSizeMap: Record<LogoSize, number> = {
+  sm: 128,
+  md: 160,
+  lg: 220,
+};
+
 const variantSrc: Record<LogoVariant, string> = {
   symbol: "/logo/logo.svg",
   full: "/logo/logo-con-scritta.svg",
@@ -25,8 +31,8 @@ const variantSrc: Record<LogoVariant, string> = {
 const Logo = ({ variant = "symbol", size = "md", className }: LogoProps) => {
   const px = typeof size === "number" ? size : sizeMap[size];
 
-  // For horizontal/full/text variants, height = px, width auto
   const isWide = variant === "horizontal" || variant === "full" || variant === "text";
+  const wideWidth = typeof size === "number" ? Math.round(px * 4.2) : wideSizeMap[size];
 
   return (
     <img
@@ -35,7 +41,7 @@ const Logo = ({ variant = "symbol", size = "md", className }: LogoProps) => {
       className={cn("block", className)}
       style={
         isWide
-          ? { height: px, width: "auto" }
+          ? { height: px, width: wideWidth, objectFit: "contain" }
           : { width: px, height: px }
       }
     />
