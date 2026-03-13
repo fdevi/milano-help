@@ -45,6 +45,9 @@ serve(async (req) => {
         </head>
         <body>
           <div class="container">
+            <div style="text-align:center; margin-bottom:24px;">
+              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+            </div>
             <h2>Benvenuto su Milano Help!</h2>
             <p>Ciao, grazie per esserti registrato.</p>
             <p>Per confermare la tua email e attivare l'account, clicca sul pulsante qui sotto:</p>
