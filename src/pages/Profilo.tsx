@@ -351,12 +351,12 @@ const Profilo = () => {
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="dati" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-5">
-            <TabsTrigger value="dati" className="gap-1.5"><User className="w-4 h-4" /> I miei dati</TabsTrigger>
-            <TabsTrigger value="annunci" className="gap-1.5"><FileText className="w-4 h-4" /> Annunci</TabsTrigger>
-            <TabsTrigger value="eventi" className="gap-1.5"><CalendarDays className="w-4 h-4" /> Eventi</TabsTrigger>
-            <TabsTrigger value="fermate" className="gap-1.5"><Train className="w-4 h-4" /> Le mie fermate</TabsTrigger>
-            <TabsTrigger value="preferenze" className="gap-1.5"><Shield className="w-4 h-4" /> Preferenze</TabsTrigger>
+          <TabsList className="w-full flex flex-wrap h-auto min-h-10 p-1 gap-1">
+            <TabsTrigger value="dati" className="gap-1.5 flex-1 min-w-[110px] sm:min-w-0"><User className="w-4 h-4" /> <span className="whitespace-nowrap">I miei dati</span></TabsTrigger>
+            <TabsTrigger value="annunci" className="gap-1.5 flex-1 min-w-[110px] sm:min-w-0"><FileText className="w-4 h-4" /> <span className="whitespace-nowrap">Annunci</span></TabsTrigger>
+            <TabsTrigger value="eventi" className="gap-1.5 flex-1 min-w-[110px] sm:min-w-0"><CalendarDays className="w-4 h-4" /> <span className="whitespace-nowrap">Eventi</span></TabsTrigger>
+            <TabsTrigger value="fermate" className="gap-1.5 flex-1 min-w-[110px] sm:min-w-0"><Train className="w-4 h-4" /> <span className="whitespace-nowrap">Fermate</span></TabsTrigger>
+            <TabsTrigger value="preferenze" className="gap-1.5 flex-1 min-w-[110px] sm:min-w-0"><Shield className="w-4 h-4" /> <span className="whitespace-nowrap">Preferenze</span></TabsTrigger>
           </TabsList>
 
           {/* ── Tab: I miei dati ── */}
