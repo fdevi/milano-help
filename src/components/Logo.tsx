@@ -23,9 +23,9 @@ const wideSizeMap: Record<LogoSize, number> = {
 
 const variantSrc: Record<LogoVariant, string> = {
   symbol: "/logo/logo.svg",
-  full: "/logo/logo-con-scritta.svg",
-  horizontal: "/logo/logo-orizzontale.svg",
-  text: "/logo/scritta-only.svg",
+  full: "/logo/logo-con-scritta.png",
+  horizontal: "/logo/logo-orizzontale.png",
+  text: "/logo/scritta-only.png",
 };
 
 const Logo = ({ variant = "symbol", size = "md", className }: LogoProps) => {
