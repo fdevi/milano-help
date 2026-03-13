@@ -991,10 +991,30 @@ const Fermate: React.FC = () => {
                       Fermata
                     </span>
                     {fermata.distanza > 0 && (
-                      <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
                         {fermata.distanza}mt
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleFavorite.mutate(
+                          { stopIds: fermata.stopIds, stopName: fermata.nome },
+                          {
+                            onSuccess: () => {
+                              toast({
+                                title: isFavorite(fermata.stopIds) ? "Rimossa dai preferiti" : "Aggiunta ai preferiti",
+                                description: fermata.nome,
+                              });
+                            },
+                          }
+                        );
+                      }}
+                      className="ml-auto p-1.5 rounded-full hover:bg-yellow-50 transition-colors"
+                      aria-label={isFavorite(fermata.stopIds) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                    >
+                      <Star className={`w-5 h-5 ${isFavorite(fermata.stopIds) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                    </button>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-lg text-gray-900">
