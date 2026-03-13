@@ -926,6 +926,29 @@ const Fermate: React.FC = () => {
                           {fermata.distanza}mt
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite.mutate(
+                            { stopIds: fermata.stopIds, stopName: fermata.nome },
+                            {
+                              onSuccess: () => {
+                                toast({
+                                  title: isFavorite(fermata.stopIds) ? "Rimossa dai preferiti" : "Aggiunta ai preferiti",
+                                  description: fermata.nome,
+                                });
+                              },
+                            }
+                          );
+                        }}
+                        className="p-1 rounded-full hover:bg-yellow-50 transition-colors flex-shrink-0"
+                        aria-label={isFavorite(fermata.stopIds) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                      >
+                        <Star
+                          className={`w-5 h-5 ${isFavorite(fermata.stopIds) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`}
+                        />
+                      </button>
                     </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1 mt-0.5 mb-0.5">
