@@ -4,7 +4,7 @@ import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
   Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle, CalendarClock, RefreshCw, Train,
 } from "lucide-react";
-import { getPreferiti } from "@/lib/fermate";
+import { useFermatePreferite } from "@/hooks/useFermatePreferite";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -174,11 +174,7 @@ const Profilo = () => {
     enabled: !!user,
   });
 
-  const { data: preferitiFermate } = useQuery({
-    queryKey: ["profilo-fermate-preferite", user?.id],
-    queryFn: () => getPreferiti(user!.id),
-    enabled: !!user,
-  });
+  const { preferiti: preferitiFermate } = useFermatePreferite();
 
   const handleDeleteAnnuncio = async () => {
     if (!deleteAnnuncioId) return;
@@ -507,17 +503,14 @@ const Profilo = () => {
                     {preferitiFermate.map((pref) => (
                       <li key={pref.id}>
                         <Link
-                          to={`/fermate?fermata=${pref.fermataId}`}
+                          to={`/fermate?fermata=${pref.stop_id}`}
                           className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-sm transition-all"
                         >
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <Train className="w-5 h-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">{pref.fermata?.nome ?? pref.fermataId}</p>
-                            {pref.fermata?.linee && pref.fermata.linee.length > 0 && (
-                              <p className="text-xs text-muted-foreground">Linee: {pref.fermata.linee.join(", ")}</p>
-                            )}
+                            <p className="text-sm font-medium">{pref.stop_name ?? pref.stop_id}</p>
                           </div>
                           <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                         </Link>

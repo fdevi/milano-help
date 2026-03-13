@@ -3,10 +3,12 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Map, { Marker, NavigationControl, Source, Layer } from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { ChevronDown, ArrowLeft, MapPin, LocateFixed, Heart, Search } from 'lucide-react';
+import { ChevronDown, ArrowLeft, MapPin, LocateFixed, Heart, Search, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
+import { useFermatePreferite } from '@/hooks/useFermatePreferite';
+import { useToast } from '@/hooks/use-toast';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
@@ -240,6 +242,8 @@ const Fermate: React.FC = () => {
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { latitude, longitude, requestPosition, loading: geoLoading } = useGeolocation();
+  const { isFavorite, toggle: toggleFavorite } = useFermatePreferite();
+  const { toast } = useToast();
 
   // Geocoder search via Mapbox
   const handleSearchChange = useCallback((value: string) => {
@@ -922,6 +926,29 @@ const Fermate: React.FC = () => {
                           {fermata.distanza}mt
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite.mutate(
+                            { stopIds: fermata.stopIds, stopName: fermata.nome },
+                            {
+                              onSuccess: () => {
+                                toast({
+                                  title: isFavorite(fermata.stopIds) ? "Rimossa dai preferiti" : "Aggiunta ai preferiti",
+                                  description: fermata.nome,
+                                });
+                              },
+                            }
+                          );
+                        }}
+                        className="p-1 rounded-full hover:bg-yellow-50 transition-colors flex-shrink-0"
+                        aria-label={isFavorite(fermata.stopIds) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                      >
+                        <Star
+                          className={`w-5 h-5 ${isFavorite(fermata.stopIds) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`}
+                        />
+                      </button>
                     </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1 mt-0.5 mb-0.5">
@@ -964,10 +991,30 @@ const Fermate: React.FC = () => {
                       Fermata
                     </span>
                     {fermata.distanza > 0 && (
-                      <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-500 text-white">
                         {fermata.distanza}mt
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleFavorite.mutate(
+                          { stopIds: fermata.stopIds, stopName: fermata.nome },
+                          {
+                            onSuccess: () => {
+                              toast({
+                                title: isFavorite(fermata.stopIds) ? "Rimossa dai preferiti" : "Aggiunta ai preferiti",
+                                description: fermata.nome,
+                              });
+                            },
+                          }
+                        );
+                      }}
+                      className="ml-auto p-1.5 rounded-full hover:bg-yellow-50 transition-colors"
+                      aria-label={isFavorite(fermata.stopIds) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                    >
+                      <Star className={`w-5 h-5 ${isFavorite(fermata.stopIds) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                    </button>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-lg text-gray-900">

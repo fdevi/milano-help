@@ -727,6 +727,30 @@ export type Database = {
         }
         Relationships: []
       }
+      fermate_preferite: {
+        Row: {
+          created_at: string
+          id: string
+          stop_id: string
+          stop_name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          stop_id: string
+          stop_name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          stop_id?: string
+          stop_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       gruppi: {
         Row: {
           categoria: string | null
