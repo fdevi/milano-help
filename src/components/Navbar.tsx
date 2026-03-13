@@ -41,9 +41,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 bg-background border-b border-border px-4 py-3 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
         <Link to="/" className="shrink-0">
-          <Logo variant="horizontal" size={36} />
+          <Logo variant="horizontal" size="md" />
         </Link>
 
         {/* Desktop nav */}
