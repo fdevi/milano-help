@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Heart,
   User,
   MapPin,
   Shield,
@@ -34,6 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import Navbar from "@/components/Navbar";
+import Logo from "@/components/Logo";
 import { useFotoProfilo } from "@/hooks/useFotoProfilo";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useReverseGeocode } from "@/hooks/useReverseGeocode";
@@ -608,8 +608,8 @@ useEffect(() => {
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mx-auto mb-4">      
-              <Heart className="w-6 h-6 text-primary-foreground" />
+            <div className="mx-auto mb-4 flex justify-center">
+              <Logo variant="full" size="lg" />
             </div>
             <h1 className="font-heading font-extrabold text-2xl text-foreground mb-1">Crea il tuo account</h1>
             <p className="text-sm text-muted-foreground">{stepTitles[step - 1]}</p>
