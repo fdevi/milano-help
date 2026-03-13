@@ -41,6 +41,9 @@ Deno.serve(async (req) => {
     const bodyHtml = isApproved
       ? `
         <div style="font-family: 'Plus Jakarta Sans', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 32px;">
+          <div style="text-align:center; margin-bottom:24px;">
+            <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+          </div>
           <h2 style="color: #0d9668;">Buongiorno ${nome}!</h2>
           <p>Il tuo annuncio <strong>"${titolo}"</strong> è stato approvato ed è ora visibile su Milano Help.</p>
           <p>Puoi vederlo cliccando il pulsante qui sotto:</p>
@@ -53,6 +56,9 @@ Deno.serve(async (req) => {
       `
       : `
         <div style="font-family: 'Plus Jakarta Sans', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 32px;">
+          <div style="text-align:center; margin-bottom:24px;">
+            <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+          </div>
           <h2 style="color: #dc2626;">Ciao ${nome},</h2>
           <p>Purtroppo il tuo annuncio <strong>"${titolo}"</strong> non è stato approvato.</p>
           ${motivo ? `<p><strong>Motivo:</strong> ${motivo}</p>` : ""}

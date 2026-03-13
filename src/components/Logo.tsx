@@ -25,7 +25,7 @@ const variantSrc: Record<LogoVariant, string> = {
 const Logo = ({ variant = "symbol", size = "md", className }: LogoProps) => {
   const px = typeof size === "number" ? size : sizeMap[size];
 
-  // For horizontal/full/text variants, use width-based sizing with auto height
+  // For horizontal/full/text variants, height = px, width auto
   const isWide = variant === "horizontal" || variant === "full" || variant === "text";
 
   return (
@@ -35,7 +35,7 @@ const Logo = ({ variant = "symbol", size = "md", className }: LogoProps) => {
       className={cn("block", className)}
       style={
         isWide
-          ? { width: px * 3, height: "auto" }
+          ? { height: px, width: "auto" }
           : { width: px, height: px }
       }
     />
