@@ -16,7 +16,7 @@ export function useFermatePreferite() {
         .select("*")
         .eq("user_id", user!.id);
       if (error) throw error;
-      return (data ?? []) as { id: string; user_id: string; stop_id: string; stop_name: string | null; created_at: string }[];
+      return (data ?? []) as unknown as { id: string; user_id: string; stop_id: string; stop_name: string | null; created_at: string }[];
     },
     enabled: !!user,
   });
