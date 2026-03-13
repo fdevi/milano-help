@@ -174,11 +174,7 @@ const Profilo = () => {
     enabled: !!user,
   });
 
-  const { data: preferitiFermate } = useQuery({
-    queryKey: ["profilo-fermate-preferite", user?.id],
-    queryFn: () => getPreferiti(user!.id),
-    enabled: !!user,
-  });
+  const { preferiti: preferitiFermate } = useFermatePreferite();
 
   const handleDeleteAnnuncio = async () => {
     if (!deleteAnnuncioId) return;
