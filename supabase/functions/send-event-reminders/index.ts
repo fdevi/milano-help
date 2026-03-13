@@ -106,7 +106,7 @@ serve(async (req) => {
               html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                   <div style="text-align:center; margin-bottom:24px;">
-                    <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+                    <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
                   </div>
                   <h2 style="color: #333;">Ciao ${nome}! 👋</h2>
                   <p style="font-size: 16px; color: #555; line-height: 1.6;">

@@ -127,7 +127,7 @@ serve(async (req) => {
         <body>
           <div class="container">
             <div style="text-align:center; margin-bottom:24px;">
-              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
             </div>
             <h2>Conferma cambio email</h2>
             <p>Hai richiesto di cambiare il tuo indirizzo email su Milano Help.</p>

@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       : `
         <div style="font-family: 'Plus Jakarta Sans', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 32px;">
           <div style="text-align:center; margin-bottom:24px;">
-            <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" style="max-width:300px; height:auto; display:block; margin:0 auto;">
+            <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
           </div>
           <h2 style="color: #dc2626;">Ciao ${nome},</h2>
           <p>Purtroppo il tuo annuncio <strong>"${titolo}"</strong> non è stato approvato.</p>
