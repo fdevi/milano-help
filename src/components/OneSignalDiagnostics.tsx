@@ -8,11 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 interface DiagResult {
   oneSignalReady: boolean;
   externalId: string | null;
+  onesignalId: string | null;
   playerId: string | null;
   token: string | null;
   notificationPermission: string;
   serviceWorkers: { scriptURL: string; state: string; scope: string }[];
   oneSignalSWFound: boolean;
+  oneSignalUserDefined: boolean;
+  oneSignalLoggedIn: boolean;
   errors: string[];
 }
 
