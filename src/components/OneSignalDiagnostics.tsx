@@ -51,8 +51,11 @@ export default function OneSignalDiagnostics() {
 
       // OneSignal data
       try {
+        diag.oneSignalUserDefined = !!w.OneSignal?.User;
         if (w.OneSignal?.User) {
-          try { diag.externalId = await w.OneSignal.User.getExternalId(); } catch (e: any) { diag.errors.push("getExternalId: " + e.message); }
+          // Use property access instead of method call
+          try { diag.externalId = w.OneSignal.User.externalId ?? null; } catch (e: any) { diag.errors.push("externalId: " + e.message); }
+          try { diag.onesignalId = w.OneSignal.User.onesignalId ?? null; } catch (e: any) { diag.errors.push("onesignalId: " + e.message); }
           try {
             const sub = w.OneSignal.User.PushSubscription;
             if (sub) {
@@ -60,6 +63,8 @@ export default function OneSignalDiagnostics() {
               diag.token = sub.token ?? null;
             }
           } catch (e: any) { diag.errors.push("PushSubscription: " + e.message); }
+          // Check if logged in (externalId present = logged in)
+          diag.oneSignalLoggedIn = !!diag.externalId;
         } else {
           diag.errors.push("OneSignal.User non disponibile");
         }
