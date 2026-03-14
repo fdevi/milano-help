@@ -150,7 +150,10 @@ export default function OneSignalDiagnostics() {
           <div className="rounded-md bg-muted p-3 text-xs font-mono space-y-2 overflow-x-auto">
             <Row label="oneSignalReady" value={result.oneSignalReady ? "✅ true" : "❌ false"} ok={result.oneSignalReady} />
             <Row label="Permission" value={result.notificationPermission} ok={result.notificationPermission === "granted"} />
+            <Row label="User definito" value={result.oneSignalUserDefined ? "✅ sì" : "❌ no"} ok={result.oneSignalUserDefined} />
+            <Row label="Logged in (OS)" value={result.oneSignalLoggedIn ? "✅ sì" : "❌ no"} ok={result.oneSignalLoggedIn} />
             <Row label="External ID" value={result.externalId || "—"} ok={!!result.externalId} />
+            <Row label="OneSignal ID" value={result.onesignalId || "—"} ok={!!result.onesignalId} />
             <Row label="Player ID" value={result.playerId || "—"} ok={!!result.playerId} />
             <Row label="Token" value={result.token ? result.token.slice(0, 40) + "…" : "—"} ok={!!result.token} />
             <Row label="OneSignal SW" value={result.oneSignalSWFound ? "✅ trovato" : "❌ non trovato"} ok={result.oneSignalSWFound} />
