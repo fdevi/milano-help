@@ -65,7 +65,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (initialSession?.user) {
         setSession(initialSession);
-        try { (window as any).OneSignal?.login(initialSession.user.id); } catch (e) { /* ignore */ }
+        try {
+          const w = window as any;
+          if (w.OneSignal) {
+            w.OneSignal.login(initialSession.user.id);
+            console.log("[OneSignal] login called with:", initialSession.user.id);
+          } else {
+            // SDK not ready yet, defer login
+            const orig = w.OneSignalDeferred || [];
+            orig.push(async function(OS: any) {
+              await OS.login(initialSession.user.id);
+              console.log("[OneSignal] deferred login called with:", initialSession.user.id);
+            });
+          }
+        } catch (e) { console.error("[OneSignal] login error:", e); }
         checkProfile(initialSession.user.id).then(() => setLoading(false));
       } else {
         setSession(initialSession);
@@ -84,8 +97,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setLoading(false);
             });
           }, 0);
-          // OneSignal login
-          try { (window as any).OneSignal?.login(newSession.user.id); } catch (e) { /* ignore */ }
+          // OneSignal login - with deferred fallback
+          try {
+            const w = window as any;
+            if (w.OneSignal) {
+              w.OneSignal.login(newSession.user.id);
+              console.log("[OneSignal] login called with:", newSession.user.id);
+            } else {
+              const orig = w.OneSignalDeferred || [];
+              orig.push(async function(OS: any) {
+                await OS.login(newSession.user.id);
+                console.log("[OneSignal] deferred login called with:", newSession.user.id);
+              });
+            }
+          } catch (e) { console.error("[OneSignal] login error:", e); }
         } else {
           setProfileComplete(null);
           setLoading(false);

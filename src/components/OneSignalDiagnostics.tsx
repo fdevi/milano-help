@@ -8,11 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 interface DiagResult {
   oneSignalReady: boolean;
   externalId: string | null;
+  onesignalId: string | null;
   playerId: string | null;
   token: string | null;
   notificationPermission: string;
   serviceWorkers: { scriptURL: string; state: string; scope: string }[];
   oneSignalSWFound: boolean;
+  oneSignalUserDefined: boolean;
+  oneSignalLoggedIn: boolean;
   errors: string[];
 }
 
@@ -27,13 +30,19 @@ export default function OneSignalDiagnostics() {
     const diag: DiagResult = {
       oneSignalReady: false,
       externalId: null,
+      onesignalId: null,
       playerId: null,
       token: null,
       notificationPermission: "unknown",
       serviceWorkers: [],
       oneSignalSWFound: false,
+      oneSignalUserDefined: false,
+      oneSignalLoggedIn: false,
       errors: [],
     };
+
+    // Wait 2s for subscription to settle
+    await new Promise(r => setTimeout(r, 2000));
 
     try {
       const w = window as any;
@@ -42,8 +51,11 @@ export default function OneSignalDiagnostics() {
 
       // OneSignal data
       try {
+        diag.oneSignalUserDefined = !!w.OneSignal?.User;
         if (w.OneSignal?.User) {
-          try { diag.externalId = await w.OneSignal.User.getExternalId(); } catch (e: any) { diag.errors.push("getExternalId: " + e.message); }
+          // Use property access instead of method call
+          try { diag.externalId = w.OneSignal.User.externalId ?? null; } catch (e: any) { diag.errors.push("externalId: " + e.message); }
+          try { diag.onesignalId = w.OneSignal.User.onesignalId ?? null; } catch (e: any) { diag.errors.push("onesignalId: " + e.message); }
           try {
             const sub = w.OneSignal.User.PushSubscription;
             if (sub) {
@@ -51,6 +63,8 @@ export default function OneSignalDiagnostics() {
               diag.token = sub.token ?? null;
             }
           } catch (e: any) { diag.errors.push("PushSubscription: " + e.message); }
+          // Check if logged in (externalId present = logged in)
+          diag.oneSignalLoggedIn = !!diag.externalId;
         } else {
           diag.errors.push("OneSignal.User non disponibile");
         }
@@ -136,7 +150,10 @@ export default function OneSignalDiagnostics() {
           <div className="rounded-md bg-muted p-3 text-xs font-mono space-y-2 overflow-x-auto">
             <Row label="oneSignalReady" value={result.oneSignalReady ? "✅ true" : "❌ false"} ok={result.oneSignalReady} />
             <Row label="Permission" value={result.notificationPermission} ok={result.notificationPermission === "granted"} />
+            <Row label="User definito" value={result.oneSignalUserDefined ? "✅ sì" : "❌ no"} ok={result.oneSignalUserDefined} />
+            <Row label="Logged in (OS)" value={result.oneSignalLoggedIn ? "✅ sì" : "❌ no"} ok={result.oneSignalLoggedIn} />
             <Row label="External ID" value={result.externalId || "—"} ok={!!result.externalId} />
+            <Row label="OneSignal ID" value={result.onesignalId || "—"} ok={!!result.onesignalId} />
             <Row label="Player ID" value={result.playerId || "—"} ok={!!result.playerId} />
             <Row label="Token" value={result.token ? result.token.slice(0, 40) + "…" : "—"} ok={!!result.token} />
             <Row label="OneSignal SW" value={result.oneSignalSWFound ? "✅ trovato" : "❌ non trovato"} ok={result.oneSignalSWFound} />
