@@ -616,6 +616,9 @@ const Profilo = () => {
                   </Button>
                 </div>
               </Card>
+              <div className="mt-4">
+                <OneSignalDiagnostics />
+              </div>
             </motion.div>
           </TabsContent>
 
