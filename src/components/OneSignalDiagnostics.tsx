@@ -30,13 +30,19 @@ export default function OneSignalDiagnostics() {
     const diag: DiagResult = {
       oneSignalReady: false,
       externalId: null,
+      onesignalId: null,
       playerId: null,
       token: null,
       notificationPermission: "unknown",
       serviceWorkers: [],
       oneSignalSWFound: false,
+      oneSignalUserDefined: false,
+      oneSignalLoggedIn: false,
       errors: [],
     };
+
+    // Wait 2s for subscription to settle
+    await new Promise(r => setTimeout(r, 2000));
 
     try {
       const w = window as any;
