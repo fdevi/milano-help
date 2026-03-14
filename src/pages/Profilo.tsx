@@ -5,6 +5,7 @@ import {
   Loader2, User, Bell, Shield, Eye, Mail, Phone, Pencil, Trash2, Plus, Clock, CheckCircle, XCircle, AlertTriangle, CalendarClock, RefreshCw, Train,
 } from "lucide-react";
 import { useFermatePreferite } from "@/hooks/useFermatePreferite";
+import OneSignalDiagnostics from "@/components/OneSignalDiagnostics";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -616,6 +617,9 @@ const Profilo = () => {
                   </Button>
                 </div>
               </Card>
+              <div className="mt-4">
+                <OneSignalDiagnostics />
+              </div>
             </motion.div>
           </TabsContent>
 
