@@ -14,40 +14,79 @@
 
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
+      (function monitorOneSignalScriptLoad() {
+        var sdkScript = document.querySelector('script[src*="OneSignalSDK.page.js"]');
+        if (!sdkScript) {
+          console.warn('[OneSignal] SDK script tag non trovato');
+          return;
+        }
+        sdkScript.addEventListener('load', function() {
+          console.log('[OneSignal] SDK script caricato ✅');
+        });
+        sdkScript.addEventListener('error', function(err) {
+          console.error('[OneSignal] Errore rete caricamento SDK:', err);
+          window.oneSignalInitError = 'Errore rete caricamento OneSignalSDK.page.js';
+        });
+      })();
+
+      async function waitForActivation(registration) {
+        if (registration.active) return;
+        var sw = registration.installing || registration.waiting;
+        if (!sw) return;
+
+        await new Promise(function(resolve) {
+          sw.addEventListener('statechange', function() {
+            if (sw.state === 'activated') resolve();
+          });
+          setTimeout(resolve, 5000);
+        });
+      }
+
       // Step 1: Register SW manually before OneSignal init (critical for iOS)
       async function ensureServiceWorker() {
         if (!('serviceWorker' in navigator)) {
           console.warn('[SW] Service workers not supported');
           return false;
         }
+
         try {
-          // Check if already registered
           var regs = await navigator.serviceWorker.getRegistrations();
-          var found = regs.some(function(r) { return r.active && r.active.scriptURL.indexOf('OneSignalSDKWorker') !== -1; });
-          if (found) {
-            console.log('[SW] OneSignal SW already registered ✅');
+          var existing = regs.find(function(r) {
+            var urls = [r.active && r.active.scriptURL, r.waiting && r.waiting.scriptURL, r.installing && r.installing.scriptURL].filter(Boolean);
+            return urls.some(function(url) { return url.indexOf('OneSignalSDKWorker') !== -1; });
+          });
+
+          if (existing) {
+            await waitForActivation(existing);
+            console.log('[SW] OneSignal SW già registrato ✅', existing.active ? existing.active.scriptURL : '(in attesa di attivazione)');
             return true;
           }
-          console.log('[SW] Registering OneSignalSDKWorker.js manually...');
-          var reg = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', { scope: '/' });
-          console.log('[SW] Registered successfully:', reg.scope);
-          // Wait for SW to be active
-          if (reg.installing || reg.waiting) {
-            await new Promise(function(resolve) {
-              var sw = reg.installing || reg.waiting;
-              sw.addEventListener('statechange', function() {
-                if (sw.state === 'activated') resolve();
-              });
-              // Timeout after 5s
-              setTimeout(resolve, 5000);
-            });
+
+          var relativePath = '/OneSignalSDKWorker.js';
+          var absolutePath = window.location.origin + '/OneSignalSDKWorker.js';
+          var reg;
+
+          try {
+            console.log('[SW] Registering OneSignalSDKWorker.js (relative)...');
+            reg = await navigator.serviceWorker.register(relativePath, { scope: '/' });
+          } catch (firstErr) {
+            console.warn('[SW] Registrazione relativa fallita, provo assoluta...', firstErr);
+            reg = await navigator.serviceWorker.register(absolutePath, { scope: '/' });
           }
-          console.log('[SW] SW active ✅');
+
+          await waitForActivation(reg);
+          console.log('[SW] SW registrato e attivo ✅', reg.scope);
           return true;
         } catch (err) {
           console.error('[SW] Registration failed:', err);
           return false;
         }
+      }
+
+      function findOneSignalRegistration(regs) {
+        return regs.find(function(r) {
+          return r.active && r.active.scriptURL.indexOf('OneSignalSDKWorker') !== -1;
+        });
       }
 
       // Step 2: Init OneSignal after SW is ready
@@ -56,25 +95,40 @@
         var swReady = await ensureServiceWorker();
         console.log('[OneSignal] SW ready:', swReady);
 
+        if ('serviceWorker' in navigator) {
+          var preRegs = await navigator.serviceWorker.getRegistrations();
+          var pre = findOneSignalRegistration(preRegs);
+          console.log('[OneSignal] SW pre-init (riuso atteso):', pre ? pre.active.scriptURL : 'non trovato');
+          window.oneSignalPreInitSW = pre ? pre.active.scriptURL : null;
+        }
+
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         window.OneSignalDeferred.push(async function(OneSignal) {
           try {
             if (OneSignal.Debug) {
               OneSignal.Debug.setLogLevel('trace');
             }
-            console.log("[OneSignal] Step 2: calling init...");
+
+            console.log('[OneSignal] Step 2: calling init (senza gestione SW SDK)...');
             await OneSignal.init({
-              appId: "dada59a2-fab8-46aa-b12c-6ef78b12e976",
-              serviceWorkerPath: "/OneSignalSDKWorker.js",
-              serviceWorkerParam: { scope: "/" },
+              appId: 'dada59a2-fab8-46aa-b12c-6ef78b12e976',
+              serviceWorkerPath: null,
               notifyButton: { enable: true },
               allowLocalhostAsSecureOrigin: false,
             });
+
+            if ('serviceWorker' in navigator) {
+              var postRegs = await navigator.serviceWorker.getRegistrations();
+              var post = findOneSignalRegistration(postRegs);
+              console.log('[OneSignal] SW post-init (deve restare registrato):', post ? post.active.scriptURL : 'non trovato');
+              window.oneSignalPostInitSW = post ? post.active.scriptURL : null;
+            }
+
             window.oneSignalReady = true;
-            console.log("[OneSignal] SDK inizializzato e pronto ✅");
+            console.log('[OneSignal] SDK inizializzato e pronto ✅');
           } catch (err) {
-            console.error("[OneSignal] Errore durante init:", err);
-            window.oneSignalInitError = err.message || String(err);
+            console.error('[OneSignal] Errore durante init:', err);
+            window.oneSignalInitError = err && err.message ? err.message : String(err);
           }
         });
       }
