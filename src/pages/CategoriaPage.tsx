@@ -73,7 +73,24 @@ const CategoriaPage = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!nome && !isEvento,
+    enabled: !!nome && !isEvento && !isSpecial,
+  });
+
+  // Fetch profiles for special categories (Professionisti / Negozi)
+  const { data: specialProfiles = [], isLoading: loadingSpecial } = useQuery({
+    queryKey: ["special_profiles", nome],
+    queryFn: async () => {
+      const tipoAccount = isProf ? "professionista" : "negoziante";
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome, nome_attivita, quartiere, avatar_url, telefono, email, mostra_telefono, mostra_email")
+        .eq("tipo_account", tipoAccount)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isSpecial,
+    staleTime: 30_000,
   });
 
   // Fetch eventi attivi con profilo organizzatore
