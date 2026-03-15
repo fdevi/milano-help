@@ -14,6 +14,7 @@ import { Menu, X } from "lucide-react";
 const Navbar = () => {
   const { user } = useAuth();
   const { isAdmin } = useAdminCheck();
+  const { isProfessionista, isNegoziante } = useTipoAccount();
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: profile } = useQuery({
