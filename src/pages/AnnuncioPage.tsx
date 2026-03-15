@@ -252,6 +252,16 @@ const AnnuncioPage = () => {
       setShowReviewForm(false); setReviewCommento(""); setReviewVoto(5);
       queryClient.invalidateQueries({ queryKey: ["recensioni", id] });
       queryClient.invalidateQueries({ queryKey: ["user_review", id] });
+      // Send notification to annuncio owner
+      if (user.id !== annuncio.user_id) {
+        const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
+        await supabase.from("notifiche").insert({
+          user_id: annuncio.user_id, tipo: "recensione", titolo: "Nuova recensione",
+          messaggio: `${nomeUtente} ha recensito "${annuncio.titolo}" con ${reviewVoto} stelle`,
+          link: `/annuncio/${annuncio.id}`, riferimento_id: annuncio.id, mittente_id: user.id,
+        } as any);
+        sendPushNotification(annuncio.user_id, "Nuova recensione", `${nomeUtente} ha recensito "${annuncio.titolo}" con ${reviewVoto} stelle`, `/annuncio/${annuncio.id}`);
+      }
     }
   };
 
