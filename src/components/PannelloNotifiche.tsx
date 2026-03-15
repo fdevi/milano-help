@@ -33,7 +33,9 @@ const PannelloNotifiche = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const caricaNotifiche = async () => {
+  const caricaNotifiche = async (
+    source: "init" | "open" | "realtime_insert" | "realtime_update" | "read" | "manual" = "manual"
+  ) => {
     if (!user) return;
     setLoading(true);
 
@@ -56,6 +58,14 @@ const PannelloNotifiche = () => {
         link: n.link,
       }))
     );
+
+    console.log("[NotificheDebug] caricaNotifiche", {
+      source,
+      userId: user.id,
+      unreadCount: count || 0,
+      rows: (data || []).length,
+    });
+
     setLoading(false);
   };
 
