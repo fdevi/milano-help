@@ -110,7 +110,7 @@ const PannelloNotifiche = () => {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         logRealtimeEvento("UPDATE", payload);
-        caricaNotifiche();
+        caricaNotifiche("realtime_update");
       })
       .subscribe((status) => {
         console.log("[Realtime][notifiche] stato subscription", { status, userId: user.id });
