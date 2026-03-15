@@ -37,6 +37,7 @@ const ModificaAnnuncio = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isProfessionista, isNegoziante } = useTipoAccount();
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
