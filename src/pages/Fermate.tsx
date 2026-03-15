@@ -526,16 +526,39 @@ const Fermate: React.FC = () => {
     };
   };
 
+  // Auto-geolocate on mount
   useEffect(() => {
+    requestPosition();
+    // fallback: load default center stops
     caricaFermateVicine(searchCenter.lat, searchCenter.lng);
   }, []);
 
-  const handleGeolocate = () => {
-    requestPosition();
-  };
+  // Store latest coords in a ref so the button always has fresh values
+  const latestCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
+  const handleGeolocate = useCallback(() => {
+    // Always force a fresh geolocation request
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        latestCoordsRef.current = { lat, lng };
+        setSearchCenter({ lat, lng });
+        const map = mapRef.current?.getMap?.() ?? mapRef.current;
+        map?.flyTo?.({ center: [lng, lat], zoom: 16, duration: 800 });
+        caricaFermateVicine(lat, lng);
+      },
+      (err) => {
+        console.error('[Fermate] Geolocation error:', err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  // React to initial geolocation result
   useEffect(() => {
     if (latitude != null && longitude != null && mapRef.current) {
+      latestCoordsRef.current = { lat: latitude, lng: longitude };
       const map = mapRef.current?.getMap?.() ?? mapRef.current;
       map?.flyTo?.({ center: [longitude, latitude], zoom: 16 });
       setSearchCenter({ lat: latitude, lng: longitude });
