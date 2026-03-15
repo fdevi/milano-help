@@ -508,7 +508,7 @@ const CategoriaPage = () => {
         )}
 
         {/* ANNUNCI: Filters toolbar */}
-        {!isEvento && (
+        {!isEvento && !isSpecial && (
           <>
             <div className="flex flex-wrap items-center gap-3 mb-6">
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
