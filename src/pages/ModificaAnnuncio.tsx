@@ -193,6 +193,7 @@ const ModificaAnnuncio = () => {
         stato: "in_moderazione",
         condizione: isInVendita && condizione ? condizione : null,
         tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
+        contenuto_speciale: isSpecialCat && contenutoSpeciale.trim() ? contenutoSpeciale.trim() : null,
       };
 
       const { error } = await (supabase as any)
