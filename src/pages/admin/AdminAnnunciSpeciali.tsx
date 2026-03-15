@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Search, CheckCircle, XCircle, Trash2, Eye, Building2, Store } from "lucide-react";
-import { format } from "date-fns";
+import { Search, CheckCircle, XCircle, Trash2, Eye, Building2, Store, Pencil, Heart } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
+import { Link } from "react-router-dom";
 
 const AdminAnnunciSpeciali = () => {
   const { user } = useAuth();
@@ -27,7 +28,6 @@ const AdminAnnunciSpeciali = () => {
   const { data: annunci = [], isLoading } = useQuery({
     queryKey: ["admin_annunci_speciali"],
     queryFn: async () => {
-      // Fetch the two special category IDs
       const { data: cats } = await supabase
         .from("categorie_annunci")
         .select("id, nome, label")
@@ -39,7 +39,7 @@ const AdminAnnunciSpeciali = () => {
 
       const { data, error } = await supabase
         .from("annunci")
-        .select("id, titolo, stato, created_at, user_id, categoria_id, quartiere, immagini")
+        .select("id, titolo, stato, created_at, user_id, categoria_id, quartiere, immagini, mi_piace, visualizzazioni")
         .in("categoria_id", catIds)
         .order("created_at", { ascending: false });
 
@@ -49,7 +49,7 @@ const AdminAnnunciSpeciali = () => {
         (data || []).map(async (a: any) => {
           const { data: profilo } = await supabase
             .from("profiles")
-            .select("nome, cognome, nome_attivita, email")
+            .select("nome, cognome, nome_attivita, email, username")
             .eq("user_id", a.user_id)
             .single();
           return {
@@ -71,7 +71,7 @@ const AdminAnnunciSpeciali = () => {
     if (filterStato !== "tutti" && a.stato !== filterStato) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!a.titolo?.toLowerCase().includes(q) && !a.profilo?.nome_attivita?.toLowerCase().includes(q)) return false;
+      if (!a.titolo?.toLowerCase().includes(q) && !a.profilo?.nome_attivita?.toLowerCase().includes(q) && !a.profilo?.email?.toLowerCase().includes(q)) return false;
     }
     return true;
   });
@@ -114,7 +114,7 @@ const AdminAnnunciSpeciali = () => {
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cerca per titolo o attività..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Input placeholder="Cerca per titolo, attività o email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
         <Select value={filterTipo} onValueChange={setFilterTipo}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
@@ -140,57 +140,75 @@ const AdminAnnunciSpeciali = () => {
       ) : filtered.length === 0 ? (
         <p className="text-muted-foreground text-center py-12">Nessun annuncio speciale trovato.</p>
       ) : (
-        <div className="border rounded-xl overflow-hidden">
+        <div className="border rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 font-medium">Tipo</th>
                 <th className="text-left p-3 font-medium">Titolo / Attività</th>
+                <th className="text-left p-3 font-medium">Autore</th>
                 <th className="text-left p-3 font-medium">Stato</th>
                 <th className="text-left p-3 font-medium">Data</th>
+                <th className="text-center p-3 font-medium">👁️</th>
+                <th className="text-center p-3 font-medium">❤️</th>
                 <th className="text-right p-3 font-medium">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((a: any) => (
-                <tr key={a.id} className="hover:bg-muted/30">
-                  <td className="p-3">
-                    {a.categoria?.nome === "Professionisti" ? (
-                      <span className="flex items-center gap-1.5 text-blue-600"><Building2 className="w-4 h-4" /> Prof.</span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-emerald-600"><Store className="w-4 h-4" /> Negozio</span>
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <div className="font-medium">{a.titolo}</div>
-                    {a.profilo?.nome_attivita && <div className="text-xs text-muted-foreground">{a.profilo.nome_attivita}</div>}
-                  </td>
-                  <td className="p-3">{statoBadge(a.stato)}</td>
-                  <td className="p-3 text-muted-foreground">{format(new Date(a.created_at), "dd/MM/yyyy", { locale: it })}</td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" asChild>
-                        <a href={`/annuncio/${a.id}`} target="_blank"><Eye className="w-4 h-4" /></a>
-                      </Button>
-                      {a.stato === "in_moderazione" && (
-                        <>
-                          <Button variant="ghost" size="icon" onClick={() => handleApprova(a.id)} title="Approva">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setRifiutaId(a.id)} title="Rifiuta">
-                            <XCircle className="w-4 h-4 text-red-600" />
-                          </Button>
-                        </>
+              {filtered.map((a: any) => {
+                const days = differenceInDays(new Date(), new Date(a.created_at));
+                return (
+                  <tr key={a.id} className="hover:bg-muted/30">
+                    <td className="p-3">
+                      {a.categoria?.nome === "Professionisti" ? (
+                        <span className="flex items-center gap-1.5 text-blue-600"><Building2 className="w-4 h-4" /> Prof.</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-emerald-600"><Store className="w-4 h-4" /> Negozio</span>
                       )}
-                      {a.stato !== "eliminato" && (
-                        <Button variant="ghost" size="icon" onClick={() => handleElimina(a.id)} title="Elimina">
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium">{a.titolo}</div>
+                      {a.profilo?.nome_attivita && <div className="text-xs text-muted-foreground">{a.profilo.nome_attivita}</div>}
+                    </td>
+                    <td className="p-3">
+                      <div className="text-sm">{a.profilo?.nome || a.profilo?.username || "—"} {a.profilo?.cognome || ""}</div>
+                      <div className="text-xs text-muted-foreground">{a.profilo?.email || "—"}</div>
+                    </td>
+                    <td className="p-3">{statoBadge(a.stato)}</td>
+                    <td className="p-3 text-muted-foreground">
+                      <div>{format(new Date(a.created_at), "dd/MM/yyyy", { locale: it })}</div>
+                      <div className="text-xs">{days}g pubblicato</div>
+                    </td>
+                    <td className="p-3 text-center text-muted-foreground">{a.visualizzazioni || 0}</td>
+                    <td className="p-3 text-center text-muted-foreground">{a.mi_piace || 0}</td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" asChild>
+                          <a href={`/annuncio/${a.id}`} target="_blank"><Eye className="w-4 h-4" /></a>
                         </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link to={`/modifica-annuncio/${a.id}`}><Pencil className="w-4 h-4" /></Link>
+                        </Button>
+                        {a.stato === "in_moderazione" && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => handleApprova(a.id)} title="Approva">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setRifiutaId(a.id)} title="Rifiuta">
+                              <XCircle className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </>
+                        )}
+                        {a.stato !== "eliminato" && (
+                          <Button variant="ghost" size="icon" onClick={() => handleElimina(a.id)} title="Elimina">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

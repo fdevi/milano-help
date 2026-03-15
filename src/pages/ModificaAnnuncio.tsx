@@ -39,6 +39,7 @@ const ModificaAnnuncio = () => {
   const [condizione, setCondizione] = useState("");
   const [tipoOperazione, setTipoOperazione] = useState("");
   const [contenutoSpeciale, setContenutoSpeciale] = useState("");
+  const [categoriaAttivita, setCategoriaAttivita] = useState("");
   const [via, setVia] = useState("");
   const [civico, setCivico] = useState("");
   const [citta, setCitta] = useState("");
@@ -68,6 +69,7 @@ const ModificaAnnuncio = () => {
       setCondizione((annuncio as any).condizione || "");
       setTipoOperazione((annuncio as any).tipo_operazione || "");
       setContenutoSpeciale((annuncio as any).contenuto_speciale || "");
+      setCategoriaAttivita((annuncio as any).categoria_attivita || "");
       setVia((annuncio as any).via || "");
       setCivico((annuncio as any).civico || "");
       setCitta((annuncio as any).citta || "");
@@ -185,6 +187,7 @@ const ModificaAnnuncio = () => {
         condizione: isInVendita && condizione ? condizione : null,
         tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
         contenuto_speciale: isSpecialCat && contenutoSpeciale.trim() ? contenutoSpeciale.trim() : null,
+        categoria_attivita: isSpecialCat && categoriaAttivita ? categoriaAttivita : null,
         via: isSpecialCat ? via.trim() || null : null,
         civico: isSpecialCat ? civico.trim() || null : null,
         citta: isSpecialCat ? citta.trim() || null : null,
@@ -252,6 +255,20 @@ const ModificaAnnuncio = () => {
             <Label htmlFor="descrizione">Descrizione</Label>
             <Textarea id="descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)} placeholder="Descrivi..." rows={4} />
           </div>
+
+          {isSpecialCat && (
+            <div>
+              <Label>🏷️ Tipo di attività</Label>
+              <Select value={categoriaAttivita} onValueChange={setCategoriaAttivita}>
+                <SelectTrigger><SelectValue placeholder="Seleziona tipo..." /></SelectTrigger>
+                <SelectContent>
+                  {["Alimentari","Panetteria","Ristorante","Bar / Caffetteria","Parrucchiere","Estetista","Abbigliamento","Elettronica","Farmacia","Ferramenta","Libreria","Studio Legale","Commercialista","Idraulico","Elettricista","Artigiano","Medico","Dentista","Veterinario","Palestra / Fitness","Altro"].map(v => (
+                    <SelectItem key={v} value={v}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {isSpecialCat && (
             <div className="space-y-4 p-4 rounded-xl border bg-muted/30">

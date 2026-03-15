@@ -37,6 +37,7 @@ const NuovoAnnuncio = () => {
   const [condizione, setCondizione] = useState("");
   const [tipoOperazione, setTipoOperazione] = useState("");
   const [contenutoSpeciale, setContenutoSpeciale] = useState("");
+  const [categoriaAttivita, setCategoriaAttivita] = useState("");
 
   // Address fields for special categories
   const [via, setVia] = useState("");
@@ -171,6 +172,7 @@ const NuovoAnnuncio = () => {
         condizione: isInVendita && condizione ? condizione : null,
         tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
         contenuto_speciale: isSpecialCat && contenutoSpeciale.trim() ? contenutoSpeciale.trim() : null,
+        categoria_attivita: isSpecialCat && categoriaAttivita ? categoriaAttivita : null,
         via: isSpecialCat ? via.trim() || null : null,
         civico: isSpecialCat ? civico.trim() || null : null,
         citta: isSpecialCat ? citta.trim() || null : null,
@@ -251,6 +253,21 @@ const NuovoAnnuncio = () => {
             <Textarea id="descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)}
               placeholder={isSpecialCat ? "Descrivi la tua attività, cosa offri, i tuoi punti di forza..." : "Descrivi il tuo annuncio..."} rows={4} />
           </div>
+
+          {isSpecialCat && (
+            <div>
+              <Label htmlFor="catAttivita">🏷️ Tipo di attività</Label>
+              <Select value={categoriaAttivita} onValueChange={setCategoriaAttivita}>
+                <SelectTrigger id="catAttivita"><SelectValue placeholder="Seleziona tipo..." /></SelectTrigger>
+                <SelectContent>
+                  {["Alimentari","Panetteria","Ristorante","Bar / Caffetteria","Parrucchiere","Estetista","Abbigliamento","Elettronica","Farmacia","Ferramenta","Libreria","Studio Legale","Commercialista","Idraulico","Elettricista","Artigiano","Medico","Dentista","Veterinario","Palestra / Fitness","Altro"].map(v => (
+                    <SelectItem key={v} value={v}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Opzionale. Verrà mostrato come badge nella card.</p>
+            </div>
+          )}
 
           {/* ADDRESS FIELDS for special categories */}
           {isSpecialCat && (
