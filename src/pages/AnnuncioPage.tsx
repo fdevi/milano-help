@@ -1,12 +1,13 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn, Share2, Copy, Check, Navigation, Building2, Store, MoreVertical, Star, Globe, Clock } from "lucide-react";
+import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn, Share2, Copy, Check, Navigation, Building2, Store, MoreVertical, Star, Globe, Clock, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,9 +24,21 @@ import CommentiAnnuncio from "@/components/chat/CommentiAnnuncio";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoibWlsYW5vaGVscCIsImEiOiJjbTlxMzJxcGIwMDFnMnFzOHU3OXF1YnhzIn0.X4KMsJcd_oBP4iFvOWm2TA";
 
+const BUSINESS_CATEGORY_COLORS: Record<string, string> = {
+  "Alimentari": "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  "Panetteria": "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  "Ristorante": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  "Bar / Caffetteria": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  "Parrucchiere": "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+  "Estetista": "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200",
+  "Abbigliamento": "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+  "Altro": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+};
+
 const AnnuncioPage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -41,6 +54,11 @@ const AnnuncioPage = () => {
   const [reviewVoto, setReviewVoto] = useState(5);
   const [reviewCommento, setReviewCommento] = useState("");
   const [reviewSending, setReviewSending] = useState(false);
+  // Admin review management
+  const [editingReview, setEditingReview] = useState<any>(null);
+  const [editReviewVoto, setEditReviewVoto] = useState(5);
+  const [editReviewCommento, setEditReviewCommento] = useState("");
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   // Fetch annuncio
   const { data: annuncio, isLoading, error } = useQuery({
@@ -98,7 +116,6 @@ const AnnuncioPage = () => {
         .eq("annuncio_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Enrich with profile names
       const enriched = await Promise.all(
         (data || []).map(async (r: any) => {
           const { data: p } = await supabase.from("profiles").select("nome, cognome, avatar_url").eq("user_id", r.utente_id).single();
@@ -238,6 +255,32 @@ const AnnuncioPage = () => {
     }
   };
 
+  // Admin: edit review
+  const handleEditReview = async () => {
+    if (!editingReview) return;
+    const { error } = await (supabase as any).from("recensioni").update({
+      voto: editReviewVoto, commento: editReviewCommento.trim() || null,
+    }).eq("id", editingReview.id);
+    if (error) { toast({ title: "Errore", description: "Impossibile modificare la recensione.", variant: "destructive" }); }
+    else {
+      toast({ title: "Recensione aggiornata" });
+      setEditingReview(null);
+      queryClient.invalidateQueries({ queryKey: ["recensioni", id] });
+    }
+  };
+
+  // Admin: delete review
+  const handleDeleteReview = async () => {
+    if (!deletingReviewId) return;
+    const { error } = await (supabase as any).from("recensioni").delete().eq("id", deletingReviewId);
+    if (error) { toast({ title: "Errore", description: "Impossibile eliminare la recensione.", variant: "destructive" }); }
+    else {
+      toast({ title: "Recensione eliminata" });
+      setDeletingReviewId(null);
+      queryClient.invalidateQueries({ queryKey: ["recensioni", id] });
+    }
+  };
+
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/annuncio/${id}` : '';
   const shareText = annuncio ? `${annuncio.titolo} - Milano Help` : '';
 
@@ -266,7 +309,7 @@ const AnnuncioPage = () => {
     );
   }
 
-  if (!isLoading && annuncio && annuncio.stato !== "attivo" && annuncio.user_id !== user?.id) {
+  if (!isLoading && annuncio && annuncio.stato !== "attivo" && annuncio.user_id !== user?.id && !isAdmin) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -279,6 +322,9 @@ const AnnuncioPage = () => {
       </div>
     );
   }
+
+  const catAttivita = (annuncio as any)?.categoria_attivita;
+  const catAttivitaColor = catAttivita ? (BUSINESS_CATEGORY_COLORS[catAttivita] || BUSINESS_CATEGORY_COLORS["Altro"]) : "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -355,6 +401,11 @@ const AnnuncioPage = () => {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={toggleLike} className="flex items-center gap-2">
+                        <Heart className={`w-4 h-4 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
+                        {userLiked ? "Rimuovi Mi piace" : "Mi piace"} {(annuncio as any).mi_piace > 0 ? `(${(annuncio as any).mi_piace})` : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {user && autore?.telefono && (
                         <DropdownMenuItem asChild>
                           <a href={`tel:${autore.telefono}`} className="flex items-center gap-2"><Phone className="w-4 h-4" /> Chiama</a>
@@ -373,20 +424,21 @@ const AnnuncioPage = () => {
                       <DropdownMenuItem onClick={handleShare} className="flex items-center gap-2">
                         <Share2 className="w-4 h-4" /> Condividi
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={toggleLike} className="flex items-center gap-2">
-                        <Heart className={`w-4 h-4 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
-                        {userLiked ? "Rimuovi Mi piace" : "Mi piace"}
-                      </DropdownMenuItem>
                       {isSpecialCategory && user && annuncio.user_id !== user?.id && !userReview && (
-                        <DropdownMenuItem onClick={() => setShowReviewForm(true)} className="flex items-center gap-2">
-                          <Star className="w-4 h-4" /> Recensisci
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setShowReviewForm(true)} className="flex items-center gap-2">
+                            <Star className="w-4 h-4" /> Recensisci
+                          </DropdownMenuItem>
+                        </>
                       )}
                       {user && annuncio.user_id !== user?.id && (
-                        <DropdownMenuItem onClick={() => setShowSegnala(true)} className="flex items-center gap-2 text-destructive">
-                          <Flag className="w-4 h-4" /> Segnala
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setShowSegnala(true)} className="flex items-center gap-2 text-destructive">
+                            <Flag className="w-4 h-4" /> Segnala
+                          </DropdownMenuItem>
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -400,6 +452,11 @@ const AnnuncioPage = () => {
                     <Badge variant="secondary" className="gap-1">
                       <CatIcon className="w-3 h-3" /> {categoria.label}
                     </Badge>
+                  )}
+                  {catAttivita && (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${catAttivitaColor}`}>
+                      {catAttivita}
+                    </span>
                   )}
                   {isSpecialCategory && (avgRating || recensioni.length > 0) && (
                     <div className="flex items-center gap-1">
@@ -442,6 +499,12 @@ const AnnuncioPage = () => {
                     {(annuncio as any).via ? `${(annuncio as any).via}${(annuncio as any).civico ? ` ${(annuncio as any).civico}` : ''}${(annuncio as any).citta ? `, ${(annuncio as any).citta}` : ''}${(annuncio as any).cap ? ` ${(annuncio as any).cap}` : ''}` : annuncio.quartiere}
                   </p>
                 )}
+
+                {/* Quick like button */}
+                <button onClick={toggleLike} className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition-colors">
+                  <Heart className={`w-5 h-5 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
+                  <span>{(annuncio as any).mi_piace || 0}</span>
+                </button>
               </div>
 
               {/* Description */}
@@ -480,7 +543,7 @@ const AnnuncioPage = () => {
               )}
 
               {/* Map */}
-              {hasLocation && (
+              {hasLocation ? (
                 <div className="bg-card border rounded-xl p-5">
                   <h2 className="font-heading font-bold text-foreground mb-3">📍 Posizione</h2>
                   <div className="rounded-xl overflow-hidden mb-3">
@@ -493,7 +556,12 @@ const AnnuncioPage = () => {
                     <Navigation className="w-4 h-4 mr-2" /> Portami qui
                   </Button>
                 </div>
-              )}
+              ) : isSpecialCategory ? (
+                <div className="bg-card border rounded-xl p-5">
+                  <h2 className="font-heading font-bold text-foreground mb-3">📍 Posizione</h2>
+                  <p className="text-sm text-muted-foreground">Posizione non disponibile per questa attività.</p>
+                </div>
+              ) : null}
 
               {/* Reviews section */}
               {isSpecialCategory && (
@@ -549,6 +617,19 @@ const AnnuncioPage = () => {
                                 <Star key={s} className={`w-3 h-3 ${s < r.voto ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`} />
                               ))}
                             </div>
+                            {/* Admin actions on reviews */}
+                            {isAdmin && (
+                              <div className="flex items-center gap-1 ml-2">
+                                <button onClick={() => { setEditingReview(r); setEditReviewVoto(r.voto); setEditReviewCommento(r.commento || ""); }}
+                                  className="text-muted-foreground hover:text-primary transition-colors" title="Modifica">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => setDeletingReviewId(r.id)}
+                                  className="text-muted-foreground hover:text-destructive transition-colors" title="Elimina">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                           {r.commento && <p className="text-sm text-foreground/80 ml-9">{r.commento}</p>}
                           <p className="text-xs text-muted-foreground ml-9 mt-1">{format(new Date(r.created_at), "d MMM yyyy", { locale: it })}</p>
@@ -560,43 +641,8 @@ const AnnuncioPage = () => {
               )}
             </div>
 
-            {/* Sidebar */}
+            {/* Sidebar - clean, minimal */}
             <div className="space-y-6">
-              {/* Actions */}
-              <div className="bg-card border rounded-xl p-5 space-y-3">
-                <Button variant={userLiked ? "default" : "outline"} className="w-full" onClick={toggleLike}>
-                  <Heart className={`w-4 h-4 mr-2 ${userLiked ? "fill-current" : ""}`} />
-                  Mi piace {(annuncio as any).mi_piace > 0 ? `(${(annuncio as any).mi_piace})` : ""}
-                </Button>
-
-                {annuncio.user_id !== user?.id && (
-                  <Button className="w-full" size="lg" onClick={handleContatta}>
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    {user ? "Contatta" : "Accedi per contattare"}
-                  </Button>
-                )}
-
-                {user && autore?.email && (
-                  <a href={`mailto:${autore.email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <Mail className="w-4 h-4" /> {autore.email}
-                  </a>
-                )}
-                {user && autore?.telefono && (
-                  <a href={`tel:${autore.telefono}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <Phone className="w-4 h-4" /> {autore.telefono}
-                  </a>
-                )}
-                {!user && ((annuncio as any).mostra_email || (annuncio as any).mostra_telefono) && (
-                  <p className="text-xs text-muted-foreground italic">
-                    <a href="/login" className="underline hover:text-primary">Accedi</a> per vedere i contatti.
-                  </p>
-                )}
-
-                <Button variant="outline" className="w-full" onClick={handleShare}>
-                  <Share2 className="w-4 h-4 mr-2" /> Condividi
-                </Button>
-              </div>
-
               {/* Author card */}
               {autore && (
                 <div className="bg-card border rounded-xl p-5">
@@ -616,9 +662,28 @@ const AnnuncioPage = () => {
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mb-3">
                     Membro dal {format(new Date(autore.created_at), "MMMM yyyy", { locale: it })}
                   </p>
+
+                  {/* Contact info */}
+                  <div className="space-y-2 border-t pt-3">
+                    {user && autore?.email && (
+                      <a href={`mailto:${autore.email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                        <Mail className="w-4 h-4" /> {autore.email}
+                      </a>
+                    )}
+                    {user && autore?.telefono && (
+                      <a href={`tel:${autore.telefono}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                        <Phone className="w-4 h-4" /> {autore.telefono}
+                      </a>
+                    )}
+                    {!user && ((annuncio as any).mostra_email || (annuncio as any).mostra_telefono) && (
+                      <p className="text-xs text-muted-foreground italic">
+                        <a href="/login" className="underline hover:text-primary">Accedi</a> per vedere i contatti.
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -712,6 +777,44 @@ const AnnuncioPage = () => {
             <Button onClick={handleSegnala} disabled={!segnalaMotivo || sending}>
               {sending ? "Invio..." : "Invia segnalazione"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin edit review dialog */}
+      <Dialog open={!!editingReview} onOpenChange={() => setEditingReview(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Modifica recensione</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2">Voto</label>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, s) => (
+                  <button key={s} onClick={() => setEditReviewVoto(s + 1)} className="focus:outline-none">
+                    <Star className={`w-6 h-6 transition-colors ${s < editReviewVoto ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Textarea placeholder="Commento..." value={editReviewCommento} onChange={(e) => setEditReviewCommento(e.target.value)} rows={3} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingReview(null)}>Annulla</Button>
+            <Button onClick={handleEditReview}>Salva</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin delete review confirmation */}
+      <Dialog open={!!deletingReviewId} onOpenChange={() => setDeletingReviewId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Elimina recensione</DialogTitle>
+            <DialogDescription>Sei sicuro di voler eliminare questa recensione? L'azione è irreversibile.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingReviewId(null)}>Annulla</Button>
+            <Button variant="destructive" onClick={handleDeleteReview}>Elimina</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

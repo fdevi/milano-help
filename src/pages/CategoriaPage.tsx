@@ -24,6 +24,30 @@ const isProfCategory = (nome?: string) => nome === "Professionisti";
 const isNegoziCategory = (nome?: string) => nome === "negozi_di_quartiere";
 const isSpecialCategory = (nome?: string) => isProfCategory(nome) || isNegoziCategory(nome);
 
+const BUSINESS_CATEGORY_COLORS: Record<string, string> = {
+  "Alimentari": "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  "Panetteria": "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  "Ristorante": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  "Bar / Caffetteria": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  "Parrucchiere": "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
+  "Estetista": "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-200",
+  "Abbigliamento": "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+  "Elettronica": "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
+  "Farmacia": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  "Studio Legale": "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
+  "Commercialista": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+  "Idraulico": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  "Elettricista": "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
+  "Artigiano": "bg-stone-100 text-stone-800 dark:bg-stone-900 dark:text-stone-200",
+  "Medico": "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+  "Dentista": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  "Veterinario": "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200",
+  "Palestra / Fitness": "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+  "Ferramenta": "bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200",
+  "Libreria": "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  "Altro": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+};
+
 const DATE_FILTERS = [
   { label: "Tutti", value: "tutti" },
   { label: "Oggi", value: "oggi" },
@@ -86,7 +110,7 @@ const CategoriaPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("annunci")
-        .select("id, titolo, descrizione, prezzo, quartiere, immagini, created_at, categoria_id, user_id, mi_piace, visualizzazioni, mostra_email, mostra_telefono, contenuto_speciale, via, civico, citta, cap, lat, lon, sito_web, orari_apertura")
+        .select("id, titolo, descrizione, prezzo, quartiere, immagini, created_at, categoria_id, user_id, mi_piace, visualizzazioni, mostra_email, mostra_telefono, contenuto_speciale, via, civico, citta, cap, lat, lon, sito_web, orari_apertura, categoria_attivita")
         .eq("stato", "attivo")
         .eq("categoria_id", categoria!.id)
         .order("created_at", { ascending: false });
@@ -169,7 +193,8 @@ const CategoriaPage = () => {
         (a.titolo || '').toLowerCase().includes(q) ||
         (a.profilo?.nome_attivita || '').toLowerCase().includes(q) ||
         (a.profilo?.nome || '').toLowerCase().includes(q) ||
-        (a.quartiere || '').toLowerCase().includes(q)
+        (a.quartiere || '').toLowerCase().includes(q) ||
+        (a.categoria_attivita || '').toLowerCase().includes(q)
       );
     }
     if (specialQuartiere !== "tutti") {
@@ -366,9 +391,9 @@ const CategoriaPage = () => {
             {isLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex gap-4 bg-card rounded-xl border p-4">
-                    <Skeleton className="w-28 h-28 rounded-xl shrink-0" />
-                    <div className="flex-1 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
+                  <div key={i} className="flex gap-4 bg-card rounded-xl border p-0 h-[140px]">
+                    <Skeleton className="w-[120px] h-[140px] rounded-l-xl shrink-0" />
+                    <div className="flex-1 space-y-2 py-4 pr-4"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
                   </div>
                 ))}
               </div>
@@ -391,40 +416,46 @@ const CategoriaPage = () => {
                   const fakeRating = (3.5 + (annuncio.titolo?.length || 5) % 15 / 10).toFixed(1);
                   const fakeReviews = 2 + (annuncio.titolo?.length || 3) % 20;
                   const accentColor = isProf ? 'blue' : 'emerald';
+                  const catAttivita = annuncio.categoria_attivita;
+                  const badgeColor = catAttivita ? (BUSINESS_CATEGORY_COLORS[catAttivita] || BUSINESS_CATEGORY_COLORS["Altro"]) : "";
 
                   return (
                     <motion.div key={annuncio.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.2) }}>
                       <Link to={`/annuncio/${annuncio.id}`} className="block">
-                        <div className={`group flex gap-0 sm:gap-4 bg-card rounded-xl overflow-hidden border-2 hover:shadow-lg transition-all duration-300 ${
+                        <div className={`group flex bg-card rounded-xl overflow-hidden border-2 hover:shadow-lg transition-all duration-300 h-[140px] ${
                           isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
                         }`}>
-                          {/* Photo left */}
-                          <div className="w-32 sm:w-40 shrink-0 relative overflow-hidden">
+                          {/* Photo left - fixed 120x120 square */}
+                          <div className="w-[120px] h-[140px] shrink-0 relative overflow-hidden">
                             {firstImage ? (
-                              <img src={firstImage} alt={nomeAttivita} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 min-h-[120px]" loading="lazy" />
+                              <img src={firstImage} alt={nomeAttivita} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                             ) : (
-                              <div className={`flex items-center justify-center w-full h-full min-h-[120px] ${isProf ? 'bg-blue-50 dark:bg-blue-950' : 'bg-emerald-50 dark:bg-emerald-950'}`}>
+                              <div className={`flex items-center justify-center w-full h-full ${isProf ? 'bg-blue-50 dark:bg-blue-950' : 'bg-emerald-50 dark:bg-emerald-950'}`}>
                                 {isProf ? <Building2 className="w-10 h-10 text-blue-300" /> : <Store className="w-10 h-10 text-emerald-300" />}
                               </div>
                             )}
                           </div>
 
                           {/* Content right */}
-                          <div className="flex-1 p-3 sm:p-4 flex flex-col justify-center min-w-0">
+                          <div className="flex-1 p-3 sm:p-4 flex flex-col justify-center min-w-0 overflow-hidden">
                             <h3 className="font-heading font-bold text-foreground text-base sm:text-lg truncate group-hover:text-primary transition-colors">
                               {nomeAttivita}
                             </h3>
 
                             {/* Category badge */}
-                            {profilo?.nome_attivita && annuncio.titolo !== profilo.nome_attivita && (
-                              <p className="text-xs text-muted-foreground truncate mt-0.5">{profilo.nome_attivita}</p>
+                            {catAttivita && (
+                              <div className="mt-1">
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${badgeColor}`}>
+                                  {catAttivita}
+                                </span>
+                              </div>
                             )}
 
                             {/* Rating */}
                             <div className="flex items-center gap-1.5 mt-1.5">
                               <div className="flex items-center gap-0.5">
                                 {Array.from({ length: 5 }).map((_, s) => (
-                                  <Star key={s} className={`w-3 h-3 ${s < Math.round(Number(fakeRating)) ? `text-${accentColor}-500 fill-${accentColor}-500` : 'text-muted-foreground/30'}`} />
+                                  <Star key={s} className={`w-3 h-3 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
                                 ))}
                               </div>
                               <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews})</span>
@@ -432,21 +463,21 @@ const CategoriaPage = () => {
 
                             {/* Location */}
                             {(annuncio.quartiere || annuncio.citta) && (
-                              <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                                 <MapPin className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{annuncio.via ? `${annuncio.via}${annuncio.civico ? ` ${annuncio.civico}` : ''}, ` : ''}{annuncio.quartiere || annuncio.citta}</span>
                               </div>
                             )}
 
                             {/* Contact icons */}
-                            <div className="flex items-center gap-3 mt-2" onClick={(e) => e.preventDefault()}>
+                            <div className="flex items-center gap-3 mt-1.5" onClick={(e) => e.preventDefault()}>
                               {profilo?.mostra_telefono && profilo?.telefono && (
-                                <a href={`tel:${profilo.telefono}`} onClick={(e) => e.stopPropagation()} className={`text-${accentColor}-600 hover:text-${accentColor}-800 transition-colors`}>
+                                <a href={`tel:${profilo.telefono}`} onClick={(e) => e.stopPropagation()} className={`${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'} transition-colors`}>
                                   <Phone className="w-4 h-4" />
                                 </a>
                               )}
                               {profilo?.mostra_email && profilo?.email && (
-                                <a href={`mailto:${profilo.email}`} onClick={(e) => e.stopPropagation()} className={`text-${accentColor}-600 hover:text-${accentColor}-800 transition-colors`}>
+                                <a href={`mailto:${profilo.email}`} onClick={(e) => e.stopPropagation()} className={`${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'} transition-colors`}>
                                   <Mail className="w-4 h-4" />
                                 </a>
                               )}
@@ -500,198 +531,197 @@ const CategoriaPage = () => {
                 </SelectContent>
               </Select>
               <Select value={priceFilter} onValueChange={setPriceFilter}>
-                <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue placeholder="Prezzo" /></SelectTrigger>
+                <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="tutti">Tutti i prezzi</SelectItem>
-                  <SelectItem value="gratuito">🆓 Gratuito</SelectItem>
-                  <SelectItem value="pagamento">💰 A pagamento</SelectItem>
+                  <SelectItem value="gratuito">Gratuiti</SelectItem>
+                  <SelectItem value="pagamento">A pagamento</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={eventSortBy} onValueChange={setEventSortBy}>
-                <SelectTrigger className="w-[160px] h-8 text-xs">
-                  <ArrowUpDown className="w-3 h-3 mr-1" />
-                  <SelectValue placeholder="Ordina" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="data">Data più vicina</SelectItem>
-                  <SelectItem value="rilevanza">Rilevanza ricerca</SelectItem>
+                  <SelectItem value="data">Per data</SelectItem>
+                  <SelectItem value="rilevanza">Rilevanza</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         )}
 
-        {/* ANNUNCI: Filters toolbar */}
-        {!isEvento && !isSpecial && (
-          <>
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Ordina per" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="data_desc">Più recenti</SelectItem>
-                  <SelectItem value="prezzo_asc">Prezzo crescente</SelectItem>
-                  <SelectItem value="prezzo_desc">Prezzo decrescente</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant={showFilters ? "default" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
-                <SlidersHorizontal className="w-4 h-4 mr-1" /> Filtri
-                {hasActiveFilters && <Badge variant="secondary" className="ml-2 text-xs">{selectedQuartieri.length + (prezzoMin ? 1 : 0) + (prezzoMax ? 1 : 0)}</Badge>}
-              </Button>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={() => { setSelectedQuartieri([]); setPrezzoMin(""); setPrezzoMax(""); }}>
-                  <X className="w-4 h-4 mr-1" /> Rimuovi filtri
-                </Button>
-              )}
+        {/* EVENTI: Grid */}
+        {isEvento && (
+          isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-72 rounded-xl" />
+              ))}
             </div>
-            {showFilters && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-card border rounded-xl p-4 mb-6 space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Fascia di prezzo</label>
-                  <div className="flex gap-3 items-center">
-                    <Input type="number" placeholder="Min €" value={prezzoMin} onChange={(e) => setPrezzoMin(e.target.value)} className="w-32" />
-                    <span className="text-muted-foreground">—</span>
-                    <Input type="number" placeholder="Max €" value={prezzoMax} onChange={(e) => setPrezzoMax(e.target.value)} className="w-32" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Quartiere</label>
-                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                    {quartieri.map((q) => (
-                      <Badge key={q.nome} variant={selectedQuartieri.includes(q.nome) ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleQuartiere(q.nome)}>
-                        {q.nome}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </>
-        )}
-
-        {/* Grid (skip for special categories - they render above) */}
-        {isSpecial ? null : isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border overflow-hidden">
-                <Skeleton className="h-48 w-full" />
-                <div className="p-4 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
-              </div>
-            ))}
-          </div>
-        ) : isEvento ? (
-          filteredEventi.length === 0 ? (
+          ) : filteredEventi.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-muted-foreground" />
-              </div>
               <h3 className="font-heading text-xl font-bold text-foreground mb-2">Nessun evento trovato</h3>
-              <p className="text-muted-foreground">Prova a cambiare i filtri di ricerca.</p>
+              <p className="text-muted-foreground">Prova a modificare i filtri di ricerca.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEventi.map((evento: any, i: number) => {
+              {filteredEventi.map((evento: any) => {
                 const style = getCategoryStyle(evento.categoria);
-                const autoDesc = getAutoDescription(evento);
                 return (
-                  <motion.div key={evento.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
-                    <Link to={`/evento/${evento.id}`}>
-                      <div className="group bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                        <div className="relative h-48 bg-muted overflow-hidden">
-                          {evento.immagine ? (
-                            <img src={evento.immagine} alt={evento.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                          ) : (
-                            <div className={`flex items-center justify-center h-full ${style.bg}`}>
-                              <span className="text-6xl">{style.emoji}</span>
+                  <Link key={evento.id} to={`/evento/${evento.id}`}>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      className="bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all group h-full flex flex-col">
+                      {evento.immagine ? (
+                        <div className="relative h-44 overflow-hidden">
+                          <img src={evento.immagine} alt={evento.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                          {evento.categoria && (
+                            <div className="absolute top-3 left-3">
+                              <Badge className={`${style.bg} ${style.text} border-0 text-xs`}>
+                                {style.emoji} {evento.categoria.charAt(0).toUpperCase() + evento.categoria.slice(1)}
+                              </Badge>
                             </div>
                           )}
-                          <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center shadow-sm">
-                            <p className="text-xs font-bold text-primary leading-tight">{new Date(evento.data).toLocaleDateString("it", { month: "short" }).toUpperCase()}</p>
-                            <p className="text-lg font-heading font-bold text-foreground leading-tight">{new Date(evento.data).getDate()}</p>
-                          </div>
-                          <Badge className={`absolute top-3 right-3 ${evento.gratuito ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                            {evento.gratuito ? "Gratuito" : evento.prezzo != null ? `€${evento.prezzo}` : ""}
-                          </Badge>
-                          <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-                            <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} />
-                            {evento.fonte_esterna && (
-                              <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5">⭐ Ufficiale</Badge>
-                            )}
-                          </div>
-                          {evento.categoria && (
-                            <Badge variant="outline" className="absolute bottom-3 right-3 bg-card/80 backdrop-blur-sm text-[10px]">
-                              {style.emoji} {evento.categoria}
-                            </Badge>
+                          {evento.gratuito && (
+                            <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 text-xs">Gratuito</Badge>
                           )}
                         </div>
-                        <div className="p-4 space-y-2">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>
-                              {evento.fine
-                                ? `Dal ${formatEventDate(evento.data)} al ${formatEventDate(evento.fine)}`
-                                : formatEventDate(evento.data)}
-                            </span>
-                          </div>
-                          <h3 className="font-heading font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                            {evento.titolo}
-                          </h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{autoDesc}</p>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <MapPin className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{evento.luogo}</span>
-                          </div>
+                      ) : (
+                        <div className="relative h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                          <Calendar className="w-12 h-12 text-primary/30" />
+                          {evento.categoria && (
+                            <div className="absolute top-3 left-3">
+                              <Badge className={`${style.bg} ${style.text} border-0 text-xs`}>
+                                {style.emoji} {evento.categoria.charAt(0).toUpperCase() + evento.categoria.slice(1)}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="p-4 flex-1 flex flex-col">
+                        <h3 className="font-heading font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                          {evento.titolo}
+                        </h3>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                          <Calendar className="w-4 h-4 shrink-0" />
+                          {formatEventDate(evento.data)}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                          <MapPin className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{evento.luogo}</span>
+                        </div>
+                        {evento.prezzo != null && !evento.gratuito && (
+                          <p className="text-sm font-bold text-primary mt-2">€{evento.prezzo.toFixed(2)}</p>
+                        )}
+                        <div className="mt-auto pt-3 flex items-center gap-2 text-xs text-muted-foreground border-t">
+                          <span>👤 {evento.organizzatore_nome}</span>
+                          <EventStatusBadge stato={evento.stato} />
                         </div>
                       </div>
-                    </Link>
-                  </motion.div>
+                    </motion.div>
+                  </Link>
                 );
               })}
             </div>
           )
-        ) : filteredAnnunci.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <ImageOff className="w-8 h-8 text-muted-foreground" />
+        )}
+
+        {/* ANNUNCI STANDARD: Filters & Grid */}
+        {!isEvento && !isSpecial && (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-2">
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                  <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="data_desc">Più recenti</SelectItem>
+                    <SelectItem value="prezzo_asc">Prezzo crescente</SelectItem>
+                    <SelectItem value="prezzo_desc">Prezzo decrescente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}
+                className={`gap-1.5 ${hasActiveFilters ? "border-primary text-primary" : ""}`}>
+                <SlidersHorizontal className="w-4 h-4" /> Filtri {hasActiveFilters && "(attivi)"}
+              </Button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-foreground mb-2">Nessun annuncio trovato</h3>
-            <p className="text-muted-foreground">{hasActiveFilters ? "Prova a modificare i filtri di ricerca." : "Non ci sono ancora annunci in questa categoria."}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAnnunci.map((annuncio, i) => {
-              const firstImage = annuncio.immagini?.[0];
-              return (
-                <motion.div key={annuncio.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                  <Link to={`/annuncio/${annuncio.id}`}>
-                    <div className="group bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                      <div className="h-48 bg-muted flex items-center justify-center overflow-hidden">
-                        {firstImage ? (
-                          <img src={firstImage} alt={annuncio.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+
+            {showFilters && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="mb-6 bg-card border rounded-xl p-4 space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-foreground mb-2">Quartiere</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(quartieri.length > 0 ? quartieri : ["Brera", "Isola", "Navigli", "Porta Romana"]).map((q) => (
+                      <Button key={q} variant={selectedQuartieri.includes(q) ? "default" : "outline"} size="sm"
+                        className="h-7 text-xs rounded-full" onClick={() => toggleQuartiere(q)}>
+                        {q}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1"><label className="text-sm text-muted-foreground">Min €</label><Input type="number" value={prezzoMin} onChange={(e) => setPrezzoMin(e.target.value)} placeholder="0" /></div>
+                  <div className="flex-1"><label className="text-sm text-muted-foreground">Max €</label><Input type="number" value={prezzoMax} onChange={(e) => setPrezzoMax(e.target.value)} placeholder="∞" /></div>
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedQuartieri([]); setPrezzoMin(""); setPrezzoMax(""); }}>
+                    <X className="w-3 h-3 mr-1" /> Resetta filtri
+                  </Button>
+                )}
+              </motion.div>
+            )}
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-64 rounded-xl" />
+                ))}
+              </div>
+            ) : filteredAnnunci.length === 0 ? (
+              <div className="text-center py-16">
+                <ImageOff className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+                <h3 className="font-heading text-xl font-bold text-foreground mb-2">Nessun annuncio trovato</h3>
+                <p className="text-muted-foreground">
+                  {hasActiveFilters ? "Prova a modificare i filtri." : "Non ci sono ancora annunci in questa categoria."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredAnnunci.map((annuncio) => (
+                  <Link key={annuncio.id} to={`/annuncio/${annuncio.id}`}>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      className="bg-card rounded-xl overflow-hidden border hover:shadow-lg transition-all group">
+                      <div className="h-44 bg-muted overflow-hidden">
+                        {annuncio.immagini?.[0] ? (
+                          <img src={annuncio.immagini[0]} alt={annuncio.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                         ) : (
-                          <Icon className="w-12 h-12 text-muted-foreground/30" />
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Icon className="w-12 h-12 text-muted-foreground/30" />
+                          </div>
                         )}
                       </div>
                       <div className="p-4">
-                        <h3 className="font-heading font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">{annuncio.titolo}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{annuncio.descrizione}</p>
+                        <h3 className="font-heading font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                          {annuncio.titolo}
+                        </h3>
+                        {annuncio.prezzo != null && (
+                          <p className="text-lg font-bold text-primary mt-1">€{annuncio.prezzo.toFixed(2)}</p>
+                        )}
                         <div className="flex items-center justify-between mt-3">
-                          {annuncio.prezzo != null && <span className="text-primary font-bold">€{annuncio.prezzo.toFixed(2)}</span>}
                           {annuncio.quartiere && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />{annuncio.quartiere}
-                            </span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> {annuncio.quartiere}</span>
                           )}
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(annuncio.created_at), "d MMM", { locale: it })}
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </Link>
-                </motion.div>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
-
       <Footer />
     </div>
   );
