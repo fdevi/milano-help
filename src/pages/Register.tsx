@@ -57,6 +57,8 @@ interface FormData {
   civico: string;
   cap: string;
   tipoAccount: string;
+  partitaIva: string;
+  nomeAttivita: string;
   termini: boolean;
   privacy: boolean;
   notificheEmail: boolean;
