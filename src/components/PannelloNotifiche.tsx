@@ -168,7 +168,7 @@ const PannelloNotifiche = () => {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => { setOpen(!open); if (!open) caricaNotifiche(); }}
+        onClick={() => { setOpen(!open); if (!open) caricaNotifiche("open"); }}
         className="relative p-2 rounded-lg hover:bg-muted transition-colors"
       >
         <Bell className="w-5 h-5 text-muted-foreground" />
