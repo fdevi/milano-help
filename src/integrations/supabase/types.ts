@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           categoria_id: string | null
           condizione: string | null
+          contenuto_speciale: string | null
           created_at: string
           data_scadenza: string | null
           descrizione: string | null
@@ -66,6 +67,7 @@ export type Database = {
         Insert: {
           categoria_id?: string | null
           condizione?: string | null
+          contenuto_speciale?: string | null
           created_at?: string
           data_scadenza?: string | null
           descrizione?: string | null
@@ -90,6 +92,7 @@ export type Database = {
         Update: {
           categoria_id?: string | null
           condizione?: string | null
+          contenuto_speciale?: string | null
           created_at?: string
           data_scadenza?: string | null
           descrizione?: string | null
@@ -1414,6 +1417,41 @@ export type Database = {
             columns: ["comune_id"]
             isOneToOne: false
             referencedRelation: "comuni"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recensioni: {
+        Row: {
+          annuncio_id: string
+          commento: string | null
+          created_at: string
+          id: string
+          utente_id: string
+          voto: number
+        }
+        Insert: {
+          annuncio_id: string
+          commento?: string | null
+          created_at?: string
+          id?: string
+          utente_id: string
+          voto: number
+        }
+        Update: {
+          annuncio_id?: string
+          commento?: string | null
+          created_at?: string
+          id?: string
+          utente_id?: string
+          voto?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recensioni_annuncio_id_fkey"
+            columns: ["annuncio_id"]
+            isOneToOne: false
+            referencedRelation: "annunci"
             referencedColumns: ["id"]
           },
         ]
