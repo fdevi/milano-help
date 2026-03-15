@@ -554,8 +554,8 @@ const CategoriaPage = () => {
           </>
         )}
 
-        {/* Grid */}
-        {isLoading ? (
+        {/* Grid (skip for special categories - they render above) */}
+        {isSpecial ? null : isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card rounded-xl border overflow-hidden">
