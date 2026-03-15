@@ -44,7 +44,9 @@ const CategoriaPage = () => {
   const { nome } = useParams<{ nome: string }>();
   const { quartieri } = useQuartieri();
   const isEvento = isEventCategory(nome);
-
+  const isProf = isProfCategory(nome);
+  const isNegozi = isNegoziCategory(nome);
+  const isSpecial = isSpecialCategory(nome);
   // Annunci state
   const [sortBy, setSortBy] = useState<SortOption>("data_desc");
   const [selectedQuartieri, setSelectedQuartieri] = useState<string[]>([]);
