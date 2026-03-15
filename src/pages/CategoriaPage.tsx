@@ -281,7 +281,30 @@ const CategoriaPage = () => {
 
       <div className="container mx-auto px-4 pt-24 pb-12">
         {/* Header */}
-        {isEvento ? (
+        {isSpecial ? (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <div className={`rounded-2xl p-6 md:p-8 ${isProf ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800' : 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800'}`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'}`}>
+                  {isProf ? <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" /> : <Store className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />}
+                </div>
+                <div>
+                  <h1 className="font-heading text-3xl font-extrabold text-foreground">
+                    {isProf ? "Professionisti" : "Negozi di Quartiere"}
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
+                    {isLoading ? "Caricamento..." : `${filteredSpecialProfiles.length} ${isProf ? 'professionisti' : 'negozi'} registrati`}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground max-w-2xl">
+                {isProf
+                  ? "Scopri i professionisti del tuo quartiere: artigiani, consulenti, tecnici e molto altro. Servizi di qualità, vicino a te."
+                  : "Esplora i negozi e le attività commerciali del tuo quartiere. Supporta il commercio locale!"}
+              </p>
+            </div>
+          </motion.div>
+        ) : isEvento ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <h1 className="font-heading text-3xl font-extrabold text-foreground">🎉 Eventi a Milano</h1>
             <p className="text-muted-foreground mt-1">
