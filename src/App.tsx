@@ -66,6 +66,7 @@ import CompletaProfilo from "./pages/CompletaProfilo";
 import Fermate from "./pages/Fermate";
 import ImportFermate from "./pages/ImportFermate";
 import OneSignalInit from "./components/OneSignalInit";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
