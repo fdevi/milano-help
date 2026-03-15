@@ -226,13 +226,18 @@ const Register = () => {
     return form.quartiere.trim() !== "" && form.citta.trim() !== "" && form.indirizzo.trim() !== "" && form.civico.trim() !== "" && form.cap.trim() !== "";
   }, [form.quartiere, form.citta, form.indirizzo, form.civico, form.cap]);
 
+  const isValidPartitaIva = useCallback((piva: string) => {
+    const cleaned = piva.replace(/\s/g, '');
+    return /^\d{11}$/.test(cleaned);
+  }, []);
+
   const step4Valid = useCallback(() => {
     if (!form.tipoAccount) return false;
     if (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') {
-      return form.partitaIva.trim() !== "" && form.nomeAttivita.trim() !== "";
+      return isValidPartitaIva(form.partitaIva) && form.nomeAttivita.trim() !== "";
     }
     return true;
-  }, [form.tipoAccount, form.partitaIva, form.nomeAttivita]);
+  }, [form.tipoAccount, form.partitaIva, form.nomeAttivita, isValidPartitaIva]);
 
   // Update form
   const updateForm = (field: keyof FormData, value: any) => {
