@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTipoAccount } from "@/hooks/useTipoAccount";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ const ModificaAnnuncio = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isProfessionista, isNegoziante } = useTipoAccount();
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
@@ -50,6 +52,7 @@ const ModificaAnnuncio = () => {
   const [loaded, setLoaded] = useState(false);
   const [condizione, setCondizione] = useState("");
   const [tipoOperazione, setTipoOperazione] = useState("");
+  const [contenutoSpeciale, setContenutoSpeciale] = useState("");
 
   // Fetch annuncio data
   const { data: annuncio, isLoading: loadingAnnuncio } = useQuery({
@@ -78,6 +81,7 @@ const ModificaAnnuncio = () => {
       setExistingImages((annuncio.immagini as string[])?.filter(Boolean) || []);
       setCondizione((annuncio as any).condizione || "");
       setTipoOperazione((annuncio as any).tipo_operazione || "");
+      setContenutoSpeciale((annuncio as any).contenuto_speciale || "");
       setLoaded(true);
     }
   }, [annuncio, loaded]);
@@ -116,6 +120,14 @@ const ModificaAnnuncio = () => {
   const richiedePrezzo = selectedCat?.richiede_prezzo ?? false;
   const isInVendita = selectedCat?.nome === "in_vendita" || selectedCat?.label?.toLowerCase().includes("vendita");
   const isImmobili = selectedCat?.nome === "immobili" || selectedCat?.label?.toLowerCase().includes("immobil");
+  const isSpecialCat = selectedCat?.nome === "Professionisti" || selectedCat?.nome === "negozi_di_quartiere";
+
+  // Filter categories based on user tipo_account
+  const filteredCategorie = categorie.filter((c) => {
+    if (c.nome === "Professionisti") return isProfessionista;
+    if (c.nome === "negozi_di_quartiere") return isNegoziante;
+    return true;
+  });
 
   const totalImages = existingImages.length + newImages.length;
 
@@ -181,6 +193,7 @@ const ModificaAnnuncio = () => {
         stato: "in_moderazione",
         condizione: isInVendita && condizione ? condizione : null,
         tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
+        contenuto_speciale: isSpecialCat && contenutoSpeciale.trim() ? contenutoSpeciale.trim() : null,
       };
 
       const { error } = await (supabase as any)
@@ -257,7 +270,7 @@ const ModificaAnnuncio = () => {
                 <SelectValue placeholder="Seleziona una categoria" />
               </SelectTrigger>
               <SelectContent>
-                {categorie.map((c) => (
+                {filteredCategorie.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -286,6 +299,21 @@ const ModificaAnnuncio = () => {
               rows={4}
             />
           </div>
+
+          {/* Contenuto speciale per Prof/Negozianti */}
+          {isSpecialCat && (
+            <div>
+              <Label htmlFor="contenutoSpeciale">📋 Menù / Offerte speciali</Label>
+              <Textarea
+                id="contenutoSpeciale"
+                value={contenutoSpeciale}
+                onChange={(e) => setContenutoSpeciale(e.target.value)}
+                placeholder="Inserisci il tuo menù, listino prezzi o offerte speciali..."
+                rows={5}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Opzionale. Verrà visualizzato nella pagina di dettaglio.</p>
+            </div>
+          )}
 
           {richiedePrezzo && (
             <div>

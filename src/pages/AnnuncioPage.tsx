@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn, Share2, Copy, Check } from "lucide-react";
+import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn, Share2, Copy, Check, Navigation, Building2, Store } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import CommentiAnnuncio from "@/components/chat/CommentiAnnuncio";
+
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoibWlsYW5vaGVscCIsImEiOiJjbTlxMzJxcGIwMDFnMnFzOHU3OXF1YnhzIn0.X4KMsJcd_oBP4iFvOWm2TA";
 
 const AnnuncioPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,20 +52,24 @@ const AnnuncioPage = () => {
     enabled: !!id,
   });
 
-  // Fetch author profile — email/telefono solo se utente loggato e consenso dato
+  const isSpecialCategory = annuncio?.categorie_annunci &&
+    ((annuncio.categorie_annunci as any).nome === "Professionisti" || (annuncio.categorie_annunci as any).nome === "negozi_di_quartiere");
+  const isProf = (annuncio?.categorie_annunci as any)?.nome === "Professionisti";
+
+  // Fetch author profile with full contact info for special categories
   const { data: autore } = useQuery({
     queryKey: ["profilo_autore", annuncio?.user_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, nome, cognome, avatar_url, quartiere, created_at")
+        .select("user_id, nome, cognome, avatar_url, quartiere, created_at, nome_attivita, tipo_account, lat, lon")
         .eq("user_id", annuncio!.user_id)
         .single();
       if (error) throw error;
-      // Fetch email/telefono solo se: utente loggato + consenso venditore + non è il proprietario
       let email: string | null = null;
       let telefono: string | null = null;
-      if (user && annuncio?.user_id !== user.id) {
+      // Show contacts if user is logged in and annuncio owner consented
+      if (user) {
         if ((annuncio as any).mostra_email) {
           const { data: contactData } = await supabase
             .from("profiles")
@@ -120,7 +126,6 @@ const AnnuncioPage = () => {
     } else {
       await supabase.from("annunci_mi_piace").insert({ annuncio_id: annuncio.id, user_id: user.id } as any);
       await supabase.from("annunci").update({ mi_piace: (annuncio.mi_piace ?? 0) + 1 } as any).eq("id", annuncio.id);
-      // Send notification to annuncio owner
       if (user.id !== annuncio.user_id) {
         const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
         await supabase.from("notifiche").insert({
@@ -139,7 +144,7 @@ const AnnuncioPage = () => {
     queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
   };
 
-  // View counter — one increment per session per annuncio
+  // View counter
   useEffect(() => {
     if (!annuncio?.id) return;
     const key = `visto_annuncio_${annuncio.id}`;
@@ -176,13 +181,8 @@ const AnnuncioPage = () => {
   const images = annuncio?.immagini?.filter(Boolean) || [];
 
   const handleContatta = async () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+    if (!user) { navigate("/login"); return; }
     if (!annuncio) return;
-
-    // Check existing conversation
     const { data: existing } = await supabase
       .from("conversazioni")
       .select("id")
@@ -190,18 +190,12 @@ const AnnuncioPage = () => {
       .or(`utente1_id.eq.${annuncio.user_id},utente2_id.eq.${annuncio.user_id}`)
       .limit(1)
       .maybeSingle();
-
-    if (existing) {
-      navigate(`/chat/${existing.id}`);
-      return;
-    }
-
+    if (existing) { navigate(`/chat/${existing.id}`); return; }
     const { data: conv, error } = await supabase
       .from("conversazioni")
       .insert({ utente1_id: user.id, utente2_id: annuncio.user_id })
       .select("id")
       .single();
-
     if (error) {
       toast({ title: "Errore", description: "Impossibile avviare la conversazione.", variant: "destructive" });
       return;
@@ -234,9 +228,7 @@ const AnnuncioPage = () => {
 
   const handleShare = async () => {
     if (navigator.share) {
-      try {
-        await navigator.share({ title: shareText, url: shareUrl });
-      } catch {}
+      try { await navigator.share({ title: shareText, url: shareUrl }); } catch {}
     } else {
       setShowSharePopup(true);
     }
@@ -248,7 +240,11 @@ const AnnuncioPage = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Not found / not active states
+  // Get lat/lon from annuncio or autore profile
+  const lat = (annuncio as any)?.lat || autore?.lat;
+  const lon = (annuncio as any)?.lon || autore?.lon;
+  const hasLocation = lat && lon;
+
   if (!isLoading && (error || !annuncio)) {
     return (
       <div className="min-h-screen bg-background">
@@ -316,7 +312,6 @@ const AnnuncioPage = () => {
                     className="w-full max-h-[300px] md:max-h-[500px] object-contain bg-muted cursor-pointer"
                     onClick={() => setLightboxOpen(true)}
                   />
-                  {/* Zoom hint */}
                   <button
                     onClick={() => setLightboxOpen(true)}
                     className="absolute top-3 right-3 bg-background/80 rounded-full p-2 hover:bg-background transition-colors"
@@ -346,7 +341,6 @@ const AnnuncioPage = () => {
                           />
                         ))}
                       </div>
-                      {/* Photo counter badge */}
                       <Badge className="absolute bottom-3 right-3 bg-background/80 text-foreground text-xs">
                         {currentImage + 1}/{images.length}
                       </Badge>
@@ -378,6 +372,13 @@ const AnnuncioPage = () => {
                 <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground mb-2">
                   {annuncio.titolo}
                 </h1>
+                {/* Business name for special categories */}
+                {isSpecialCategory && autore?.nome_attivita && (
+                  <p className="text-lg text-muted-foreground mb-2 flex items-center gap-2">
+                    {isProf ? <Building2 className="w-5 h-5 text-blue-500" /> : <Store className="w-5 h-5 text-emerald-500" />}
+                    {autore.nome_attivita}
+                  </p>
+                )}
                 <div className="flex items-center gap-4 mb-2">
                   <button onClick={toggleLike} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                     <Heart className={`w-4 h-4 ${userLiked ? "text-destructive fill-destructive" : ""}`} />
@@ -419,13 +420,42 @@ const AnnuncioPage = () => {
                   <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{annuncio.descrizione}</p>
                 </div>
               )}
+
+              {/* Contenuto speciale (Menù / Offerte) */}
+              {(annuncio as any).contenuto_speciale && (
+                <div className={`border rounded-xl p-5 ${isProf ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'}`}>
+                  <h2 className="font-heading font-bold text-foreground mb-3">📋 Menù / Offerte speciali</h2>
+                  <p className="text-foreground/80 whitespace-pre-line leading-relaxed">{(annuncio as any).contenuto_speciale}</p>
+                </div>
+              )}
+
+              {/* Map for special categories */}
+              {isSpecialCategory && hasLocation && (
+                <div className="bg-card border rounded-xl p-5">
+                  <h2 className="font-heading font-bold text-foreground mb-3">📍 Posizione</h2>
+                  <div className="rounded-xl overflow-hidden mb-3">
+                    <img
+                      src={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+${isProf ? '3b82f6' : '10b981'}(${lon},${lat})/${lon},${lat},15,0/600x300@2x?access_token=${MAPBOX_TOKEN}`}
+                      alt="Mappa posizione"
+                      className="w-full h-[200px] object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank')}
+                  >
+                    <Navigation className="w-4 h-4 mr-2" /> Portami qui
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Actions */}
               <div className="bg-card border rounded-xl p-5 space-y-3">
-                {/* Like button */}
                 <Button
                   variant={userLiked ? "default" : "outline"}
                   className="w-full"
@@ -442,7 +472,7 @@ const AnnuncioPage = () => {
                   </Button>
                 )}
 
-                {/* Contact info — visibile solo se utente loggato + venditore ha dato consenso */}
+                {/* Contact info */}
                 {user && autore?.email && (
                   <a href={`mailto:${autore.email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <Mail className="w-4 h-4" /> {autore.email}
@@ -485,6 +515,9 @@ const AnnuncioPage = () => {
                       <p className="font-medium text-foreground">
                         {autore.nome || "Utente"} {autore.cognome ? autore.cognome.charAt(0) + "." : ""}
                       </p>
+                      {autore.nome_attivita && (
+                        <p className="text-sm font-medium text-primary">{autore.nome_attivita}</p>
+                      )}
                       {autore.quartiere && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> {autore.quartiere}
@@ -534,38 +567,21 @@ const AnnuncioPage = () => {
 
       {/* Lightbox */}
       {lightboxOpen && images.length > 0 && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={() => setLightboxOpen(false)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
-            onClick={() => setLightboxOpen(false)}
-          >
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
+          <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setLightboxOpen(false)}>
             <X className="w-8 h-8" />
           </button>
           {images.length > 1 && (
             <>
-              <button
-                onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p - 1 + images.length) % images.length); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10"
-              >
+              <button onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p - 1 + images.length) % images.length); }} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10">
                 <ChevronLeft className="w-10 h-10" />
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p + 1) % images.length); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10"
-              >
+              <button onClick={(e) => { e.stopPropagation(); setCurrentImage((p) => (p + 1) % images.length); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white z-10">
                 <ChevronRight className="w-10 h-10" />
               </button>
             </>
           )}
-          <img
-            src={images[currentImage]}
-            alt={annuncio?.titolo}
-            className="max-w-[95vw] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <img src={images[currentImage]} alt={annuncio?.titolo} className="max-w-[95vw] max-h-[90vh] object-contain" onClick={(e) => e.stopPropagation()} />
           {images.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
               {currentImage + 1} / {images.length}
@@ -574,7 +590,7 @@ const AnnuncioPage = () => {
         </div>
       )}
 
-      {/* Share popup (desktop fallback) */}
+      {/* Share popup */}
       <Dialog open={showSharePopup} onOpenChange={setShowSharePopup}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -582,40 +598,14 @@ const AnnuncioPage = () => {
             <DialogDescription>Scegli come condividere questo annuncio.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
-            >
-              💬 WhatsApp
-            </a>
-            <a
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
-            >
-              📘 Facebook
-            </a>
-            <a
-              href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
-            >
-              🐦 Twitter
-            </a>
-            <button
-              onClick={handleCopyLink}
-              className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium"
-            >
+            <a href={`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium">💬 WhatsApp</a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium">📘 Facebook</a>
+            <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium">🐦 Twitter</a>
+            <button onClick={handleCopyLink} className="flex items-center gap-2 rounded-lg border p-3 hover:bg-muted transition-colors text-sm font-medium">
               {copied ? <><Check className="w-4 h-4 text-green-500" /> Copiato!</> : <><Copy className="w-4 h-4" /> Copia link</>}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            📸 Per Instagram, condividi da mobile: l'app apparirà tra le opzioni di condivisione.
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">📸 Per Instagram, condividi da mobile.</p>
         </DialogContent>
       </Dialog>
 

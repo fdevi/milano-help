@@ -44,6 +44,7 @@ import Eventi from "./pages/Eventi";
 import EventoPage from "./pages/EventoPage";
 import AdminEventi from "./pages/admin/AdminEventi";
 import AdminAnnunci from "./pages/admin/AdminAnnunci";
+import AdminAnnunciSpeciali from "./pages/admin/AdminAnnunciSpeciali";
 import AdminImportazioni from "./pages/admin/AdminImportazioni";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
             <Route path="/admin/eventi" element={<AdminRoute><AdminEventi /></AdminRoute>} />
             <Route path="/admin/annunci" element={<AdminRoute><AdminAnnunci /></AdminRoute>} />
+            <Route path="/admin/annunci-speciali" element={<AdminRoute><AdminAnnunciSpeciali /></AdminRoute>} />
             <Route path="/admin/importazioni" element={<AdminRoute><AdminImportazioni /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
