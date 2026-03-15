@@ -135,7 +135,7 @@ const PannelloNotifiche = () => {
   const handleClick = async (n: NotificaItem) => {
     setOpen(false);
     await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
-    caricaNotifiche();
+    caricaNotifiche("read");
     if (n.link) navigate(n.link);
   };
 
