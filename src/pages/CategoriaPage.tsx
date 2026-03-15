@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail } from "lucide-react";
+import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail, MoreVertical } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { it } from "date-fns/locale";
@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { useQuartieri } from "@/hooks/useQuartieri";
 import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type SortOption = "data_desc" | "prezzo_asc" | "prezzo_desc";
 
@@ -47,6 +48,7 @@ const CategoriaPage = () => {
   const isProf = isProfCategory(nome);
   const isNegozi = isNegoziCategory(nome);
   const isSpecial = isSpecialCategory(nome);
+
   // Annunci state
   const [sortBy, setSortBy] = useState<SortOption>("data_desc");
   const [selectedQuartieri, setSelectedQuartieri] = useState<string[]>([]);
@@ -77,23 +79,35 @@ const CategoriaPage = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!nome && !isEvento && !isSpecial,
+    enabled: !!nome && !isEvento,
   });
 
-  // Fetch profiles for special categories (Professionisti / Negozi)
-  const { data: specialProfiles = [], isLoading: loadingSpecial } = useQuery({
-    queryKey: ["special_profiles", nome],
+  // Fetch annunci for special categories (using categoria_id from categorie_annunci)
+  const { data: specialAnnunci = [], isLoading: loadingSpecial } = useQuery({
+    queryKey: ["special_annunci", categoria?.id],
     queryFn: async () => {
-      const tipoAccount = isProf ? "professionista" : "negoziante";
       const { data, error } = await supabase
-        .from("profiles")
-        .select("user_id, nome, cognome, nome_attivita, quartiere, avatar_url, telefono, email, mostra_telefono, mostra_email")
-        .eq("tipo_account", tipoAccount)
+        .from("annunci")
+        .select("id, titolo, descrizione, prezzo, quartiere, immagini, created_at, categoria_id, user_id, mi_piace, visualizzazioni, mostra_email, mostra_telefono, contenuto_speciale")
+        .eq("stato", "attivo")
+        .eq("categoria_id", categoria!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      
+      // Fetch profiles for each annuncio
+      const enriched = await Promise.all(
+        (data || []).map(async (annuncio: any) => {
+          const { data: profilo } = await supabase
+            .from("profiles")
+            .select("nome, cognome, nome_attivita, quartiere, avatar_url, telefono, email, mostra_telefono, mostra_email")
+            .eq("user_id", annuncio.user_id)
+            .single();
+          return { ...annuncio, profilo };
+        })
+      );
+      return enriched;
     },
-    enabled: isSpecial,
+    enabled: isSpecial && !!categoria?.id,
     staleTime: 30_000,
   });
 
@@ -129,7 +143,7 @@ const CategoriaPage = () => {
     staleTime: 30_000,
   });
 
-  // Fetch annunci attivi per questa categoria
+  // Fetch annunci attivi per questa categoria (standard, non-special)
   const { data: annunci = [], isLoading: loadingAnnunci } = useQuery({
     queryKey: ["annunci_categoria", categoria?.id],
     queryFn: async () => {
@@ -142,36 +156,36 @@ const CategoriaPage = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!categoria?.id && !isEvento,
+    enabled: !!categoria?.id && !isEvento && !isSpecial,
     staleTime: 30_000,
   });
 
-  const isLoading = isSpecial ? loadingSpecial : isEvento ? loadingEventi : loadingAnnunci;
+  const isLoading = isSpecial ? (loadingCat || loadingSpecial) : isEvento ? loadingEventi : loadingAnnunci;
 
-  // Filter special profiles
-  const filteredSpecialProfiles = useMemo(() => {
+  // Filter special annunci
+  const filteredSpecialAnnunci = useMemo(() => {
     if (!isSpecial) return [];
-    let results = [...specialProfiles];
+    let results = [...specialAnnunci];
     const q = specialSearch.toLowerCase().trim();
     if (q) {
-      results = results.filter((p: any) => 
-        (p.nome_attivita || '').toLowerCase().includes(q) ||
-        (p.nome || '').toLowerCase().includes(q) ||
-        (p.cognome || '').toLowerCase().includes(q) ||
-        (p.quartiere || '').toLowerCase().includes(q)
+      results = results.filter((a: any) =>
+        (a.titolo || '').toLowerCase().includes(q) ||
+        (a.profilo?.nome_attivita || '').toLowerCase().includes(q) ||
+        (a.profilo?.nome || '').toLowerCase().includes(q) ||
+        (a.quartiere || '').toLowerCase().includes(q)
       );
     }
     if (specialQuartiere !== "tutti") {
-      results = results.filter((p: any) => p.quartiere === specialQuartiere);
+      results = results.filter((a: any) => a.quartiere === specialQuartiere);
     }
     return results;
-  }, [specialProfiles, specialSearch, specialQuartiere, isSpecial]);
+  }, [specialAnnunci, specialSearch, specialQuartiere, isSpecial]);
 
   const specialQuartieriList = useMemo(() => {
     const set = new Set<string>();
-    specialProfiles.forEach((p: any) => { if (p.quartiere) set.add(p.quartiere); });
+    specialAnnunci.forEach((a: any) => { if (a.quartiere) set.add(a.quartiere); });
     return Array.from(set).sort();
-  }, [specialProfiles]);
+  }, [specialAnnunci]);
 
   // Extract unique event categories
   const dbCategories = useMemo(() => {
@@ -236,7 +250,7 @@ const CategoriaPage = () => {
 
   // Filter & sort annunci
   const filteredAnnunci = useMemo(() => {
-    if (isEvento) return [];
+    if (isEvento || isSpecial) return [];
     let result = [...annunci];
     if (selectedQuartieri.length > 0) {
       result = result.filter((a) => a.quartiere && selectedQuartieri.includes(a.quartiere));
@@ -249,7 +263,7 @@ const CategoriaPage = () => {
       default: result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
     return result;
-  }, [annunci, selectedQuartieri, prezzoMin, prezzoMax, sortBy, isEvento]);
+  }, [annunci, selectedQuartieri, prezzoMin, prezzoMax, sortBy, isEvento, isSpecial]);
 
   const Icon = categoria
     ? (icons as Record<string, LucideIcon>)[categoria.icona] || icons.Circle
@@ -261,7 +275,7 @@ const CategoriaPage = () => {
 
   const hasActiveFilters = selectedQuartieri.length > 0 || prezzoMin || prezzoMax;
 
-  if (errorCat && !isEvento && !isSpecial) {
+  if (errorCat && !isEvento) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -293,7 +307,7 @@ const CategoriaPage = () => {
                     {isProf ? "Professionisti" : "Negozi di Quartiere"}
                   </h1>
                   <p className="text-muted-foreground mt-1">
-                    {isLoading ? "Caricamento..." : `${filteredSpecialProfiles.length} ${isProf ? 'professionisti' : 'negozi'} registrati`}
+                    {isLoading ? "Caricamento..." : `${filteredSpecialAnnunci.length} annunci attivi`}
                   </p>
                 </div>
               </div>
@@ -356,89 +370,107 @@ const CategoriaPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-card rounded-xl border overflow-hidden">
-                    <div className="flex gap-4 p-5">
-                      <Skeleton className="w-20 h-20 rounded-xl shrink-0" />
-                      <div className="flex-1 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
-                    </div>
+                    <Skeleton className="h-48 w-full" />
+                    <div className="p-5 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
                   </div>
                 ))}
               </div>
-            ) : filteredSpecialProfiles.length === 0 ? (
+            ) : filteredSpecialAnnunci.length === 0 ? (
               <div className="text-center py-16">
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'}`}>
                   {isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />}
                 </div>
                 <h3 className="font-heading text-xl font-bold text-foreground mb-2">
-                  Nessun {isProf ? 'professionista' : 'negozio'} trovato
+                  Nessun annuncio trovato
                 </h3>
                 <p className="text-muted-foreground">
-                  {specialSearch || specialQuartiere !== 'tutti' ? 'Prova a modificare i filtri di ricerca.' : `Non ci sono ancora ${isProf ? 'professionisti' : 'negozi'} registrati.`}
+                  {specialSearch || specialQuartiere !== 'tutti' ? 'Prova a modificare i filtri di ricerca.' : `Non ci sono ancora annunci in questa categoria.`}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredSpecialProfiles.map((profile: any, i: number) => {
-                  const fakeRating = (3.5 + (profile.nome_attivita?.length || 5) % 15 / 10).toFixed(1);
-                  const fakeReviews = 2 + (profile.nome_attivita?.length || 3) % 20;
+                {filteredSpecialAnnunci.map((annuncio: any, i: number) => {
+                  const firstImage = annuncio.immagini?.[0];
+                  const profilo = annuncio.profilo;
+                  const fakeRating = (3.5 + (annuncio.titolo?.length || 5) % 15 / 10).toFixed(1);
+                  const fakeReviews = 2 + (annuncio.titolo?.length || 3) % 20;
                   return (
-                    <motion.div key={profile.user_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.3) }}>
-                      <Link to={`/annuncio/${profile.user_id}`} className="block">
+                    <motion.div key={annuncio.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.3) }}>
+                      <Link to={`/annuncio/${annuncio.id}`} className="block">
                         <div className={`group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 ${
                           isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
                         }`}>
-                          <div className="p-5 flex gap-4">
-                            {/* Avatar */}
-                            <div className={`w-20 h-20 rounded-xl shrink-0 overflow-hidden flex items-center justify-center ${
-                              isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'
-                            }`}>
-                              {profile.avatar_url ? (
-                                <img src={profile.avatar_url} alt={profile.nome_attivita || ''} className="w-full h-full object-cover" />
-                              ) : (
-                                isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />
-                              )}
-                            </div>
-                            
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-heading font-bold text-foreground text-lg truncate group-hover:text-primary transition-colors">
-                                {profile.nome_attivita || `${profile.nome || ''} ${profile.cognome || ''}`.trim() || 'Attività'}
-                              </h3>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {profile.nome && profile.cognome ? `${profile.nome} ${profile.cognome}` : ''}
-                              </p>
-                              
-                              {/* Rating */}
-                              <div className="flex items-center gap-1.5 mt-1.5">
-                                <div className="flex items-center gap-0.5">
-                                  {Array.from({ length: 5 }).map((_, s) => (
-                                    <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
-                                  ))}
-                                </div>
-                                <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews} recensioni)</span>
+                          {/* Image */}
+                          <div className="relative h-48 bg-muted overflow-hidden">
+                            {firstImage ? (
+                              <img src={firstImage} alt={annuncio.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                            ) : (
+                              <div className={`flex items-center justify-center h-full ${isProf ? 'bg-blue-50 dark:bg-blue-950' : 'bg-emerald-50 dark:bg-emerald-950'}`}>
+                                {isProf ? <Building2 className="w-12 h-12 text-blue-300" /> : <Store className="w-12 h-12 text-emerald-300" />}
                               </div>
-                              
-                              {/* Quartiere */}
-                              {profile.quartiere && (
-                                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                                  <MapPin className="w-3 h-3 shrink-0" />
-                                  <span>{profile.quartiere}</span>
-                                </div>
-                              )}
+                            )}
+                            {/* Three dots menu */}
+                            <div className="absolute top-3 right-3" onClick={(e) => e.preventDefault()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="bg-background/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-background transition-colors">
+                                    <MoreVertical className="w-4 h-4 text-foreground" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  {profilo?.mostra_telefono && profilo?.telefono && (
+                                    <DropdownMenuItem asChild>
+                                      <a href={`tel:${profilo.telefono}`} className="flex items-center gap-2">
+                                        <Phone className="w-4 h-4" /> Chiama
+                                      </a>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {profilo?.mostra_email && profilo?.email && (
+                                    <DropdownMenuItem asChild>
+                                      <a href={`mailto:${profilo.email}`} className="flex items-center gap-2">
+                                        <Mail className="w-4 h-4" /> Email
+                                      </a>
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            {/* Price badge */}
+                            {annuncio.prezzo != null && (
+                              <Badge className="absolute bottom-3 left-3 bg-background/90 text-foreground font-bold">
+                                €{annuncio.prezzo.toFixed(2)}
+                              </Badge>
+                            )}
+                          </div>
 
-                              {/* Contact */}
-                              <div className="flex items-center gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
-                                {profile.mostra_telefono && profile.telefono && (
-                                  <a href={`tel:${profile.telefono}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
-                                    <Phone className="w-3 h-3" /> Chiama
-                                  </a>
-                                )}
-                                {profile.mostra_email && profile.email && (
-                                  <a href={`mailto:${profile.email}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
-                                    <Mail className="w-3 h-3" /> Email
-                                  </a>
-                                )}
+                          {/* Content */}
+                          <div className="p-4">
+                            <h3 className="font-heading font-bold text-foreground text-lg truncate group-hover:text-primary transition-colors">
+                              {annuncio.titolo}
+                            </h3>
+                            {profilo?.nome_attivita && (
+                              <p className="text-sm text-muted-foreground truncate mt-0.5">
+                                {profilo.nome_attivita}
+                              </p>
+                            )}
+
+                            {/* Rating */}
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, s) => (
+                                  <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
+                                ))}
                               </div>
+                              <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews})</span>
                             </div>
+
+                            {/* Quartiere */}
+                            {annuncio.quartiere && (
+                              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span>{annuncio.quartiere}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </Link>
@@ -593,31 +625,25 @@ const CategoriaPage = () => {
                               <span className="text-6xl">{style.emoji}</span>
                             </div>
                           )}
-                          {/* Date badge */}
                           <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center shadow-sm">
                             <p className="text-xs font-bold text-primary leading-tight">{new Date(evento.data).toLocaleDateString("it", { month: "short" }).toUpperCase()}</p>
                             <p className="text-lg font-heading font-bold text-foreground leading-tight">{new Date(evento.data).getDate()}</p>
                           </div>
-                          {/* Price badge */}
                           <Badge className={`absolute top-3 right-3 ${evento.gratuito ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
                             {evento.gratuito ? "Gratuito" : evento.prezzo != null ? `€${evento.prezzo}` : ""}
                           </Badge>
-                          {/* Status badges */}
                           <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
                             <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} />
                             {evento.fonte_esterna && (
                               <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5">⭐ Ufficiale</Badge>
                             )}
                           </div>
-                          {/* Category badge */}
                           {evento.categoria && (
                             <Badge variant="outline" className="absolute bottom-3 right-3 bg-card/80 backdrop-blur-sm text-[10px]">
                               {style.emoji} {evento.categoria}
                             </Badge>
                           )}
                         </div>
-
-                        {/* Content */}
                         <div className="p-4 space-y-2">
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
