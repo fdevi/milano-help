@@ -257,6 +257,20 @@ const ModificaAnnuncio = () => {
           </div>
 
           {isSpecialCat && (
+            <div>
+              <Label>🏷️ Tipo di attività</Label>
+              <Select value={categoriaAttivita} onValueChange={setCategoriaAttivita}>
+                <SelectTrigger><SelectValue placeholder="Seleziona tipo..." /></SelectTrigger>
+                <SelectContent>
+                  {["Alimentari","Panetteria","Ristorante","Bar / Caffetteria","Parrucchiere","Estetista","Abbigliamento","Elettronica","Farmacia","Ferramenta","Libreria","Studio Legale","Commercialista","Idraulico","Elettricista","Artigiano","Medico","Dentista","Veterinario","Palestra / Fitness","Altro"].map(v => (
+                    <SelectItem key={v} value={v}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {isSpecialCat && (
             <div className="space-y-4 p-4 rounded-xl border bg-muted/30">
               <h3 className="font-heading font-bold text-foreground flex items-center gap-2"><MapPin className="w-4 h-4" /> Indirizzo</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
