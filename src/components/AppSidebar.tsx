@@ -50,6 +50,12 @@ const AppSidebar = () => {
         {mainItems.map((item) => (
           <SidebarLink key={item.url} item={item} />
         ))}
+        {isProfessionista && (
+          <SidebarLink item={{ title: "Professionisti", url: "/categoria/Professionisti", icon: Building2 }} />
+        )}
+        {isNegoziante && (
+          <SidebarLink item={{ title: "Negozi", url: "/categoria/negozi_di_quartiere", icon: Store }} />
+        )}
         {isAdmin && (
           <Link
             to="/admin"
