@@ -39,6 +39,7 @@ const ModificaAnnuncio = () => {
   const [condizione, setCondizione] = useState("");
   const [tipoOperazione, setTipoOperazione] = useState("");
   const [contenutoSpeciale, setContenutoSpeciale] = useState("");
+  const [categoriaAttivita, setCategoriaAttivita] = useState("");
   const [via, setVia] = useState("");
   const [civico, setCivico] = useState("");
   const [citta, setCitta] = useState("");
