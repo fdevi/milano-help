@@ -227,8 +227,12 @@ const Register = () => {
   }, [form.quartiere, form.citta, form.indirizzo, form.civico, form.cap]);
 
   const step4Valid = useCallback(() => {
-    return form.tipoAccount !== "";
-  }, [form.tipoAccount]);
+    if (!form.tipoAccount) return false;
+    if (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') {
+      return form.partitaIva.trim() !== "" && form.nomeAttivita.trim() !== "";
+    }
+    return true;
+  }, [form.tipoAccount, form.partitaIva, form.nomeAttivita]);
 
   // Update form
   const updateForm = (field: keyof FormData, value: any) => {
