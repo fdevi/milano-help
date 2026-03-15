@@ -315,6 +315,7 @@ const ModificaAnnuncio = () => {
             </div>
           )}
 
+          {richiedePrezzo && (
             <div>
               <Label htmlFor="prezzo">Prezzo (€)</Label>
               <Input
