@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays } from "lucide-react";
+import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { it } from "date-fns/locale";
@@ -21,6 +21,9 @@ import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
 type SortOption = "data_desc" | "prezzo_asc" | "prezzo_desc";
 
 const isEventCategory = (nome?: string) => nome === "evento";
+const isProfCategory = (nome?: string) => nome === "Professionisti";
+const isNegoziCategory = (nome?: string) => nome === "negozi_di_quartiere";
+const isSpecialCategory = (nome?: string) => isProfCategory(nome) || isNegoziCategory(nome);
 
 const DATE_FILTERS = [
   { label: "Tutti", value: "tutti" },
