@@ -510,6 +510,8 @@ useEffect(() => {
         civico: form.civico,
         cap: form.cap,
         tipo_account: form.tipoAccount || "privato",
+        partita_iva: (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') ? form.partitaIva : null,
+        nome_attivita: (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') ? form.nomeAttivita : null,
         profilo_pubblico: form.profiloPubblico,
         mostra_email: form.mostraEmail,
         mostra_telefono: form.mostraTelefono,
