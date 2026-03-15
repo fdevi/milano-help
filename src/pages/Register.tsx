@@ -126,6 +126,8 @@ const Register = () => {
     civico: "",
     cap: "",
     tipoAccount: "",
+    partitaIva: "",
+    nomeAttivita: "",
     termini: false,
     privacy: false,
     notificheEmail: true,
