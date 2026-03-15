@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import CommentiAnnuncio from "@/components/chat/CommentiAnnuncio";
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoibWlsYW5vaGVscCIsImEiOiJjbTlxMzJxcGIwMDFnMnFzOHU3OXF1YnhzIn0.X4KMsJcd_oBP4iFvOWm2TA";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
 const BUSINESS_CATEGORY_COLORS: Record<string, string> = {
   "Alimentari": "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
@@ -252,6 +252,16 @@ const AnnuncioPage = () => {
       setShowReviewForm(false); setReviewCommento(""); setReviewVoto(5);
       queryClient.invalidateQueries({ queryKey: ["recensioni", id] });
       queryClient.invalidateQueries({ queryKey: ["user_review", id] });
+      // Send notification to annuncio owner
+      if (user.id !== annuncio.user_id) {
+        const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
+        await supabase.from("notifiche").insert({
+          user_id: annuncio.user_id, tipo: "recensione", titolo: "Nuova recensione",
+          messaggio: `${nomeUtente} ha recensito "${annuncio.titolo}" con ${reviewVoto} stelle`,
+          link: `/annuncio/${annuncio.id}`, riferimento_id: annuncio.id, mittente_id: user.id,
+        } as any);
+        sendPushNotification(annuncio.user_id, "Nuova recensione", `${nomeUtente} ha recensito "${annuncio.titolo}" con ${reviewVoto} stelle`, `/annuncio/${annuncio.id}`);
+      }
     }
   };
 

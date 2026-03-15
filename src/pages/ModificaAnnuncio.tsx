@@ -108,7 +108,11 @@ const ModificaAnnuncio = () => {
   const isImmobili = selectedCat?.nome === "immobili" || selectedCat?.label?.toLowerCase().includes("immobil");
   const isSpecialCat = selectedCat?.nome === "Professionisti" || selectedCat?.nome === "negozi_di_quartiere";
 
+  // When editing, always include the annuncio's current category even if user type doesn't match
+  const annuncioCurrentCatNome = categorie.find(c => c.id === annuncio?.categoria_id)?.nome;
   const filteredCategorie = categorie.filter((c) => {
+    // Always include the annuncio's current category
+    if (c.id === annuncio?.categoria_id) return true;
     if (c.nome === "Professionisti") return isProfessionista;
     if (c.nome === "negozi_di_quartiere") return isNegoziante;
     return true;
