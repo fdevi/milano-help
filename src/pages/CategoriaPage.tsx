@@ -1,8 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail, MoreVertical } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail } from "lucide-react";
+import { format } from "date-fns";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { useQuartieri } from "@/hooks/useQuartieri";
 import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type SortOption = "data_desc" | "prezzo_asc" | "prezzo_desc";
 
@@ -82,19 +80,18 @@ const CategoriaPage = () => {
     enabled: !!nome && !isEvento,
   });
 
-  // Fetch annunci for special categories (using categoria_id from categorie_annunci)
+  // Fetch annunci for special categories
   const { data: specialAnnunci = [], isLoading: loadingSpecial } = useQuery({
     queryKey: ["special_annunci", categoria?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("annunci")
-        .select("id, titolo, descrizione, prezzo, quartiere, immagini, created_at, categoria_id, user_id, mi_piace, visualizzazioni, mostra_email, mostra_telefono, contenuto_speciale")
+        .select("id, titolo, descrizione, prezzo, quartiere, immagini, created_at, categoria_id, user_id, mi_piace, visualizzazioni, mostra_email, mostra_telefono, contenuto_speciale, via, civico, citta, cap, lat, lon, sito_web, orari_apertura")
         .eq("stato", "attivo")
         .eq("categoria_id", categoria!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      
-      // Fetch profiles for each annuncio
+
       const enriched = await Promise.all(
         (data || []).map(async (annuncio: any) => {
           const { data: profilo } = await supabase
@@ -307,7 +304,7 @@ const CategoriaPage = () => {
                     {isProf ? "Professionisti" : "Negozi di Quartiere"}
                   </h1>
                   <p className="text-muted-foreground mt-1">
-                    {isLoading ? "Caricamento..." : `${filteredSpecialAnnunci.length} annunci attivi`}
+                    {isLoading ? "Caricamento..." : `${filteredSpecialAnnunci.length} attività in vetrina`}
                   </p>
                 </div>
               </div>
@@ -342,7 +339,7 @@ const CategoriaPage = () => {
           </motion.div>
         ) : null}
 
-        {/* SPECIAL CATEGORIES: Search & Grid */}
+        {/* SPECIAL CATEGORIES: Search & Vetrina Grid */}
         {isSpecial && (
           <>
             <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -367,11 +364,11 @@ const CategoriaPage = () => {
             </div>
 
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="bg-card rounded-xl border overflow-hidden">
-                    <Skeleton className="h-48 w-full" />
-                    <div className="p-5 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
+                  <div key={i} className="flex gap-4 bg-card rounded-xl border p-4">
+                    <Skeleton className="w-28 h-28 rounded-xl shrink-0" />
+                    <div className="flex-1 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
                   </div>
                 ))}
               </div>
@@ -380,97 +377,80 @@ const CategoriaPage = () => {
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'}`}>
                   {isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />}
                 </div>
-                <h3 className="font-heading text-xl font-bold text-foreground mb-2">
-                  Nessun annuncio trovato
-                </h3>
+                <h3 className="font-heading text-xl font-bold text-foreground mb-2">Nessuna attività trovata</h3>
                 <p className="text-muted-foreground">
-                  {specialSearch || specialQuartiere !== 'tutti' ? 'Prova a modificare i filtri di ricerca.' : `Non ci sono ancora annunci in questa categoria.`}
+                  {specialSearch || specialQuartiere !== 'tutti' ? 'Prova a modificare i filtri di ricerca.' : 'Non ci sono ancora attività in questa sezione.'}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 {filteredSpecialAnnunci.map((annuncio: any, i: number) => {
                   const firstImage = annuncio.immagini?.[0];
                   const profilo = annuncio.profilo;
+                  const nomeAttivita = annuncio.titolo || profilo?.nome_attivita || "Attività";
                   const fakeRating = (3.5 + (annuncio.titolo?.length || 5) % 15 / 10).toFixed(1);
                   const fakeReviews = 2 + (annuncio.titolo?.length || 3) % 20;
+                  const accentColor = isProf ? 'blue' : 'emerald';
+
                   return (
-                    <motion.div key={annuncio.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.3) }}>
+                    <motion.div key={annuncio.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.2) }}>
                       <Link to={`/annuncio/${annuncio.id}`} className="block">
-                        <div className={`group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 ${
+                        <div className={`group flex gap-0 sm:gap-4 bg-card rounded-xl overflow-hidden border-2 hover:shadow-lg transition-all duration-300 ${
                           isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
                         }`}>
-                          {/* Image */}
-                          <div className="relative h-48 bg-muted overflow-hidden">
+                          {/* Photo left */}
+                          <div className="w-32 sm:w-40 shrink-0 relative overflow-hidden">
                             {firstImage ? (
-                              <img src={firstImage} alt={annuncio.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                              <img src={firstImage} alt={nomeAttivita} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 min-h-[120px]" loading="lazy" />
                             ) : (
-                              <div className={`flex items-center justify-center h-full ${isProf ? 'bg-blue-50 dark:bg-blue-950' : 'bg-emerald-50 dark:bg-emerald-950'}`}>
-                                {isProf ? <Building2 className="w-12 h-12 text-blue-300" /> : <Store className="w-12 h-12 text-emerald-300" />}
+                              <div className={`flex items-center justify-center w-full h-full min-h-[120px] ${isProf ? 'bg-blue-50 dark:bg-blue-950' : 'bg-emerald-50 dark:bg-emerald-950'}`}>
+                                {isProf ? <Building2 className="w-10 h-10 text-blue-300" /> : <Store className="w-10 h-10 text-emerald-300" />}
                               </div>
-                            )}
-                            {/* Three dots menu */}
-                            <div className="absolute top-3 right-3" onClick={(e) => e.preventDefault()}>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button className="bg-background/80 backdrop-blur-sm rounded-full p-1.5 hover:bg-background transition-colors">
-                                    <MoreVertical className="w-4 h-4 text-foreground" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                  {profilo?.mostra_telefono && profilo?.telefono && (
-                                    <DropdownMenuItem asChild>
-                                      <a href={`tel:${profilo.telefono}`} className="flex items-center gap-2">
-                                        <Phone className="w-4 h-4" /> Chiama
-                                      </a>
-                                    </DropdownMenuItem>
-                                  )}
-                                  {profilo?.mostra_email && profilo?.email && (
-                                    <DropdownMenuItem asChild>
-                                      <a href={`mailto:${profilo.email}`} className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4" /> Email
-                                      </a>
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            {/* Price badge */}
-                            {annuncio.prezzo != null && (
-                              <Badge className="absolute bottom-3 left-3 bg-background/90 text-foreground font-bold">
-                                €{annuncio.prezzo.toFixed(2)}
-                              </Badge>
                             )}
                           </div>
 
-                          {/* Content */}
-                          <div className="p-4">
-                            <h3 className="font-heading font-bold text-foreground text-lg truncate group-hover:text-primary transition-colors">
-                              {annuncio.titolo}
+                          {/* Content right */}
+                          <div className="flex-1 p-3 sm:p-4 flex flex-col justify-center min-w-0">
+                            <h3 className="font-heading font-bold text-foreground text-base sm:text-lg truncate group-hover:text-primary transition-colors">
+                              {nomeAttivita}
                             </h3>
-                            {profilo?.nome_attivita && (
-                              <p className="text-sm text-muted-foreground truncate mt-0.5">
-                                {profilo.nome_attivita}
-                              </p>
+
+                            {/* Category badge */}
+                            {profilo?.nome_attivita && annuncio.titolo !== profilo.nome_attivita && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{profilo.nome_attivita}</p>
                             )}
 
                             {/* Rating */}
-                            <div className="flex items-center gap-1.5 mt-2">
+                            <div className="flex items-center gap-1.5 mt-1.5">
                               <div className="flex items-center gap-0.5">
                                 {Array.from({ length: 5 }).map((_, s) => (
-                                  <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
+                                  <Star key={s} className={`w-3 h-3 ${s < Math.round(Number(fakeRating)) ? `text-${accentColor}-500 fill-${accentColor}-500` : 'text-muted-foreground/30'}`} />
                                 ))}
                               </div>
                               <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews})</span>
                             </div>
 
-                            {/* Quartiere */}
-                            {annuncio.quartiere && (
-                              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                            {/* Location */}
+                            {(annuncio.quartiere || annuncio.citta) && (
+                              <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
                                 <MapPin className="w-3 h-3 shrink-0" />
-                                <span>{annuncio.quartiere}</span>
+                                <span className="truncate">{annuncio.via ? `${annuncio.via}${annuncio.civico ? ` ${annuncio.civico}` : ''}, ` : ''}{annuncio.quartiere || annuncio.citta}</span>
                               </div>
                             )}
+
+                            {/* Contact icons */}
+                            <div className="flex items-center gap-3 mt-2" onClick={(e) => e.preventDefault()}>
+                              {profilo?.mostra_telefono && profilo?.telefono && (
+                                <a href={`tel:${profilo.telefono}`} onClick={(e) => e.stopPropagation()} className={`text-${accentColor}-600 hover:text-${accentColor}-800 transition-colors`}>
+                                  <Phone className="w-4 h-4" />
+                                </a>
+                              )}
+                              {profilo?.mostra_email && profilo?.email && (
+                                <a href={`mailto:${profilo.email}`} onClick={(e) => e.stopPropagation()} className={`text-${accentColor}-600 hover:text-${accentColor}-800 transition-colors`}>
+                                  <Mail className="w-4 h-4" />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -616,7 +596,6 @@ const CategoriaPage = () => {
                   <motion.div key={evento.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
                     <Link to={`/evento/${evento.id}`}>
                       <div className="group bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                        {/* Cover */}
                         <div className="relative h-48 bg-muted overflow-hidden">
                           {evento.immagine ? (
                             <img src={evento.immagine} alt={evento.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
@@ -689,15 +668,19 @@ const CategoriaPage = () => {
                         {firstImage ? (
                           <img src={firstImage} alt={annuncio.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                         ) : (
-                          <Icon className="w-12 h-12 text-muted-foreground/40" />
+                          <Icon className="w-12 h-12 text-muted-foreground/30" />
                         )}
                       </div>
                       <div className="p-4">
-                        <h3 className="font-heading font-bold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">{annuncio.titolo}</h3>
-                        {annuncio.prezzo != null && <p className="text-lg font-bold text-primary mb-1">€{annuncio.prezzo.toFixed(2)}</p>}
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          {annuncio.quartiere && <span>{annuncio.quartiere}</span>}
-                          <span>{formatDistanceToNow(new Date(annuncio.created_at), { addSuffix: true, locale: it })}</span>
+                        <h3 className="font-heading font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">{annuncio.titolo}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{annuncio.descrizione}</p>
+                        <div className="flex items-center justify-between mt-3">
+                          {annuncio.prezzo != null && <span className="text-primary font-bold">€{annuncio.prezzo.toFixed(2)}</span>}
+                          {annuncio.quartiere && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />{annuncio.quartiere}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -40,7 +40,10 @@ export type Database = {
       }
       annunci: {
         Row: {
+          cap: string | null
           categoria_id: string | null
+          citta: string | null
+          civico: string | null
           condizione: string | null
           contenuto_speciale: string | null
           created_at: string
@@ -48,24 +51,32 @@ export type Database = {
           descrizione: string | null
           id: string
           immagini: string[] | null
+          lat: number | null
+          lon: number | null
           mi_piace: number
           moderato_da: string | null
           moderato_il: string | null
           mostra_email: boolean
           mostra_telefono: boolean
           motivo_rifiuto: string | null
+          orari_apertura: string | null
           prezzo: number | null
           proroghe_effettuate: number
           quartiere: string | null
+          sito_web: string | null
           stato: string
           tipo_operazione: string | null
           titolo: string
           updated_at: string
           user_id: string
+          via: string | null
           visualizzazioni: number
         }
         Insert: {
+          cap?: string | null
           categoria_id?: string | null
+          citta?: string | null
+          civico?: string | null
           condizione?: string | null
           contenuto_speciale?: string | null
           created_at?: string
@@ -73,24 +84,32 @@ export type Database = {
           descrizione?: string | null
           id?: string
           immagini?: string[] | null
+          lat?: number | null
+          lon?: number | null
           mi_piace?: number
           moderato_da?: string | null
           moderato_il?: string | null
           mostra_email?: boolean
           mostra_telefono?: boolean
           motivo_rifiuto?: string | null
+          orari_apertura?: string | null
           prezzo?: number | null
           proroghe_effettuate?: number
           quartiere?: string | null
+          sito_web?: string | null
           stato?: string
           tipo_operazione?: string | null
           titolo: string
           updated_at?: string
           user_id: string
+          via?: string | null
           visualizzazioni?: number
         }
         Update: {
+          cap?: string | null
           categoria_id?: string | null
+          citta?: string | null
+          civico?: string | null
           condizione?: string | null
           contenuto_speciale?: string | null
           created_at?: string
@@ -98,20 +117,25 @@ export type Database = {
           descrizione?: string | null
           id?: string
           immagini?: string[] | null
+          lat?: number | null
+          lon?: number | null
           mi_piace?: number
           moderato_da?: string | null
           moderato_il?: string | null
           mostra_email?: boolean
           mostra_telefono?: boolean
           motivo_rifiuto?: string | null
+          orari_apertura?: string | null
           prezzo?: number | null
           proroghe_effettuate?: number
           quartiere?: string | null
+          sito_web?: string | null
           stato?: string
           tipo_operazione?: string | null
           titolo?: string
           updated_at?: string
           user_id?: string
+          via?: string | null
           visualizzazioni?: number
         }
         Relationships: [

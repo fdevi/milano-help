@@ -1,0 +1,9 @@
+
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS via text DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS civico text DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS citta text DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS cap text DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS lat double precision DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS lon double precision DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS sito_web text DEFAULT NULL;
+ALTER TABLE public.annunci ADD COLUMN IF NOT EXISTS orari_apertura text DEFAULT NULL;

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,22 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  ArrowLeft,
-  Loader2,
-  X,
-  Image as ImageIcon,
-  AlertCircle,
-  MapPin,
-} from "lucide-react";
+import { ArrowLeft, Loader2, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { Link } from "react-router-dom";
 
@@ -36,7 +23,7 @@ const NuovoAnnuncio = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { tipoAccount, isProfessionista, isNegoziante } = useTipoAccount();
+  const { isProfessionista, isNegoziante } = useTipoAccount();
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
@@ -51,15 +38,18 @@ const NuovoAnnuncio = () => {
   const [tipoOperazione, setTipoOperazione] = useState("");
   const [contenutoSpeciale, setContenutoSpeciale] = useState("");
 
-  // Fetch user profile to get quartiere
+  // Address fields for special categories
+  const [via, setVia] = useState("");
+  const [civico, setCivico] = useState("");
+  const [citta, setCitta] = useState("");
+  const [cap, setCap] = useState("");
+  const [sitoWeb, setSitoWeb] = useState("");
+  const [orariApertura, setOrariApertura] = useState("");
+
   const { data: userProfile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("quartiere")
-        .eq("user_id", user!.id)
-        .single();
+      const { data, error } = await supabase.from("profiles").select("quartiere").eq("user_id", user!.id).single();
       if (error) throw error;
       return data;
     },
@@ -71,18 +61,13 @@ const NuovoAnnuncio = () => {
   const { data: categorie = [] } = useQuery({
     queryKey: ["categorie_annunci"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categorie_annunci")
-        .select("id, nome, label, icona, richiede_prezzo")
-        .neq("nome", "evento")
-        .order("ordine");
+      const { data, error } = await supabase.from("categorie_annunci").select("id, nome, label, icona, richiede_prezzo").neq("nome", "evento").order("ordine");
       if (error) throw error;
       return data || [];
     },
     staleTime: 60_000,
   });
 
-  // Filter categories based on user tipo_account
   const filteredCategorie = categorie.filter((c) => {
     if (c.nome === "Professionisti") return isProfessionista;
     if (c.nome === "negozi_di_quartiere") return isNegoziante;
@@ -126,6 +111,25 @@ const NuovoAnnuncio = () => {
     return urls;
   };
 
+  // Geocode address to lat/lon
+  const geocodeAddress = useCallback(async (): Promise<{ lat: number; lon: number } | null> => {
+    if (!via && !citta) return null;
+    const query = `${via}${civico ? ` ${civico}` : ''}, ${citta}${cap ? ` ${cap}` : ''}, Italia`;
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        { headers: { "Accept-Language": "it" } }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      }
+    } catch (e) {
+      console.error("Geocoding error:", e);
+    }
+    return null;
+  }, [via, civico, citta, cap]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -134,16 +138,26 @@ const NuovoAnnuncio = () => {
       return;
     }
     if (!userQuartiere) {
-      toast({
-        title: "Zona non impostata",
-        description: "Imposta la tua zona di appartenenza nel Profilo prima di pubblicare.",
-        variant: "destructive",
-      });
+      toast({ title: "Zona non impostata", description: "Imposta la tua zona nel Profilo prima di pubblicare.", variant: "destructive" });
+      return;
+    }
+    if (isSpecialCat && images.length === 0) {
+      toast({ title: "Foto obbligatoria", description: "Carica almeno una foto vetrina per la tua attività.", variant: "destructive" });
+      return;
+    }
+    if (isSpecialCat && (!via.trim() || !citta.trim())) {
+      toast({ title: "Indirizzo obbligatorio", description: "Inserisci Via e Città per la tua attività.", variant: "destructive" });
       return;
     }
 
     setSubmitting(true);
     try {
+      // Geocode if special category
+      let coords: { lat: number; lon: number } | null = null;
+      if (isSpecialCat) {
+        coords = await geocodeAddress();
+      }
+
       const payload: Record<string, any> = {
         user_id: user.id,
         titolo: titolo.trim(),
@@ -157,13 +171,18 @@ const NuovoAnnuncio = () => {
         condizione: isInVendita && condizione ? condizione : null,
         tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
         contenuto_speciale: isSpecialCat && contenutoSpeciale.trim() ? contenutoSpeciale.trim() : null,
+        via: isSpecialCat ? via.trim() || null : null,
+        civico: isSpecialCat ? civico.trim() || null : null,
+        citta: isSpecialCat ? citta.trim() || null : null,
+        cap: isSpecialCat ? cap.trim() || null : null,
+        lat: coords?.lat || null,
+        lon: coords?.lon || null,
+        sito_web: isSpecialCat && sitoWeb.trim() ? sitoWeb.trim() : null,
+        orari_apertura: isSpecialCat && orariApertura.trim() ? orariApertura.trim() : null,
       };
 
       const { data: annuncio, error } = await (supabase as any)
-        .from("annunci")
-        .insert([payload])
-        .select("id")
-        .single();
+        .from("annunci").insert([payload]).select("id").single();
       if (error) throw error;
 
       if (images.length > 0) {
@@ -174,17 +193,10 @@ const NuovoAnnuncio = () => {
       await queryClient.invalidateQueries({ queryKey: ["categorie_annunci"] });
       await queryClient.invalidateQueries({ queryKey: ["annunci"] });
 
-      toast({
-        title: "Annuncio inviato!",
-        description: "Il tuo annuncio è in fase di moderazione.",
-      });
+      toast({ title: "Annuncio inviato!", description: "Il tuo annuncio è in fase di moderazione." });
       navigate("/miei-annunci");
     } catch (err: any) {
-      toast({
-        title: "Errore",
-        description: err.message || "Impossibile creare l'annuncio.",
-        variant: "destructive",
-      });
+      toast({ title: "Errore", description: err.message || "Impossibile creare l'annuncio.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -193,40 +205,33 @@ const NuovoAnnuncio = () => {
   return (
     <AuthLayout>
       <div className="max-w-2xl mx-auto">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => window.history.back()}
-          className="mb-4 -ml-2 gap-1"
-        >
+        <Button variant="ghost" size="sm" onClick={() => window.history.back()} className="mb-4 -ml-2 gap-1">
           <ArrowLeft className="w-4 h-4" /> Indietro
         </Button>
 
-        <h1 className="text-2xl font-bold mb-6">Crea un nuovo annuncio</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          {isSpecialCat ? "🏪 Crea la tua vetrina" : "Crea un nuovo annuncio"}
+        </h1>
 
-        {/* Zona info banner */}
         {userQuartiere ? (
           <div className="mb-6 flex items-center gap-2 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
             <MapPin className="w-4 h-4 text-primary shrink-0" />
-            <span>L'annuncio verrà pubblicato nella zona: <strong className="text-foreground">{userQuartiere}</strong></span>
+            <span>Zona: <strong className="text-foreground">{userQuartiere}</strong></span>
             <Link to="/profilo" className="ml-auto text-primary underline text-xs whitespace-nowrap">Modifica</Link>
           </div>
         ) : (
           <div className="mb-6 flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>Devi impostare la tua zona di appartenenza prima di pubblicare.</span>
+            <span>Devi impostare la tua zona prima di pubblicare.</span>
             <Link to="/profilo" className="ml-auto text-primary underline text-xs whitespace-nowrap">Vai al Profilo</Link>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Categoria */}
           <div>
             <Label htmlFor="categoria">Categoria *</Label>
             <Select value={categoriaId} onValueChange={setCategoriaId}>
-              <SelectTrigger id="categoria">
-                <SelectValue placeholder="Seleziona una categoria" />
-              </SelectTrigger>
+              <SelectTrigger id="categoria"><SelectValue placeholder="Seleziona una categoria" /></SelectTrigger>
               <SelectContent>
                 {filteredCategorie.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
@@ -235,97 +240,100 @@ const NuovoAnnuncio = () => {
             </Select>
           </div>
 
-          {/* Titolo */}
           <div>
-            <Label htmlFor="titolo">Titolo *</Label>
-            <Input
-              id="titolo"
-              value={titolo}
-              onChange={(e) => setTitolo(e.target.value)}
-              placeholder="Es. Offro lezioni di italiano"
-              maxLength={100}
-              required
-            />
+            <Label htmlFor="titolo">{isSpecialCat ? "Nome attività *" : "Titolo *"}</Label>
+            <Input id="titolo" value={titolo} onChange={(e) => setTitolo(e.target.value)}
+              placeholder={isSpecialCat ? "Es. Panetteria della Piazza" : "Es. Offro lezioni di italiano"} maxLength={100} required />
           </div>
 
-          {/* Descrizione */}
           <div>
-            <Label htmlFor="descrizione">Descrizione</Label>
-            <Textarea
-              id="descrizione"
-              value={descrizione}
-              onChange={(e) => setDescrizione(e.target.value)}
-              placeholder="Descrivi il tuo annuncio..."
-              rows={4}
-            />
+            <Label htmlFor="descrizione">Descrizione {isSpecialCat ? "*" : ""}</Label>
+            <Textarea id="descrizione" value={descrizione} onChange={(e) => setDescrizione(e.target.value)}
+              placeholder={isSpecialCat ? "Descrivi la tua attività, cosa offri, i tuoi punti di forza..." : "Descrivi il tuo annuncio..."} rows={4} />
           </div>
 
-          {/* Contenuto speciale per Prof/Negozianti */}
+          {/* ADDRESS FIELDS for special categories */}
+          {isSpecialCat && (
+            <div className="space-y-4 p-4 rounded-xl border bg-muted/30">
+              <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                <MapPin className="w-4 h-4" /> Indirizzo dell'attività
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="via">Via *</Label>
+                  <Input id="via" value={via} onChange={(e) => setVia(e.target.value)} placeholder="Es. Via Roma" required={isSpecialCat} />
+                </div>
+                <div>
+                  <Label htmlFor="civico">N. Civico</Label>
+                  <Input id="civico" value={civico} onChange={(e) => setCivico(e.target.value)} placeholder="Es. 42" />
+                </div>
+                <div>
+                  <Label htmlFor="citta">Città *</Label>
+                  <Input id="citta" value={citta} onChange={(e) => setCitta(e.target.value)} placeholder="Es. Milano" required={isSpecialCat} />
+                </div>
+                <div>
+                  <Label htmlFor="cap">CAP</Label>
+                  <Input id="cap" value={cap} onChange={(e) => setCap(e.target.value)} placeholder="Es. 20100" maxLength={5} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Orari apertura */}
           {isSpecialCat && (
             <div>
-              <Label htmlFor="contenutoSpeciale">📋 Menù / Offerte speciali</Label>
-              <Textarea
-                id="contenutoSpeciale"
-                value={contenutoSpeciale}
-                onChange={(e) => setContenutoSpeciale(e.target.value)}
-                placeholder="Inserisci il tuo menù, listino prezzi o offerte speciali..."
-                rows={5}
-              />
+              <Label htmlFor="orari">🕐 Orari di apertura</Label>
+              <Textarea id="orari" value={orariApertura} onChange={(e) => setOrariApertura(e.target.value)}
+                placeholder={"Lun-Ven: 8:00 - 19:00\nSab: 9:00 - 13:00\nDom: Chiuso"} rows={3} />
+              <p className="text-xs text-muted-foreground mt-1">Opzionale.</p>
+            </div>
+          )}
+
+          {/* Sito web */}
+          {isSpecialCat && (
+            <div>
+              <Label htmlFor="sito">🌐 Sito web</Label>
+              <Input id="sito" value={sitoWeb} onChange={(e) => setSitoWeb(e.target.value)} placeholder="www.example.com" />
+            </div>
+          )}
+
+          {/* Contenuto speciale */}
+          {isSpecialCat && (
+            <div>
+              <Label htmlFor="contenutoSpeciale">📋 Menù / Listino prezzi</Label>
+              <Textarea id="contenutoSpeciale" value={contenutoSpeciale} onChange={(e) => setContenutoSpeciale(e.target.value)}
+                placeholder="Inserisci il tuo menù, listino prezzi o offerte speciali..." rows={5} />
               <p className="text-xs text-muted-foreground mt-1">Opzionale. Verrà visualizzato nella pagina di dettaglio.</p>
             </div>
           )}
 
-          {/* Prezzo (condizionale) */}
           {richiedePrezzo && (
             <div>
               <Label htmlFor="prezzo">Prezzo (€)</Label>
-              <Input
-                id="prezzo"
-                type="number"
-                step="0.01"
-                min="0"
-                value={prezzo}
-                onChange={(e) => setPrezzo(e.target.value)}
-                placeholder="0.00"
-              />
+              <Input id="prezzo" type="number" step="0.01" min="0" value={prezzo} onChange={(e) => setPrezzo(e.target.value)} placeholder="0.00" />
             </div>
           )}
 
-          {/* Condizione (per "In vendita") */}
           {isInVendita && (
             <div>
               <Label>Condizione *</Label>
               <RadioGroup value={condizione} onValueChange={setCondizione} className="flex gap-4 mt-2">
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="nuovo" id="cond-nuovo" />
-                  <Label htmlFor="cond-nuovo" className="font-normal">Nuovo</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="usato" id="cond-usato" />
-                  <Label htmlFor="cond-usato" className="font-normal">Usato</Label>
-                </div>
+                <div className="flex items-center gap-2"><RadioGroupItem value="nuovo" id="cond-nuovo" /><Label htmlFor="cond-nuovo" className="font-normal">Nuovo</Label></div>
+                <div className="flex items-center gap-2"><RadioGroupItem value="usato" id="cond-usato" /><Label htmlFor="cond-usato" className="font-normal">Usato</Label></div>
               </RadioGroup>
             </div>
           )}
 
-          {/* Tipo operazione (per "Immobili") */}
           {isImmobili && (
             <div>
               <Label>Tipo operazione *</Label>
               <RadioGroup value={tipoOperazione} onValueChange={setTipoOperazione} className="flex gap-4 mt-2">
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="vendita" id="op-vendita" />
-                  <Label htmlFor="op-vendita" className="font-normal">Vendita</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="locazione" id="op-locazione" />
-                  <Label htmlFor="op-locazione" className="font-normal">Locazione</Label>
-                </div>
+                <div className="flex items-center gap-2"><RadioGroupItem value="vendita" id="op-vendita" /><Label htmlFor="op-vendita" className="font-normal">Vendita</Label></div>
+                <div className="flex items-center gap-2"><RadioGroupItem value="locazione" id="op-locazione" /><Label htmlFor="op-locazione" className="font-normal">Locazione</Label></div>
               </RadioGroup>
             </div>
           )}
 
-          {/* Contatti */}
           <div className="space-y-2">
             <Label>Contatti visibili nell'annuncio</Label>
             <div className="flex items-center gap-2">
@@ -338,9 +346,8 @@ const NuovoAnnuncio = () => {
             </div>
           </div>
 
-          {/* Upload foto */}
           <div>
-            <Label>Foto (max {MAX_IMAGES})</Label>
+            <Label>Foto {isSpecialCat ? "vetrina (obbligatoria, max" : "(max"} {MAX_IMAGES})</Label>
             <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
               {previews.map((src, i) => (
                 <div key={i} className="relative group aspect-square rounded-md overflow-hidden border">
@@ -361,11 +368,7 @@ const NuovoAnnuncio = () => {
           </div>
 
           <Button type="submit" className="w-full" disabled={submitting || !userQuartiere}>
-            {submitting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Invio in corso...</>
-            ) : (
-              "Pubblica annuncio"
-            )}
+            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Invio in corso...</> : isSpecialCat ? "🏪 Pubblica vetrina" : "Pubblica annuncio"}
           </Button>
         </form>
       </div>
