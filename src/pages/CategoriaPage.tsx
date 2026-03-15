@@ -575,7 +575,7 @@ const CategoriaPage = () => {
                           <img src={evento.immagine} alt={evento.titolo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                           {evento.categoria && (
                             <div className="absolute top-3 left-3">
-                              <Badge className={`${style.bg} ${style.text} border-0 text-xs`}>
+                      <Badge className={`${style.bg} border-0 text-xs`}>
                                 {style.emoji} {evento.categoria.charAt(0).toUpperCase() + evento.categoria.slice(1)}
                               </Badge>
                             </div>
@@ -589,7 +589,7 @@ const CategoriaPage = () => {
                           <Calendar className="w-12 h-12 text-primary/30" />
                           {evento.categoria && (
                             <div className="absolute top-3 left-3">
-                              <Badge className={`${style.bg} ${style.text} border-0 text-xs`}>
+                              <Badge className={`${style.bg} border-0 text-xs`}>
                                 {style.emoji} {evento.categoria.charAt(0).toUpperCase() + evento.categoria.slice(1)}
                               </Badge>
                             </div>
