@@ -382,64 +382,66 @@ const CategoriaPage = () => {
                   const fakeReviews = 2 + (profile.nome_attivita?.length || 3) % 20;
                   return (
                     <motion.div key={profile.user_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.3) }}>
-                      <div className={`group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 ${
-                        isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
-                      }`}>
-                        <div className="p-5 flex gap-4">
-                          {/* Avatar */}
-                          <div className={`w-20 h-20 rounded-xl shrink-0 overflow-hidden flex items-center justify-center ${
-                            isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'
-                          }`}>
-                            {profile.avatar_url ? (
-                              <img src={profile.avatar_url} alt={profile.nome_attivita || ''} className="w-full h-full object-cover" />
-                            ) : (
-                              isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />
-                            )}
-                          </div>
-                          
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-heading font-bold text-foreground text-lg truncate">
-                              {profile.nome_attivita || `${profile.nome || ''} ${profile.cognome || ''}`.trim() || 'Attività'}
-                            </h3>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {profile.nome && profile.cognome ? `${profile.nome} ${profile.cognome}` : ''}
-                            </p>
-                            
-                            {/* Rating */}
-                            <div className="flex items-center gap-1.5 mt-1.5">
-                              <div className="flex items-center gap-0.5">
-                                {Array.from({ length: 5 }).map((_, s) => (
-                                  <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
-                                ))}
-                              </div>
-                              <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews} recensioni)</span>
+                      <Link to={`/annuncio/${profile.user_id}`} className="block">
+                        <div className={`group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 ${
+                          isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
+                        }`}>
+                          <div className="p-5 flex gap-4">
+                            {/* Avatar */}
+                            <div className={`w-20 h-20 rounded-xl shrink-0 overflow-hidden flex items-center justify-center ${
+                              isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'
+                            }`}>
+                              {profile.avatar_url ? (
+                                <img src={profile.avatar_url} alt={profile.nome_attivita || ''} className="w-full h-full object-cover" />
+                              ) : (
+                                isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />
+                              )}
                             </div>
                             
-                            {/* Quartiere */}
-                            {profile.quartiere && (
-                              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                                <MapPin className="w-3 h-3 shrink-0" />
-                                <span>{profile.quartiere}</span>
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-heading font-bold text-foreground text-lg truncate group-hover:text-primary transition-colors">
+                                {profile.nome_attivita || `${profile.nome || ''} ${profile.cognome || ''}`.trim() || 'Attività'}
+                              </h3>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {profile.nome && profile.cognome ? `${profile.nome} ${profile.cognome}` : ''}
+                              </p>
+                              
+                              {/* Rating */}
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <div className="flex items-center gap-0.5">
+                                  {Array.from({ length: 5 }).map((_, s) => (
+                                    <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
+                                  ))}
+                                </div>
+                                <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews} recensioni)</span>
                               </div>
-                            )}
+                              
+                              {/* Quartiere */}
+                              {profile.quartiere && (
+                                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                                  <MapPin className="w-3 h-3 shrink-0" />
+                                  <span>{profile.quartiere}</span>
+                                </div>
+                              )}
 
-                            {/* Contact */}
-                            <div className="flex items-center gap-3 mt-2">
-                              {profile.mostra_telefono && profile.telefono && (
-                                <a href={`tel:${profile.telefono}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
-                                  <Phone className="w-3 h-3" /> Chiama
-                                </a>
-                              )}
-                              {profile.mostra_email && profile.email && (
-                                <a href={`mailto:${profile.email}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
-                                  <Mail className="w-3 h-3" /> Email
-                                </a>
-                              )}
+                              {/* Contact */}
+                              <div className="flex items-center gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
+                                {profile.mostra_telefono && profile.telefono && (
+                                  <a href={`tel:${profile.telefono}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                                    <Phone className="w-3 h-3" /> Chiama
+                                  </a>
+                                )}
+                                {profile.mostra_email && profile.email && (
+                                  <a href={`mailto:${profile.email}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                                    <Mail className="w-3 h-3" /> Email
+                                  </a>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </motion.div>
                   );
                 })}

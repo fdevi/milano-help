@@ -1126,13 +1126,17 @@ useEffect(() => {
                         <Label htmlFor="partitaIva">Partita IVA *</Label>
                         <Input
                           id="partitaIva"
-                          placeholder="IT12345678901"
+                          placeholder="12345678901"
                           value={form.partitaIva}
-                          onChange={e => updateForm("partitaIva", e.target.value)}
-                          maxLength={16}
+                          onChange={e => updateForm("partitaIva", e.target.value.replace(/\D/g, '').slice(0, 11))}
+                          maxLength={11}
+                          inputMode="numeric"
                         />
                         {step4Attempted && !form.partitaIva.trim() && (
                           <p className="text-xs text-destructive mt-1">La Partita IVA è obbligatoria</p>
+                        )}
+                        {step4Attempted && form.partitaIva.trim() && !isValidPartitaIva(form.partitaIva) && (
+                          <p className="text-xs text-destructive mt-1">La Partita IVA deve essere di 11 cifre</p>
                         )}
                       </div>
                       <div>
