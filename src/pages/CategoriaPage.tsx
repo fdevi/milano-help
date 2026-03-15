@@ -54,6 +54,10 @@ const CategoriaPage = () => {
   const [prezzoMax, setPrezzoMax] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
+  // Special categories state
+  const [specialSearch, setSpecialSearch] = useState("");
+  const [specialQuartiere, setSpecialQuartiere] = useState("tutti");
+
   // Eventi state
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("tutti");
