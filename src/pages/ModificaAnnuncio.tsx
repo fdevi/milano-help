@@ -69,6 +69,7 @@ const ModificaAnnuncio = () => {
       setCondizione((annuncio as any).condizione || "");
       setTipoOperazione((annuncio as any).tipo_operazione || "");
       setContenutoSpeciale((annuncio as any).contenuto_speciale || "");
+      setCategoriaAttivita((annuncio as any).categoria_attivita || "");
       setVia((annuncio as any).via || "");
       setCivico((annuncio as any).civico || "");
       setCitta((annuncio as any).citta || "");
