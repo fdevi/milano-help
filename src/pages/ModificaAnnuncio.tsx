@@ -187,6 +187,7 @@ const ModificaAnnuncio = () => {
         condizione: isInVendita && condizione ? condizione : null,
         tipo_operazione: isImmobili && tipoOperazione ? tipoOperazione : null,
         contenuto_speciale: isSpecialCat && contenutoSpeciale.trim() ? contenutoSpeciale.trim() : null,
+        categoria_attivita: isSpecialCat && categoriaAttivita ? categoriaAttivita : null,
         via: isSpecialCat ? via.trim() || null : null,
         civico: isSpecialCat ? civico.trim() || null : null,
         citta: isSpecialCat ? citta.trim() || null : null,
