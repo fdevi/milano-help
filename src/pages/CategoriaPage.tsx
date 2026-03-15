@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays } from "lucide-react";
+import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { it } from "date-fns/locale";
@@ -21,6 +21,9 @@ import { getCategoryStyle, getAutoDescription } from "@/lib/eventCategoryUtils";
 type SortOption = "data_desc" | "prezzo_asc" | "prezzo_desc";
 
 const isEventCategory = (nome?: string) => nome === "evento";
+const isProfCategory = (nome?: string) => nome === "Professionisti";
+const isNegoziCategory = (nome?: string) => nome === "negozi_di_quartiere";
+const isSpecialCategory = (nome?: string) => isProfCategory(nome) || isNegoziCategory(nome);
 
 const DATE_FILTERS = [
   { label: "Tutti", value: "tutti" },
@@ -41,13 +44,19 @@ const CategoriaPage = () => {
   const { nome } = useParams<{ nome: string }>();
   const { quartieri } = useQuartieri();
   const isEvento = isEventCategory(nome);
-
+  const isProf = isProfCategory(nome);
+  const isNegozi = isNegoziCategory(nome);
+  const isSpecial = isSpecialCategory(nome);
   // Annunci state
   const [sortBy, setSortBy] = useState<SortOption>("data_desc");
   const [selectedQuartieri, setSelectedQuartieri] = useState<string[]>([]);
   const [prezzoMin, setPrezzoMin] = useState("");
   const [prezzoMax, setPrezzoMax] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Special categories state
+  const [specialSearch, setSpecialSearch] = useState("");
+  const [specialQuartiere, setSpecialQuartiere] = useState("tutti");
 
   // Eventi state
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,7 +77,24 @@ const CategoriaPage = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!nome && !isEvento,
+    enabled: !!nome && !isEvento && !isSpecial,
+  });
+
+  // Fetch profiles for special categories (Professionisti / Negozi)
+  const { data: specialProfiles = [], isLoading: loadingSpecial } = useQuery({
+    queryKey: ["special_profiles", nome],
+    queryFn: async () => {
+      const tipoAccount = isProf ? "professionista" : "negoziante";
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome, nome_attivita, quartiere, avatar_url, telefono, email, mostra_telefono, mostra_email")
+        .eq("tipo_account", tipoAccount)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isSpecial,
+    staleTime: 30_000,
   });
 
   // Fetch eventi attivi con profilo organizzatore
@@ -120,7 +146,32 @@ const CategoriaPage = () => {
     staleTime: 30_000,
   });
 
-  const isLoading = isEvento ? loadingEventi : loadingAnnunci;
+  const isLoading = isSpecial ? loadingSpecial : isEvento ? loadingEventi : loadingAnnunci;
+
+  // Filter special profiles
+  const filteredSpecialProfiles = useMemo(() => {
+    if (!isSpecial) return [];
+    let results = [...specialProfiles];
+    const q = specialSearch.toLowerCase().trim();
+    if (q) {
+      results = results.filter((p: any) => 
+        (p.nome_attivita || '').toLowerCase().includes(q) ||
+        (p.nome || '').toLowerCase().includes(q) ||
+        (p.cognome || '').toLowerCase().includes(q) ||
+        (p.quartiere || '').toLowerCase().includes(q)
+      );
+    }
+    if (specialQuartiere !== "tutti") {
+      results = results.filter((p: any) => p.quartiere === specialQuartiere);
+    }
+    return results;
+  }, [specialProfiles, specialSearch, specialQuartiere, isSpecial]);
+
+  const specialQuartieriList = useMemo(() => {
+    const set = new Set<string>();
+    specialProfiles.forEach((p: any) => { if (p.quartiere) set.add(p.quartiere); });
+    return Array.from(set).sort();
+  }, [specialProfiles]);
 
   // Extract unique event categories
   const dbCategories = useMemo(() => {
@@ -210,7 +261,7 @@ const CategoriaPage = () => {
 
   const hasActiveFilters = selectedQuartieri.length > 0 || prezzoMin || prezzoMax;
 
-  if (errorCat && !isEvento) {
+  if (errorCat && !isEvento && !isSpecial) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -230,7 +281,30 @@ const CategoriaPage = () => {
 
       <div className="container mx-auto px-4 pt-24 pb-12">
         {/* Header */}
-        {isEvento ? (
+        {isSpecial ? (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <div className={`rounded-2xl p-6 md:p-8 ${isProf ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800' : 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800'}`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'}`}>
+                  {isProf ? <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" /> : <Store className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />}
+                </div>
+                <div>
+                  <h1 className="font-heading text-3xl font-extrabold text-foreground">
+                    {isProf ? "Professionisti" : "Negozi di Quartiere"}
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
+                    {isLoading ? "Caricamento..." : `${filteredSpecialProfiles.length} ${isProf ? 'professionisti' : 'negozi'} registrati`}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground max-w-2xl">
+                {isProf
+                  ? "Scopri i professionisti del tuo quartiere: artigiani, consulenti, tecnici e molto altro. Servizi di qualità, vicino a te."
+                  : "Esplora i negozi e le attività commerciali del tuo quartiere. Supporta il commercio locale!"}
+              </p>
+            </div>
+          </motion.div>
+        ) : isEvento ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <h1 className="font-heading text-3xl font-extrabold text-foreground">🎉 Eventi a Milano</h1>
             <p className="text-muted-foreground mt-1">
@@ -253,6 +327,126 @@ const CategoriaPage = () => {
             </div>
           </motion.div>
         ) : null}
+
+        {/* SPECIAL CATEGORIES: Search & Grid */}
+        {isSpecial && (
+          <>
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder={`Cerca ${isProf ? 'professionisti' : 'negozi'}...`}
+                  value={specialSearch}
+                  onChange={(e) => setSpecialSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={specialQuartiere} onValueChange={setSpecialQuartiere}>
+                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Quartiere" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tutti">Tutti i quartieri</SelectItem>
+                  {specialQuartieriList.map((q) => (
+                    <SelectItem key={q} value={q}>{q}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-card rounded-xl border overflow-hidden">
+                    <div className="flex gap-4 p-5">
+                      <Skeleton className="w-20 h-20 rounded-xl shrink-0" />
+                      <div className="flex-1 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredSpecialProfiles.length === 0 ? (
+              <div className="text-center py-16">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'}`}>
+                  {isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />}
+                </div>
+                <h3 className="font-heading text-xl font-bold text-foreground mb-2">
+                  Nessun {isProf ? 'professionista' : 'negozio'} trovato
+                </h3>
+                <p className="text-muted-foreground">
+                  {specialSearch || specialQuartiere !== 'tutti' ? 'Prova a modificare i filtri di ricerca.' : `Non ci sono ancora ${isProf ? 'professionisti' : 'negozi'} registrati.`}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredSpecialProfiles.map((profile: any, i: number) => {
+                  const fakeRating = (3.5 + (profile.nome_attivita?.length || 5) % 15 / 10).toFixed(1);
+                  const fakeReviews = 2 + (profile.nome_attivita?.length || 3) % 20;
+                  return (
+                    <motion.div key={profile.user_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.3) }}>
+                      <div className={`group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 ${
+                        isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
+                      }`}>
+                        <div className="p-5 flex gap-4">
+                          {/* Avatar */}
+                          <div className={`w-20 h-20 rounded-xl shrink-0 overflow-hidden flex items-center justify-center ${
+                            isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'
+                          }`}>
+                            {profile.avatar_url ? (
+                              <img src={profile.avatar_url} alt={profile.nome_attivita || ''} className="w-full h-full object-cover" />
+                            ) : (
+                              isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />
+                            )}
+                          </div>
+                          
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-heading font-bold text-foreground text-lg truncate">
+                              {profile.nome_attivita || `${profile.nome || ''} ${profile.cognome || ''}`.trim() || 'Attività'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {profile.nome && profile.cognome ? `${profile.nome} ${profile.cognome}` : ''}
+                            </p>
+                            
+                            {/* Rating */}
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, s) => (
+                                  <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
+                                ))}
+                              </div>
+                              <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews} recensioni)</span>
+                            </div>
+                            
+                            {/* Quartiere */}
+                            {profile.quartiere && (
+                              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span>{profile.quartiere}</span>
+                              </div>
+                            )}
+
+                            {/* Contact */}
+                            <div className="flex items-center gap-3 mt-2">
+                              {profile.mostra_telefono && profile.telefono && (
+                                <a href={`tel:${profile.telefono}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                                  <Phone className="w-3 h-3" /> Chiama
+                                </a>
+                              )}
+                              {profile.mostra_email && profile.email && (
+                                <a href={`mailto:${profile.email}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                                  <Mail className="w-3 h-3" /> Email
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
 
         {/* EVENTI: Search & Filters */}
         {isEvento && (

@@ -57,6 +57,8 @@ interface FormData {
   civico: string;
   cap: string;
   tipoAccount: string;
+  partitaIva: string;
+  nomeAttivita: string;
   termini: boolean;
   privacy: boolean;
   notificheEmail: boolean;
@@ -124,6 +126,8 @@ const Register = () => {
     civico: "",
     cap: "",
     tipoAccount: "",
+    partitaIva: "",
+    nomeAttivita: "",
     termini: false,
     privacy: false,
     notificheEmail: true,
@@ -223,8 +227,12 @@ const Register = () => {
   }, [form.quartiere, form.citta, form.indirizzo, form.civico, form.cap]);
 
   const step4Valid = useCallback(() => {
-    return form.tipoAccount !== "";
-  }, [form.tipoAccount]);
+    if (!form.tipoAccount) return false;
+    if (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') {
+      return form.partitaIva.trim() !== "" && form.nomeAttivita.trim() !== "";
+    }
+    return true;
+  }, [form.tipoAccount, form.partitaIva, form.nomeAttivita]);
 
   // Update form
   const updateForm = (field: keyof FormData, value: any) => {
@@ -502,6 +510,8 @@ useEffect(() => {
         civico: form.civico,
         cap: form.cap,
         tipo_account: form.tipoAccount || "privato",
+        partita_iva: (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') ? form.partitaIva : null,
+        nome_attivita: (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') ? form.nomeAttivita : null,
         profilo_pubblico: form.profiloPubblico,
         mostra_email: form.mostraEmail,
         mostra_telefono: form.mostraTelefono,
@@ -1096,6 +1106,44 @@ useEffect(() => {
                       )}
                     </button>
                   ))}
+
+                  {/* Campi aggiuntivi per Professionista/Negoziante */}
+                  {(form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-4 pt-4 border-t border-border"
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        Dati {form.tipoAccount === 'professionista' ? 'professionali' : 'attività commerciale'}
+                      </p>
+                      <div>
+                        <Label htmlFor="partitaIva">Partita IVA *</Label>
+                        <Input
+                          id="partitaIva"
+                          placeholder="IT12345678901"
+                          value={form.partitaIva}
+                          onChange={e => updateForm("partitaIva", e.target.value)}
+                          maxLength={16}
+                        />
+                        {step4Attempted && !form.partitaIva.trim() && (
+                          <p className="text-xs text-destructive mt-1">La Partita IVA è obbligatoria</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="nomeAttivita">Nome attività *</Label>
+                        <Input
+                          id="nomeAttivita"
+                          placeholder={form.tipoAccount === 'professionista' ? "Es. Studio Legale Rossi" : "Es. Panetteria Da Mario"}
+                          value={form.nomeAttivita}
+                          onChange={e => updateForm("nomeAttivita", e.target.value)}
+                        />
+                        {step4Attempted && !form.nomeAttivita.trim() && (
+                          <p className="text-xs text-destructive mt-1">Il nome attività è obbligatorio</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               )}
 

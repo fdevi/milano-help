@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useTipoAccount } from "@/hooks/useTipoAccount";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
 import DropdownChat from "@/components/DropdownChat";
@@ -13,6 +14,7 @@ import { Menu, X } from "lucide-react";
 const Navbar = () => {
   const { user } = useAuth();
   const { isAdmin } = useAdminCheck();
+  const { isProfessionista, isNegoziante } = useTipoAccount();
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: profile } = useQuery({
@@ -118,6 +120,12 @@ const Navbar = () => {
                 <Link to="/miei-annunci" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">I miei annunci</Link>
                 <Link to="/gruppi" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Gruppi</Link>
                 <Link to="/chat" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm">Chat</Link>
+                {isProfessionista && (
+                  <Link to="/categoria/Professionisti" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-blue-600">Professionisti</Link>
+                )}
+                {isNegoziante && (
+                  <Link to="/categoria/negozi_di_quartiere" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm font-medium text-emerald-600">Negozi di Quartiere</Link>
+                )}
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm text-primary font-semibold">Admin Panel</Link>
                 )}
