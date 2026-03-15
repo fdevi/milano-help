@@ -120,6 +120,14 @@ const ModificaAnnuncio = () => {
   const richiedePrezzo = selectedCat?.richiede_prezzo ?? false;
   const isInVendita = selectedCat?.nome === "in_vendita" || selectedCat?.label?.toLowerCase().includes("vendita");
   const isImmobili = selectedCat?.nome === "immobili" || selectedCat?.label?.toLowerCase().includes("immobil");
+  const isSpecialCat = selectedCat?.nome === "Professionisti" || selectedCat?.nome === "negozi_di_quartiere";
+
+  // Filter categories based on user tipo_account
+  const filteredCategorie = categorie.filter((c) => {
+    if (c.nome === "Professionisti") return isProfessionista;
+    if (c.nome === "negozi_di_quartiere") return isNegoziante;
+    return true;
+  });
 
   const totalImages = existingImages.length + newImages.length;
 
