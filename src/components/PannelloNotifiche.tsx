@@ -71,7 +71,7 @@ const PannelloNotifiche = () => {
 
   useEffect(() => {
     if (!user) return;
-    caricaNotifiche();
+    caricaNotifiche("init");
 
     const logRealtimeEvento = (kind: "INSERT" | "UPDATE", payload: any) => {
       const row = payload?.new ?? payload?.old ?? {};
