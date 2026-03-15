@@ -33,7 +33,9 @@ const PannelloNotifiche = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const caricaNotifiche = async () => {
+  const caricaNotifiche = async (
+    source: "init" | "open" | "realtime_insert" | "realtime_update" | "read" | "manual" = "manual"
+  ) => {
     if (!user) return;
     setLoading(true);
 
@@ -56,12 +58,39 @@ const PannelloNotifiche = () => {
         link: n.link,
       }))
     );
+
+    console.log("[NotificheDebug] caricaNotifiche", {
+      source,
+      userId: user.id,
+      unreadCount: count || 0,
+      rows: (data || []).length,
+    });
+
     setLoading(false);
   };
 
   useEffect(() => {
     if (!user) return;
-    caricaNotifiche();
+    caricaNotifiche("init");
+
+    const logRealtimeEvento = (kind: "INSERT" | "UPDATE", payload: any) => {
+      const row = payload?.new ?? payload?.old ?? {};
+      console.log(`[Realtime][notifiche][${kind}] evento ricevuto`, {
+        eventType: payload?.eventType,
+        userFilter: user.id,
+        notifica: {
+          id: row?.id,
+          user_id: row?.user_id,
+          tipo: row?.tipo,
+          titolo: row?.titolo,
+          messaggio: row?.messaggio,
+          link: row?.link,
+          mittente_id: row?.mittente_id,
+          riferimento_id: row?.riferimento_id,
+          letta: row?.letta,
+        },
+      });
+    };
 
     const channel = supabase
       .channel("notifiche-pannello-" + user.id)
@@ -70,16 +99,27 @@ const PannelloNotifiche = () => {
         schema: "public",
         table: "notifiche",
         filter: `user_id=eq.${user.id}`,
-      }, () => caricaNotifiche())
+      }, (payload) => {
+        logRealtimeEvento("INSERT", payload);
+        caricaNotifiche("realtime_insert");
+      })
       .on("postgres_changes", {
         event: "UPDATE",
         schema: "public",
         table: "notifiche",
         filter: `user_id=eq.${user.id}`,
-      }, () => caricaNotifiche())
-      .subscribe();
+      }, (payload) => {
+        logRealtimeEvento("UPDATE", payload);
+        caricaNotifiche("realtime_update");
+      })
+      .subscribe((status) => {
+        console.log("[Realtime][notifiche] stato subscription", { status, userId: user.id });
+      });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      console.log("[Realtime][notifiche] unsubscribe", { userId: user.id });
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const formatTime = (ts?: string) => {
@@ -95,7 +135,7 @@ const PannelloNotifiche = () => {
   const handleClick = async (n: NotificaItem) => {
     setOpen(false);
     await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
-    caricaNotifiche();
+    caricaNotifiche("read");
     if (n.link) navigate(n.link);
   };
 
@@ -128,7 +168,7 @@ const PannelloNotifiche = () => {
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => { setOpen(!open); if (!open) caricaNotifiche(); }}
+        onClick={() => { setOpen(!open); if (!open) caricaNotifiche("open"); }}
         className="relative p-2 rounded-lg hover:bg-muted transition-colors"
       >
         <Bell className="w-5 h-5 text-muted-foreground" />
