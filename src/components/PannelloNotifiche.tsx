@@ -34,7 +34,7 @@ const PannelloNotifiche = () => {
   }, []);
 
   const caricaNotifiche = async (
-    source: "init" | "open" | "realtime_insert" | "realtime_update" | "read" | "manual" = "manual"
+    source: "init" | "open" | "realtime_insert" | "realtime_update" | "read" | "manual" | "poll" = "manual"
   ) => {
     if (!user) return;
     setLoading(true);
