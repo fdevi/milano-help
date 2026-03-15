@@ -613,7 +613,7 @@ const CategoriaPage = () => {
                         )}
                         <div className="mt-auto pt-3 flex items-center gap-2 text-xs text-muted-foreground border-t">
                           <span>👤 {evento.organizzatore_nome}</span>
-                          <EventStatusBadge stato={evento.stato} />
+                          <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} />
                         </div>
                       </div>
                     </motion.div>
