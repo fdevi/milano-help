@@ -34,7 +34,7 @@ const PannelloNotifiche = () => {
   }, []);
 
   const caricaNotifiche = async (
-    source: "init" | "open" | "realtime_insert" | "realtime_update" | "read" | "manual" = "manual"
+    source: "init" | "open" | "realtime_insert" | "realtime_update" | "read" | "manual" | "poll" = "manual"
   ) => {
     if (!user) return;
     setLoading(true);
@@ -68,6 +68,15 @@ const PannelloNotifiche = () => {
 
     setLoading(false);
   };
+
+  // Polling fallback every 15s to ensure badge updates even if Realtime fails
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      caricaNotifiche("poll");
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
