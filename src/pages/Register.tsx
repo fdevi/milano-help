@@ -1106,6 +1106,44 @@ useEffect(() => {
                       )}
                     </button>
                   ))}
+
+                  {/* Campi aggiuntivi per Professionista/Negoziante */}
+                  {(form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-4 pt-4 border-t border-border"
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        Dati {form.tipoAccount === 'professionista' ? 'professionali' : 'attività commerciale'}
+                      </p>
+                      <div>
+                        <Label htmlFor="partitaIva">Partita IVA *</Label>
+                        <Input
+                          id="partitaIva"
+                          placeholder="IT12345678901"
+                          value={form.partitaIva}
+                          onChange={e => updateForm("partitaIva", e.target.value)}
+                          maxLength={16}
+                        />
+                        {step4Attempted && !form.partitaIva.trim() && (
+                          <p className="text-xs text-destructive mt-1">La Partita IVA è obbligatoria</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="nomeAttivita">Nome attività *</Label>
+                        <Input
+                          id="nomeAttivita"
+                          placeholder={form.tipoAccount === 'professionista' ? "Es. Studio Legale Rossi" : "Es. Panetteria Da Mario"}
+                          value={form.nomeAttivita}
+                          onChange={e => updateForm("nomeAttivita", e.target.value)}
+                        />
+                        {step4Attempted && !form.nomeAttivita.trim() && (
+                          <p className="text-xs text-destructive mt-1">Il nome attività è obbligatorio</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               )}
 
