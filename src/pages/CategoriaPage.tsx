@@ -261,7 +261,7 @@ const CategoriaPage = () => {
 
   const hasActiveFilters = selectedQuartieri.length > 0 || prezzoMin || prezzoMax;
 
-  if (errorCat && !isEvento) {
+  if (errorCat && !isEvento && !isSpecial) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
