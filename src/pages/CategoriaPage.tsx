@@ -142,7 +142,32 @@ const CategoriaPage = () => {
     staleTime: 30_000,
   });
 
-  const isLoading = isEvento ? loadingEventi : loadingAnnunci;
+  const isLoading = isSpecial ? loadingSpecial : isEvento ? loadingEventi : loadingAnnunci;
+
+  // Filter special profiles
+  const filteredSpecialProfiles = useMemo(() => {
+    if (!isSpecial) return [];
+    let results = [...specialProfiles];
+    const q = specialSearch.toLowerCase().trim();
+    if (q) {
+      results = results.filter((p: any) => 
+        (p.nome_attivita || '').toLowerCase().includes(q) ||
+        (p.nome || '').toLowerCase().includes(q) ||
+        (p.cognome || '').toLowerCase().includes(q) ||
+        (p.quartiere || '').toLowerCase().includes(q)
+      );
+    }
+    if (specialQuartiere !== "tutti") {
+      results = results.filter((p: any) => p.quartiere === specialQuartiere);
+    }
+    return results;
+  }, [specialProfiles, specialSearch, specialQuartiere, isSpecial]);
+
+  const specialQuartieriList = useMemo(() => {
+    const set = new Set<string>();
+    specialProfiles.forEach((p: any) => { if (p.quartiere) set.add(p.quartiere); });
+    return Array.from(set).sort();
+  }, [specialProfiles]);
 
   // Extract unique event categories
   const dbCategories = useMemo(() => {
