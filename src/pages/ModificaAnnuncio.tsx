@@ -270,7 +270,7 @@ const ModificaAnnuncio = () => {
                 <SelectValue placeholder="Seleziona una categoria" />
               </SelectTrigger>
               <SelectContent>
-                {categorie.map((c) => (
+                {filteredCategorie.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                 ))}
               </SelectContent>
