@@ -41,6 +41,7 @@ export type Database = {
       annunci: {
         Row: {
           cap: string | null
+          categoria_attivita: string | null
           categoria_id: string | null
           citta: string | null
           civico: string | null
@@ -74,6 +75,7 @@ export type Database = {
         }
         Insert: {
           cap?: string | null
+          categoria_attivita?: string | null
           categoria_id?: string | null
           citta?: string | null
           civico?: string | null
@@ -107,6 +109,7 @@ export type Database = {
         }
         Update: {
           cap?: string | null
+          categoria_attivita?: string | null
           categoria_id?: string | null
           citta?: string | null
           civico?: string | null
