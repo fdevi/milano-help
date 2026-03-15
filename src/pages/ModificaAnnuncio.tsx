@@ -81,6 +81,7 @@ const ModificaAnnuncio = () => {
       setExistingImages((annuncio.immagini as string[])?.filter(Boolean) || []);
       setCondizione((annuncio as any).condizione || "");
       setTipoOperazione((annuncio as any).tipo_operazione || "");
+      setContenutoSpeciale((annuncio as any).contenuto_speciale || "");
       setLoaded(true);
     }
   }, [annuncio, loaded]);
