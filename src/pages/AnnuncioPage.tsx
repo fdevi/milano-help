@@ -265,11 +265,21 @@ const AnnuncioPage = () => {
       // Send notification to annuncio owner
       if (user.id !== annuncio.user_id) {
         const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
-        await supabase.from("notifiche").insert({
-          user_id: annuncio.user_id, tipo: "recensione", titolo: "Nuova recensione",
+        const notificaPayload = {
+          user_id: annuncio.user_id,
+          tipo: "recensione",
+          titolo: "Nuova recensione",
           messaggio: `${nomeUtente} ha recensito "${annuncio.titolo}" con ${reviewVoto} stelle`,
-          link: `/annuncio/${annuncio.id}`, riferimento_id: annuncio.id, mittente_id: user.id,
-        } as any);
+          link: `/annuncio/${annuncio.id}`,
+          riferimento_id: annuncio.id,
+          mittente_id: user.id,
+        };
+        const { error: notificaError } = await supabase.from("notifiche").insert(notificaPayload as any);
+        if (notificaError) {
+          console.error("[NotificheDebug][recensione] errore insert", { notificaPayload, notificaError });
+        } else {
+          console.log("[NotificheDebug][recensione] insert OK", notificaPayload);
+        }
         sendPushNotification(annuncio.user_id, "Nuova recensione", `${nomeUtente} ha recensito "${annuncio.titolo}" con ${reviewVoto} stelle`, `/annuncio/${annuncio.id}`);
       }
     }

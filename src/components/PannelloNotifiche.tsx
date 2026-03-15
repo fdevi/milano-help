@@ -63,6 +63,25 @@ const PannelloNotifiche = () => {
     if (!user) return;
     caricaNotifiche();
 
+    const logRealtimeEvento = (kind: "INSERT" | "UPDATE", payload: any) => {
+      const row = payload?.new ?? payload?.old ?? {};
+      console.log(`[Realtime][notifiche][${kind}] evento ricevuto`, {
+        eventType: payload?.eventType,
+        userFilter: user.id,
+        notifica: {
+          id: row?.id,
+          user_id: row?.user_id,
+          tipo: row?.tipo,
+          titolo: row?.titolo,
+          messaggio: row?.messaggio,
+          link: row?.link,
+          mittente_id: row?.mittente_id,
+          riferimento_id: row?.riferimento_id,
+          letta: row?.letta,
+        },
+      });
+    };
+
     const channel = supabase
       .channel("notifiche-pannello-" + user.id)
       .on("postgres_changes", {
@@ -70,16 +89,27 @@ const PannelloNotifiche = () => {
         schema: "public",
         table: "notifiche",
         filter: `user_id=eq.${user.id}`,
-      }, () => caricaNotifiche())
+      }, (payload) => {
+        logRealtimeEvento("INSERT", payload);
+        caricaNotifiche();
+      })
       .on("postgres_changes", {
         event: "UPDATE",
         schema: "public",
         table: "notifiche",
         filter: `user_id=eq.${user.id}`,
-      }, () => caricaNotifiche())
-      .subscribe();
+      }, (payload) => {
+        logRealtimeEvento("UPDATE", payload);
+        caricaNotifiche();
+      })
+      .subscribe((status) => {
+        console.log("[Realtime][notifiche] stato subscription", { status, userId: user.id });
+      });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      console.log("[Realtime][notifiche] unsubscribe", { userId: user.id });
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const formatTime = (ts?: string) => {
