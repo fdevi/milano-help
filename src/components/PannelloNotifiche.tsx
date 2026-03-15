@@ -112,8 +112,17 @@ const PannelloNotifiche = () => {
         logRealtimeEvento("UPDATE", payload);
         caricaNotifiche("realtime_update");
       })
-      .subscribe((status) => {
-        console.log("[Realtime][notifiche] stato subscription", { status, userId: user.id });
+      .subscribe((status, err) => {
+        console.log("[Realtime][notifiche] stato subscription", { status, error: err, userId: user.id, channelName: "notifiche-pannello-" + user.id });
+        if (status === "CHANNEL_ERROR") {
+          console.error("[Realtime][notifiche] CHANNEL_ERROR – possibile problema RLS o configurazione Realtime", err);
+        }
+        if (status === "TIMED_OUT") {
+          console.error("[Realtime][notifiche] TIMED_OUT – il canale non si è connesso");
+        }
+        if (status === "SUBSCRIBED") {
+          console.log("[Realtime][notifiche] ✅ Canale attivo e in ascolto per INSERT/UPDATE su notifiche con user_id=" + user.id);
+        }
       });
 
     return () => {
