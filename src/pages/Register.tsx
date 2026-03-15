@@ -226,13 +226,18 @@ const Register = () => {
     return form.quartiere.trim() !== "" && form.citta.trim() !== "" && form.indirizzo.trim() !== "" && form.civico.trim() !== "" && form.cap.trim() !== "";
   }, [form.quartiere, form.citta, form.indirizzo, form.civico, form.cap]);
 
+  const isValidPartitaIva = useCallback((piva: string) => {
+    const cleaned = piva.replace(/\s/g, '');
+    return /^\d{11}$/.test(cleaned);
+  }, []);
+
   const step4Valid = useCallback(() => {
     if (!form.tipoAccount) return false;
     if (form.tipoAccount === 'professionista' || form.tipoAccount === 'negoziante') {
-      return form.partitaIva.trim() !== "" && form.nomeAttivita.trim() !== "";
+      return isValidPartitaIva(form.partitaIva) && form.nomeAttivita.trim() !== "";
     }
     return true;
-  }, [form.tipoAccount, form.partitaIva, form.nomeAttivita]);
+  }, [form.tipoAccount, form.partitaIva, form.nomeAttivita, isValidPartitaIva]);
 
   // Update form
   const updateForm = (field: keyof FormData, value: any) => {
@@ -1121,13 +1126,17 @@ useEffect(() => {
                         <Label htmlFor="partitaIva">Partita IVA *</Label>
                         <Input
                           id="partitaIva"
-                          placeholder="IT12345678901"
+                          placeholder="12345678901"
                           value={form.partitaIva}
-                          onChange={e => updateForm("partitaIva", e.target.value)}
-                          maxLength={16}
+                          onChange={e => updateForm("partitaIva", e.target.value.replace(/\D/g, '').slice(0, 11))}
+                          maxLength={11}
+                          inputMode="numeric"
                         />
                         {step4Attempted && !form.partitaIva.trim() && (
                           <p className="text-xs text-destructive mt-1">La Partita IVA è obbligatoria</p>
+                        )}
+                        {step4Attempted && form.partitaIva.trim() && !isValidPartitaIva(form.partitaIva) && (
+                          <p className="text-xs text-destructive mt-1">La Partita IVA deve essere di 11 cifre</p>
                         )}
                       </div>
                       <div>
