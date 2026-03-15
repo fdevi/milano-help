@@ -15,6 +15,7 @@ const navItems = [
   { to: "/admin/servizi", icon: Briefcase, label: "Servizi" },
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
   { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci" },
+  { to: "/admin/annunci-speciali", icon: Briefcase, label: "Annunci Speciali" },
   { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", badgeTipo: "moderazione" as const },
   { to: "/admin/eventi", icon: Calendar, label: "Eventi", badgeTipo: "eventi" as const },
   { to: "/admin/importazioni", icon: Download, label: "Importazioni" },
