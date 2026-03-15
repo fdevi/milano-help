@@ -300,7 +300,21 @@ const ModificaAnnuncio = () => {
             />
           </div>
 
-          {richiedePrezzo && (
+          {/* Contenuto speciale per Prof/Negozianti */}
+          {isSpecialCat && (
+            <div>
+              <Label htmlFor="contenutoSpeciale">📋 Menù / Offerte speciali</Label>
+              <Textarea
+                id="contenutoSpeciale"
+                value={contenutoSpeciale}
+                onChange={(e) => setContenutoSpeciale(e.target.value)}
+                placeholder="Inserisci il tuo menù, listino prezzi o offerte speciali..."
+                rows={5}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Opzionale. Verrà visualizzato nella pagina di dettaglio.</p>
+            </div>
+          )}
+
             <div>
               <Label htmlFor="prezzo">Prezzo (€)</Label>
               <Input
