@@ -1,6 +1,7 @@
-import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase, Train } from "lucide-react";
+import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase, Train, Building2, Store } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useTipoAccount } from "@/hooks/useTipoAccount";
 import { cn } from "@/lib/utils";
 
 const mainItems = [
