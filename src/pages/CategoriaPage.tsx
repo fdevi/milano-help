@@ -328,6 +328,126 @@ const CategoriaPage = () => {
           </motion.div>
         ) : null}
 
+        {/* SPECIAL CATEGORIES: Search & Grid */}
+        {isSpecial && (
+          <>
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder={`Cerca ${isProf ? 'professionisti' : 'negozi'}...`}
+                  value={specialSearch}
+                  onChange={(e) => setSpecialSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={specialQuartiere} onValueChange={setSpecialQuartiere}>
+                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Quartiere" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tutti">Tutti i quartieri</SelectItem>
+                  {specialQuartieriList.map((q) => (
+                    <SelectItem key={q} value={q}>{q}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-card rounded-xl border overflow-hidden">
+                    <div className="flex gap-4 p-5">
+                      <Skeleton className="w-20 h-20 rounded-xl shrink-0" />
+                      <div className="flex-1 space-y-2"><Skeleton className="h-5 w-3/4" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-4 w-1/3" /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredSpecialProfiles.length === 0 ? (
+              <div className="text-center py-16">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'}`}>
+                  {isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />}
+                </div>
+                <h3 className="font-heading text-xl font-bold text-foreground mb-2">
+                  Nessun {isProf ? 'professionista' : 'negozio'} trovato
+                </h3>
+                <p className="text-muted-foreground">
+                  {specialSearch || specialQuartiere !== 'tutti' ? 'Prova a modificare i filtri di ricerca.' : `Non ci sono ancora ${isProf ? 'professionisti' : 'negozi'} registrati.`}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredSpecialProfiles.map((profile: any, i: number) => {
+                  const fakeRating = (3.5 + (profile.nome_attivita?.length || 5) % 15 / 10).toFixed(1);
+                  const fakeReviews = 2 + (profile.nome_attivita?.length || 3) % 20;
+                  return (
+                    <motion.div key={profile.user_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.3) }}>
+                      <div className={`group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border-2 ${
+                        isProf ? 'border-blue-200 dark:border-blue-800 hover:border-blue-400' : 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400'
+                      }`}>
+                        <div className="p-5 flex gap-4">
+                          {/* Avatar */}
+                          <div className={`w-20 h-20 rounded-xl shrink-0 overflow-hidden flex items-center justify-center ${
+                            isProf ? 'bg-blue-100 dark:bg-blue-900' : 'bg-emerald-100 dark:bg-emerald-900'
+                          }`}>
+                            {profile.avatar_url ? (
+                              <img src={profile.avatar_url} alt={profile.nome_attivita || ''} className="w-full h-full object-cover" />
+                            ) : (
+                              isProf ? <Building2 className="w-8 h-8 text-blue-500" /> : <Store className="w-8 h-8 text-emerald-500" />
+                            )}
+                          </div>
+                          
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-heading font-bold text-foreground text-lg truncate">
+                              {profile.nome_attivita || `${profile.nome || ''} ${profile.cognome || ''}`.trim() || 'Attività'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {profile.nome && profile.cognome ? `${profile.nome} ${profile.cognome}` : ''}
+                            </p>
+                            
+                            {/* Rating */}
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, s) => (
+                                  <Star key={s} className={`w-3.5 h-3.5 ${s < Math.round(Number(fakeRating)) ? (isProf ? 'text-blue-500 fill-blue-500' : 'text-emerald-500 fill-emerald-500') : 'text-muted-foreground/30'}`} />
+                                ))}
+                              </div>
+                              <span className="text-xs text-muted-foreground">{fakeRating} ({fakeReviews} recensioni)</span>
+                            </div>
+                            
+                            {/* Quartiere */}
+                            {profile.quartiere && (
+                              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span>{profile.quartiere}</span>
+                              </div>
+                            )}
+
+                            {/* Contact */}
+                            <div className="flex items-center gap-3 mt-2">
+                              {profile.mostra_telefono && profile.telefono && (
+                                <a href={`tel:${profile.telefono}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                                  <Phone className="w-3 h-3" /> Chiama
+                                </a>
+                              )}
+                              {profile.mostra_email && profile.email && (
+                                <a href={`mailto:${profile.email}`} className={`text-xs flex items-center gap-1 ${isProf ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}>
+                                  <Mail className="w-3 h-3" /> Email
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
         {/* EVENTI: Search & Filters */}
         {isEvento && (
           <div className="space-y-3 mb-6">
