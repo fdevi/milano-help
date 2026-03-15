@@ -37,6 +37,7 @@ const NuovoAnnuncio = () => {
   const [condizione, setCondizione] = useState("");
   const [tipoOperazione, setTipoOperazione] = useState("");
   const [contenutoSpeciale, setContenutoSpeciale] = useState("");
+  const [categoriaAttivita, setCategoriaAttivita] = useState("");
 
   // Address fields for special categories
   const [via, setVia] = useState("");
