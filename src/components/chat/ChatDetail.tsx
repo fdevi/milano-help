@@ -50,37 +50,66 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
   const [showEmoji, setShowEmoji] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const location = useLocation();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const messageId = params.get('message');
-    console.log('[ChatDetail] scroll useEffect', { messageId, messagesCount: messages.length });
+    const params = new URLSearchParams(location.search);
+    const messageId = params.get("message");
+    console.log("[ChatDetail] scroll useEffect", { messageId, messagesCount: messages.length, search: location.search });
+
+    let initialTimeout: number | undefined;
+    let retryTimeout: number | undefined;
 
     if (messageId && messages.length > 0) {
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20;
+
       const tryScroll = () => {
-        attempts++;
+        attempts += 1;
         const element = document.getElementById(`message-${messageId}`);
         console.log(`[ChatDetail] tryScroll attempt=${attempts}`, { found: !!element, messageId });
+
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('ring-2', 'ring-primary', 'rounded-lg');
-          setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'rounded-lg'), 3000);
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("ring-2", "ring-primary", "rounded-lg");
+          setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
+
           const url = new URL(window.location.href);
-          url.searchParams.delete('message');
-          window.history.replaceState({}, '', url.toString());
-        } else if (attempts < maxAttempts) {
-          setTimeout(tryScroll, 300);
+          url.searchParams.delete("message");
+          url.searchParams.delete("like");
+          window.history.replaceState({}, "", url.toString());
+          return;
+        }
+
+        if (attempts < maxAttempts) {
+          retryTimeout = window.setTimeout(tryScroll, 300);
         } else {
-          console.warn('[ChatDetail] message element not found after max attempts', { messageId });
+          console.warn("[ChatDetail] message element not found after max attempts", { messageId, maxAttempts });
         }
       };
-      setTimeout(tryScroll, 300);
-    } else if (!messageId && messages.length > 0 && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+
+      initialTimeout = window.setTimeout(tryScroll, 1000);
+    } else if (!messageId && messages.length > 0) {
+      initialTimeout = window.setTimeout(() => {
+        const lastMessage =
+          scrollRef.current?.querySelector<HTMLElement>('[data-last-message="true"]') ||
+          (scrollRef.current?.querySelectorAll<HTMLElement>('[id^="message-"]') || [])[messages.length - 1];
+
+        if (lastMessage) {
+          console.log("[ChatDetail] default scroll to last message", { id: lastMessage.id });
+          lastMessage.scrollIntoView({ behavior: "smooth", block: "end" });
+        } else if (scrollRef.current) {
+          console.log("[ChatDetail] fallback scrollTop=scrollHeight");
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 300);
     }
-  }, [messages]);
+
+    return () => {
+      if (initialTimeout) window.clearTimeout(initialTimeout);
+      if (retryTimeout) window.clearTimeout(retryTimeout);
+    };
+  }, [messages, location.search]);
 
   const handleSend = () => {
     const trimmed = text.trim();
