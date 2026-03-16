@@ -268,26 +268,49 @@ const EventoPage = () => {
     queryClient.invalidateQueries({ queryKey: ["evento", id] });
   };
 
+  // Scroll to hash anchor (e.g. #comment-123) when navigating from a notification
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    const targetId = hash.substring(1);
+    const tryScroll = (attempts = 0) => {
+      const element = document.getElementById(targetId);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-2', 'ring-primary', 'rounded-lg', 'transition-all');
+          setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'rounded-lg', 'transition-all'), 3000);
+        }, 300);
+      } else if (attempts < 10) {
+        setTimeout(() => tryScroll(attempts + 1), 500);
+      }
+    };
+    tryScroll();
+  }, [evento, commenti]);
+
   const handleComment = async () => {
     if (!user) { navigate("/login"); return; }
     if (!commentText.trim() || !evento) return;
 
     setSending(true);
     const testoTroncato = commentText.trim();
-    const { error } = await (supabase as any).from("eventi_commenti").insert({
+    const { data: inserted, error } = await (supabase as any).from("eventi_commenti").insert({
       evento_id: evento.id,
       user_id: user.id,
       testo: testoTroncato,
       parent_id: replyTo?.id || null,
-    });
+    }).select("id").single();
     setSending(false);
 
     if (error) {
       toast({ title: "Errore", description: "Impossibile inviare il commento.", variant: "destructive" });
     } else {
+      const commentId = inserted?.id;
       const { data: profilo } = await supabase.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
       const nomeUtente = profilo ? `${profilo.nome || ""} ${profilo.cognome || ""}`.trim() || "Un utente" : "Un utente";
       const preview = testoTroncato.length > 50 ? testoTroncato.slice(0, 50) + "…" : testoTroncato;
+      const linkBase = `/evento/${evento.id}`;
+      const linkWithHash = commentId ? `${linkBase}#comment-${commentId}` : linkBase;
 
       if (evento.organizzatore_id !== user.id) {
         await supabase.from("notifiche").insert({
@@ -295,11 +318,11 @@ const EventoPage = () => {
           tipo: "commento_evento",
           titolo: "Nuovo commento sul tuo evento",
           messaggio: `${nomeUtente} ha commentato il tuo evento "${evento.titolo}": "${preview}"`,
-          link: `/evento/${evento.id}`,
+          link: linkWithHash,
           mittente_id: user.id,
           riferimento_id: evento.id,
         });
-        sendPushNotification(evento.organizzatore_id, "Nuovo commento sul tuo evento", `${nomeUtente} ha commentato il tuo evento "${evento.titolo}": "${preview}"`, `/evento/${evento.id}`);
+        sendPushNotification(evento.organizzatore_id, "Nuovo commento sul tuo evento", `${nomeUtente} ha commentato il tuo evento "${evento.titolo}": "${preview}"`, linkWithHash);
       }
 
       if (replyTo?.id) {
@@ -310,11 +333,11 @@ const EventoPage = () => {
             tipo: "risposta_commento",
             titolo: "Risposta al tuo commento",
             messaggio: `${nomeUtente} ha risposto al tuo commento: "${preview}"`,
-            link: `/evento/${evento.id}`,
+            link: linkWithHash,
             mittente_id: user.id,
             riferimento_id: evento.id,
           });
-          sendPushNotification(parentComment.user_id, "Risposta al tuo commento", `${nomeUtente} ha risposto al tuo commento: "${preview}"`, `/evento/${evento.id}`);
+          sendPushNotification(parentComment.user_id, "Risposta al tuo commento", `${nomeUtente} ha risposto al tuo commento: "${preview}"`, linkWithHash);
         }
       }
 
@@ -761,7 +784,7 @@ const EventoPage = () => {
                     const parentNome = parentComment?.profilo ? `${parentComment.profilo.nome || "Utente"} ${parentComment.profilo.cognome || ""}`.trim() : "Utente";
 
                     return (
-                      <div key={c.id} className="flex gap-3">
+                      <div key={c.id} id={`comment-${c.id}`} className="flex gap-3">
                         <Avatar className="w-8 h-8 shrink-0">
                           {c.profilo?.avatar_url && <AvatarImage src={c.profilo.avatar_url} />}
                           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>

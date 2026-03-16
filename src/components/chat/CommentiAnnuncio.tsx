@@ -106,16 +106,19 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
 
   const addComment = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("annunci_commenti").insert({
+      const { data: inserted, error } = await supabase.from("annunci_commenti").insert({
         annuncio_id: annuncioId,
         user_id: user!.id,
         testo,
         parent_id: replyTo?.id || null,
-      } as any);
+      } as any).select("id").single();
       if (error) throw error;
 
+      const commentId = inserted?.id;
       const nomeUtente = myProfile ? `${myProfile.nome || "Utente"} ${myProfile.cognome || ""}`.trim() : "Utente";
       const testoTroncato = testo.length > 50 ? testo.slice(0, 50) + "…" : testo;
+      const linkBase = `/annuncio/${annuncioId}`;
+      const linkWithHash = commentId ? `${linkBase}#comment-${commentId}` : linkBase;
 
       // Notify annuncio author
       if (user!.id !== annuncioAutoreId) {
@@ -124,11 +127,11 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
           tipo: "commento_annuncio",
           titolo: "Nuovo commento",
           messaggio: `${nomeUtente} ha commentato il tuo annuncio "${annuncioTitolo || ""}": "${testoTroncato}"`,
-          link: `/annuncio/${annuncioId}`,
+          link: linkWithHash,
           riferimento_id: annuncioId,
           mittente_id: user!.id,
         } as any);
-        sendPushNotification(annuncioAutoreId, "Nuovo commento", `${nomeUtente} ha commentato il tuo annuncio "${annuncioTitolo || ""}": "${testoTroncato}"`, `/annuncio/${annuncioId}`);
+        sendPushNotification(annuncioAutoreId, "Nuovo commento", `${nomeUtente} ha commentato il tuo annuncio "${annuncioTitolo || ""}": "${testoTroncato}"`, linkWithHash);
       }
 
       // Notify parent comment author (if replying)
@@ -140,11 +143,11 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
             tipo: "risposta_commento",
             titolo: "Risposta al tuo commento",
             messaggio: `${nomeUtente} ha risposto al tuo commento: "${testoTroncato}"`,
-            link: `/annuncio/${annuncioId}`,
+            link: linkWithHash,
             riferimento_id: annuncioId,
             mittente_id: user!.id,
           } as any);
-          sendPushNotification(parentComment.user_id, "Risposta al tuo commento", `${nomeUtente} ha risposto al tuo commento: "${testoTroncato}"`, `/annuncio/${annuncioId}`);
+          sendPushNotification(parentComment.user_id, "Risposta al tuo commento", `${nomeUtente} ha risposto al tuo commento: "${testoTroncato}"`, linkWithHash);
         }
       }
     },
@@ -214,7 +217,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
     const parentNome = parentProfile ? `${parentProfile.nome || "Utente"} ${parentProfile.cognome || ""}`.trim() : "Utente";
 
     return (
-      <div key={c.id} className="flex gap-3">
+      <div key={c.id} id={`comment-${c.id}`} className="flex gap-3">
         <Avatar className="h-8 w-8 shrink-0">
           {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
