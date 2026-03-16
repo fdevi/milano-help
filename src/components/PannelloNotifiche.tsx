@@ -57,7 +57,9 @@ const PannelloNotifiche = () => {
     // Il valore è SEMPRE basato sulla query DB (letta = false), mai sulle push
     try {
       console.log("[Badge][DB] sync request", { source, userId: user.id, unread });
-      if (unread > 0 && "setAppBadge" in navigator) {
+      if (!("setAppBadge" in navigator) && !("clearAppBadge" in navigator)) {
+        console.log("[Badge][DB] Badge API non supportata su questo dispositivo/browser", { source, userId: user.id, unread });
+      } else if (unread > 0 && "setAppBadge" in navigator) {
         await (navigator as any).setAppBadge(unread);
         console.log("[Badge][DB] setAppBadge called", { value: unread, source, userId: user.id });
       } else if (unread === 0 && "clearAppBadge" in navigator) {
