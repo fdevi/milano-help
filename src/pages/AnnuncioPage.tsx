@@ -556,8 +556,8 @@ const AnnuncioPage = () => {
                     <Calendar className="w-3.5 h-3.5" />
                     {format(new Date(annuncio.created_at), "d MMMM yyyy", { locale: it })}
                   </span>
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Eye className="w-3.5 h-3.5" /> {annuncio.visualizzazioni}
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Visualizzazioni annuncio">
+                    <Eye className="w-3.5 h-3.5" /> {visualizzazioniCount} visualizzazioni
                   </span>
                 </div>
                 <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground mb-2">
