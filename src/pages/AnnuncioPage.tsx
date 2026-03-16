@@ -258,6 +258,25 @@ const AnnuncioPage = () => {
     void incrementaVisualizzazioni();
   }, [annuncio?.id, id, queryClient]);
 
+  // Realtime subscription for like count updates
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`annuncio-likes-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "annunci", filter: `id=eq.${id}` },
+        (payload) => {
+          console.log("[Realtime] annuncio aggiornato", payload);
+          queryClient.setQueryData(["annuncio", id], (old: any) =>
+            old ? { ...old, mi_piace: payload.new.mi_piace, visualizzazioni: payload.new.visualizzazioni } : old
+          );
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
+
   const { data: altriAnnunci = [] } = useQuery({
     queryKey: ["altri_annunci_autore", annuncio?.user_id, annuncio?.id],
     queryFn: async () => {
