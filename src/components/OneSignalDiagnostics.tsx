@@ -175,6 +175,9 @@ export default function OneSignalDiagnostics() {
           <div className="rounded-md bg-muted p-3 text-xs font-mono space-y-2 overflow-x-auto">
             <Row label="oneSignalReady" value={result.oneSignalReady ? "✅ true" : "❌ false"} ok={result.oneSignalReady} />
             <Row label="Permission" value={result.notificationPermission} ok={result.notificationPermission === "granted"} />
+            <Row label="Badge API setAppBadge" value={result.badgeApiSetSupported ? "✅ supportata" : "❌ non supportata"} ok={result.badgeApiSetSupported} />
+            <Row label="Badge API clearAppBadge" value={result.badgeApiClearSupported ? "✅ supportata" : "❌ non supportata"} ok={result.badgeApiClearSupported} />
+            <Row label="OneSignal init error" value={result.oneSignalInitError || "—"} ok={!result.oneSignalInitError} />
             <Row label="User definito" value={result.oneSignalUserDefined ? "✅ sì" : "❌ no"} ok={result.oneSignalUserDefined} />
             <Row label="Logged in (OS)" value={result.oneSignalLoggedIn ? "✅ sì" : "❌ no"} ok={result.oneSignalLoggedIn} />
             <Row label="External ID" value={result.externalId || "—"} ok={!!result.externalId} />
