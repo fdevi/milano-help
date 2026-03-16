@@ -288,7 +288,7 @@ const EventoPage = () => {
     tryScroll();
   }, [evento, commenti]);
 
-
+  const handleComment = async () => {
     if (!user) { navigate("/login"); return; }
     if (!commentText.trim() || !evento) return;
 
