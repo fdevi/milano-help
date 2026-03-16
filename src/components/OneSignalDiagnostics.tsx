@@ -28,6 +28,14 @@ export default function OneSignalDiagnostics() {
   const [regenerating, setRegenerating] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const nav = navigator as any;
+    console.log("[Badge API] supporto rilevato", {
+      setAppBadge: typeof nav.setAppBadge === "function",
+      clearAppBadge: typeof nav.clearAppBadge === "function",
+    });
+  }, []);
+
   const runDiagnostics = async () => {
     setLoading(true);
     const diag: DiagResult = {
@@ -37,6 +45,9 @@ export default function OneSignalDiagnostics() {
       playerId: null,
       token: null,
       notificationPermission: "unknown",
+      badgeApiSetSupported: false,
+      badgeApiClearSupported: false,
+      oneSignalInitError: null,
       serviceWorkers: [],
       oneSignalSWFound: false,
       oneSignalUserDefined: false,
@@ -49,8 +60,17 @@ export default function OneSignalDiagnostics() {
 
     try {
       const w = window as any;
+      const nav = navigator as any;
       diag.oneSignalReady = !!w.oneSignalReady;
       diag.notificationPermission = typeof Notification !== "undefined" ? Notification.permission : "not supported";
+      diag.badgeApiSetSupported = typeof nav.setAppBadge === "function";
+      diag.badgeApiClearSupported = typeof nav.clearAppBadge === "function";
+      diag.oneSignalInitError = typeof w.oneSignalInitError === "string" ? w.oneSignalInitError : null;
+
+      console.log("[Badge API] supporto rilevato", {
+        setAppBadge: diag.badgeApiSetSupported,
+        clearAppBadge: diag.badgeApiClearSupported,
+      });
 
       // OneSignal data
       try {
@@ -85,6 +105,8 @@ export default function OneSignalDiagnostics() {
           diag.oneSignalSWFound = regs.some(r =>
             (r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || "").includes("OneSignal")
           );
+
+          console.log("[SW] registrazioni attive", diag.serviceWorkers);
         } else {
           diag.errors.push("Service Worker non supportato dal browser");
         }
