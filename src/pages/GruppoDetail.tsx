@@ -201,7 +201,7 @@ const GruppoDetail = () => {
         { user_id: user.id, gruppo_id: id, ultimo_letto: now, updated_at: now } as any,
         { onConflict: "user_id,gruppo_id" }
       );
-    window.dispatchEvent(new Event("badge-update"));
+    
   };
 
   useEffect(() => {

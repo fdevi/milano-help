@@ -70,12 +70,6 @@ import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
-// Azzera badge residuo all'avvio (cache SW / OneSignal)
-if ("clearAppBadge" in navigator) {
-  (navigator as any).clearAppBadge().then(() => {
-    console.log("[App] clearAppBadge chiamato all'avvio");
-  }).catch(() => {});
-}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

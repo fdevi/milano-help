@@ -618,31 +618,6 @@ const Profilo = () => {
                   </Button>
                 </div>
               </Card>
-              <Separator className="my-4" />
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-foreground">Badge icona app</h4>
-                <p className="text-xs text-muted-foreground">Se il badge sull'icona mostra un numero errato, puoi azzerarlo manualmente.</p>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  disabled={resettingBadge}
-                  onClick={async () => {
-                    setResettingBadge(true);
-                    try {
-                      if ("clearAppBadge" in navigator) await (navigator as any).clearAppBadge().catch(() => {});
-                      if ("setAppBadge" in navigator) await (navigator as any).setAppBadge(0).catch(() => {});
-                      window.dispatchEvent(new Event("badge-update"));
-                      toast({ title: "✅ Badge resettato", description: "Il badge è stato azzerato. Verrà aggiornato con i dati corretti." });
-                    } catch {
-                      toast({ title: "❌ Errore", description: "Impossibile resettare il badge", variant: "destructive" });
-                    } finally {
-                      setResettingBadge(false);
-                    }
-                  }}
-                >
-                  {resettingBadge ? <><Loader2 className="w-4 h-4 animate-spin" /> Reset in corso...</> : <><RefreshCw className="w-4 h-4" /> Resetta badge icona</>}
-                </Button>
-              </div>
               <div className="mt-4">
                 <OneSignalDiagnostics />
               </div>
