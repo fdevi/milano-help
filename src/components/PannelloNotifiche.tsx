@@ -128,6 +128,7 @@ const PannelloNotifiche = () => {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         logRealtimeEvento("INSERT", payload);
+        console.log("[Realtime][notifiche][INSERT] refresh da DB (caricaNotifiche)");
         caricaNotifiche("realtime_insert");
       })
       .on("postgres_changes", {
