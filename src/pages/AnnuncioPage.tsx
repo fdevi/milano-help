@@ -297,7 +297,7 @@ const AnnuncioPage = () => {
     tryScroll();
   }, [annuncio]);
 
-
+  const { data: altriAnnunci = [] } = useQuery({
     queryKey: ["altri_annunci_autore", annuncio?.user_id, annuncio?.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("annunci").select("id, titolo, prezzo, immagini, created_at")
