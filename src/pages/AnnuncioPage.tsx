@@ -277,7 +277,27 @@ const AnnuncioPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [id, queryClient]);
 
-  const { data: altriAnnunci = [] } = useQuery({
+  // Scroll to hash anchor (e.g. #comment-123) when navigating from a notification
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    const targetId = hash.substring(1);
+    const tryScroll = (attempts = 0) => {
+      const element = document.getElementById(targetId);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-2', 'ring-primary', 'rounded-lg', 'transition-all');
+          setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'rounded-lg', 'transition-all'), 3000);
+        }, 300);
+      } else if (attempts < 10) {
+        setTimeout(() => tryScroll(attempts + 1), 500);
+      }
+    };
+    tryScroll();
+  }, [annuncio]);
+
+
     queryKey: ["altri_annunci_autore", annuncio?.user_id, annuncio?.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("annunci").select("id, titolo, prezzo, immagini, created_at")
