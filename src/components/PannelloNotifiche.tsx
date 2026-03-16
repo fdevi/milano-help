@@ -157,6 +157,16 @@ const PannelloNotifiche = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Listen for manual badge-update events (e.g. after reading messages)
+  useEffect(() => {
+    const handleBadgeUpdate = () => {
+      console.log("[Badge] badge-update event ricevuto");
+      caricaNotifiche("manual");
+    };
+    window.addEventListener("badge-update", handleBadgeUpdate);
+    return () => window.removeEventListener("badge-update", handleBadgeUpdate);
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     caricaNotifiche("init");

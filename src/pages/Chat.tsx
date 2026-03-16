@@ -286,7 +286,9 @@ const Chat = () => {
         queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
       }
     };
-    markRead();
+    markRead().then(() => {
+      window.dispatchEvent(new Event("badge-update"));
+    });
   }, [conversationId, user, isPrivateConv, messages]);
 
   // Realtime for messages
