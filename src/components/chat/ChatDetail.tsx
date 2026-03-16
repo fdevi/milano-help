@@ -51,7 +51,22 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (!messages.length) return;
+    const params = new URLSearchParams(window.location.search);
+    const messageId = params.get('message');
+    if (messageId) {
+      setTimeout(() => {
+        const element = document.getElementById(`message-${messageId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-2', 'ring-primary', 'rounded-lg');
+          setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'rounded-lg'), 3000);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('message');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }, 500);
+    } else if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
@@ -129,7 +144,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
             const liked = hasLiked(msg.id);
 
             return (
-              <div key={msg.id} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"}`}>
+              <div key={msg.id} id={`message-${msg.id}`} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"} transition-all duration-300`}>
                 {!isMine && (
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={p?.avatar_url || undefined} />
