@@ -48,14 +48,18 @@ const PannelloNotifiche = () => {
       .limit(30);
 
     const unread = count || 0;
+    console.log(`[Badge] notifiche non lette dal DB: ${unread} (source: ${source})`);
     setTotale(unread);
 
     // Badge API – aggiorna il badge sull'icona dell'app (PWA)
+    // Il valore è SEMPRE basato sulla query DB (letta = false), mai sulle push
     try {
       if (unread > 0 && "setAppBadge" in navigator) {
         (navigator as any).setAppBadge(unread);
+        console.log(`[Badge] setAppBadge(${unread})`);
       } else if (unread === 0 && "clearAppBadge" in navigator) {
         (navigator as any).clearAppBadge();
+        console.log("[Badge] clearAppBadge()");
       }
     } catch (e) {
       // Badge API non supportata o permessi mancanti
