@@ -163,8 +163,49 @@ const AnnuncioPage = () => {
   const toggleLike = async () => {
     if (!user) { navigate("/login"); return; }
     if (!annuncio) return;
+
+    if (typeof userLiked !== "boolean") {
+      console.warn("[Like][Annuncio] userLiked non pronto, attendo refetch", {
+        annuncioId: annuncio.id,
+        userId: user.id,
+        userLiked,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["annuncio_like", id, user.id] });
+      return;
+    }
+
     const wasLiked = userLiked;
-    await supabase.rpc("toggle_like_annuncio" as any, { _annuncio_id: annuncio.id, _user_id: user.id });
+    console.log("[Like][Annuncio] toggle request", {
+      annuncioId: annuncio.id,
+      userId: user.id,
+      wasLiked,
+    });
+
+    const { data: newCount, error: toggleError } = await supabase.rpc("toggle_like_annuncio" as any, {
+      _annuncio_id: annuncio.id,
+    });
+
+    if (toggleError) {
+      console.error("[Like][Annuncio] toggle_like_annuncio RPC error", {
+        annuncioId: annuncio.id,
+        userId: user.id,
+        toggleError,
+      });
+      toast({ title: "Errore", description: "Impossibile aggiornare il like.", variant: "destructive" });
+      return;
+    }
+
+    console.log("[Like][Annuncio] toggle_like_annuncio RPC success", {
+      annuncioId: annuncio.id,
+      userId: user.id,
+      newCount,
+    });
+
+    queryClient.setQueryData(["annuncio_like", id, user.id], !wasLiked);
+    queryClient.setQueryData(["annuncio", id], (old: any) =>
+      old ? { ...old, mi_piace: typeof newCount === "number" ? newCount : old.mi_piace } : old
+    );
+
     if (!wasLiked && user.id !== annuncio.user_id) {
       const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
       const notificaPayload = {
@@ -184,19 +225,38 @@ const AnnuncioPage = () => {
       }
       sendPushNotification(annuncio.user_id, "Nuovo Mi Piace", `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`, `/annuncio/${annuncio.id}`);
     }
-    queryClient.invalidateQueries({ queryKey: ["annuncio_like", id] });
-    queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["annuncio_like", id, user.id] }),
+      queryClient.invalidateQueries({ queryKey: ["annuncio", id] }),
+    ]);
   };
 
   useEffect(() => {
     if (!annuncio?.id) return;
+
     const key = `visto_annuncio_${annuncio.id}`;
     if (sessionStorage.getItem(key)) return;
+
     sessionStorage.setItem(key, "1");
-    supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id }).then(() => {
-      queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
-    });
-  }, [annuncio?.id]);
+
+    const incrementaVisualizzazioni = async () => {
+      const { error: viewError } = await supabase.rpc("incrementa_visualizzazioni", { _annuncio_id: annuncio.id });
+
+      if (viewError) {
+        console.error("[Views][Annuncio] incrementa_visualizzazioni RPC error", {
+          annuncioId: annuncio.id,
+          viewError,
+        });
+        return;
+      }
+
+      console.log("[Views][Annuncio] incrementa_visualizzazioni RPC success", { annuncioId: annuncio.id });
+      await queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
+    };
+
+    void incrementaVisualizzazioni();
+  }, [annuncio?.id, id, queryClient]);
 
   const { data: altriAnnunci = [] } = useQuery({
     queryKey: ["altri_annunci_autore", annuncio?.user_id, annuncio?.id],
