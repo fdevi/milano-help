@@ -410,6 +410,7 @@ const AnnuncioPage = () => {
 
   const catAttivita = (annuncio as any)?.categoria_attivita;
   const catAttivitaColor = catAttivita ? (BUSINESS_CATEGORY_COLORS[catAttivita] || BUSINESS_CATEGORY_COLORS["Altro"]) : "";
+  const visualizzazioniCount = Number(annuncio?.visualizzazioni ?? 0);
 
   return (
     <div className="min-h-screen bg-background">
