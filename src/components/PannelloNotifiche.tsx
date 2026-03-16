@@ -47,7 +47,20 @@ const PannelloNotifiche = () => {
       .order("created_at", { ascending: false })
       .limit(30);
 
-    setTotale(count || 0);
+    const unread = count || 0;
+    setTotale(unread);
+
+    // Badge API – aggiorna il badge sull'icona dell'app (PWA)
+    try {
+      if (unread > 0 && "setAppBadge" in navigator) {
+        (navigator as any).setAppBadge(unread);
+      } else if (unread === 0 && "clearAppBadge" in navigator) {
+        (navigator as any).clearAppBadge();
+      }
+    } catch (e) {
+      // Badge API non supportata o permessi mancanti
+    }
+
     setNotifiche(
       (data || []).map((n: any) => ({
         id: n.id,
