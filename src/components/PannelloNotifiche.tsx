@@ -41,12 +41,6 @@ const PannelloNotifiche = () => {
     if (!user) return;
     setLoading(true);
 
-    // Query 1: notifiche non lette (tutti i tipi) per campanella e badge
-    const { count: totaleNotifiche } = await supabase
-      .from("notifiche")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("letta", false);
 
     // Query 2: lista notifiche per campanella (esclusi messaggi)
     const { data, count: totaleCampanella } = await supabase
