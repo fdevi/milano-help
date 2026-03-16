@@ -163,31 +163,26 @@ const AnnuncioPage = () => {
   const toggleLike = async () => {
     if (!user) { navigate("/login"); return; }
     if (!annuncio) return;
-    if (userLiked) {
-      await supabase.from("annunci_mi_piace").delete().eq("annuncio_id", annuncio.id).eq("user_id", user.id);
-      await supabase.from("annunci").update({ mi_piace: Math.max(0, (annuncio.mi_piace ?? 1) - 1) } as any).eq("id", annuncio.id);
-    } else {
-      await supabase.from("annunci_mi_piace").insert({ annuncio_id: annuncio.id, user_id: user.id } as any);
-      await supabase.from("annunci").update({ mi_piace: (annuncio.mi_piace ?? 0) + 1 } as any).eq("id", annuncio.id);
-      if (user.id !== annuncio.user_id) {
-        const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
-        const notificaPayload = {
-          user_id: annuncio.user_id,
-          tipo: "like_annuncio",
-          titolo: "Nuovo Mi Piace",
-          messaggio: `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`,
-          link: `/annuncio/${annuncio.id}`,
-          riferimento_id: annuncio.id,
-          mittente_id: user.id,
-        };
-        const { error: notificaError } = await supabase.from("notifiche").insert(notificaPayload as any);
-        if (notificaError) {
-          console.error("[NotificheDebug][like_annuncio] errore insert", { notificaPayload, notificaError });
-        } else {
-          console.log("[NotificheDebug][like_annuncio] insert OK", notificaPayload);
-        }
-        sendPushNotification(annuncio.user_id, "Nuovo Mi Piace", `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`, `/annuncio/${annuncio.id}`);
+    const wasLiked = userLiked;
+    await supabase.rpc("toggle_like_annuncio" as any, { _annuncio_id: annuncio.id, _user_id: user.id });
+    if (!wasLiked && user.id !== annuncio.user_id) {
+      const nomeUtente = currentUserProfile ? `${currentUserProfile.nome || "Utente"} ${currentUserProfile.cognome || ""}`.trim() : "Utente";
+      const notificaPayload = {
+        user_id: annuncio.user_id,
+        tipo: "like_annuncio",
+        titolo: "Nuovo Mi Piace",
+        messaggio: `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`,
+        link: `/annuncio/${annuncio.id}`,
+        riferimento_id: annuncio.id,
+        mittente_id: user.id,
+      };
+      const { error: notificaError } = await supabase.from("notifiche").insert(notificaPayload as any);
+      if (notificaError) {
+        console.error("[NotificheDebug][like_annuncio] errore insert", { notificaPayload, notificaError });
+      } else {
+        console.log("[NotificheDebug][like_annuncio] insert OK", notificaPayload);
       }
+      sendPushNotification(annuncio.user_id, "Nuovo Mi Piace", `A ${nomeUtente} piace il tuo annuncio "${annuncio.titolo}"`, `/annuncio/${annuncio.id}`);
     }
     queryClient.invalidateQueries({ queryKey: ["annuncio_like", id] });
     queryClient.invalidateQueries({ queryKey: ["annuncio", id] });
