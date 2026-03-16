@@ -53,7 +53,7 @@ const PannelloNotifiche = () => {
       .limit(30);
 
     const unreadBell = totaleCampanella || 0;
-    console.log(`[Notifiche] campanella: ${unreadBell} (totale notifiche non lette: ${totaleNotifiche || 0}, source: ${source})`);
+    console.log(`[Notifiche] campanella: ${unreadBell} (source: ${source})`);
     setTotale(unreadBell);
 
     setNotifiche(
