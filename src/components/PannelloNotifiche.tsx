@@ -41,7 +41,15 @@ const PannelloNotifiche = () => {
     if (!user) return;
     setLoading(true);
 
-    const { data, count } = await supabase
+    // Query 1: conteggio TOTALE (tutti i tipi) per badge icona app
+    const { count: totaleBadge } = await supabase
+      .from("notifiche")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("letta", false);
+
+    // Query 2: lista notifiche per campanella (esclusi messaggi)
+    const { data, count: totaleCampanella } = await supabase
       .from("notifiche")
       .select("*", { count: "exact" })
       .eq("user_id", user.id)
@@ -50,22 +58,21 @@ const PannelloNotifiche = () => {
       .order("created_at", { ascending: false })
       .limit(30);
 
-    const unread = count || 0;
-    console.log(`[Badge] notifiche non lette dal DB: ${unread} (source: ${source})`);
-    setTotale(unread);
+    const unreadBell = totaleCampanella || 0;
+    const unreadAll = totaleBadge || 0;
+    console.log(`[Badge] campanella: ${unreadBell}, badge app: ${unreadAll} (source: ${source})`);
+    setTotale(unreadBell);
 
-    // Badge API – aggiorna il badge sull'icona dell'app (PWA)
-    // Il valore è SEMPRE basato sulla query DB (letta = false), mai sulle push
+    // Badge API – usa il totale COMPLETO (inclusi messaggi)
     try {
-      console.log("[Badge][DB] sync request", { source, userId: user.id, unread });
       if (!("setAppBadge" in navigator) && !("clearAppBadge" in navigator)) {
-        console.log("[Badge][DB] Badge API non supportata su questo dispositivo/browser", { source, userId: user.id, unread });
-      } else if (unread > 0 && "setAppBadge" in navigator) {
-        await (navigator as any).setAppBadge(unread);
-        console.log("[Badge][DB] setAppBadge called", { value: unread, source, userId: user.id });
-      } else if (unread === 0 && "clearAppBadge" in navigator) {
+        console.log("[Badge][DB] Badge API non supportata");
+      } else if (unreadAll > 0 && "setAppBadge" in navigator) {
+        await (navigator as any).setAppBadge(unreadAll);
+        console.log("[Badge][DB] setAppBadge", { value: unreadAll, source });
+      } else if (unreadAll === 0 && "clearAppBadge" in navigator) {
         await (navigator as any).clearAppBadge();
-        console.log("[Badge][DB] clearAppBadge called", { source, userId: user.id });
+        console.log("[Badge][DB] clearAppBadge", { source });
       }
     } catch (e) {
       console.warn("[Badge][DB] sync failed", e);
@@ -81,13 +88,6 @@ const PannelloNotifiche = () => {
         link: n.link,
       }))
     );
-
-    console.log("[NotificheDebug] caricaNotifiche", {
-      source,
-      userId: user.id,
-      unreadCount: count || 0,
-      rows: (data || []).length,
-    });
 
     setLoading(false);
   };
