@@ -1767,7 +1767,7 @@ export type Database = {
         }[]
       }
       toggle_like_annuncio: {
-        Args: { _annuncio_id: string; _user_id: string }
+        Args: { _annuncio_id: string; _user_id?: string }
         Returns: number
       }
       verify_email_by_address: { Args: { _email: string }; Returns: boolean }
