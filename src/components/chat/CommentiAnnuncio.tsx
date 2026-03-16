@@ -214,7 +214,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
     const parentNome = parentProfile ? `${parentProfile.nome || "Utente"} ${parentProfile.cognome || ""}`.trim() : "Utente";
 
     return (
-      <div key={c.id} className="flex gap-3">
+      <div key={c.id} id={`comment-${c.id}`} className="flex gap-3">
         <Avatar className="h-8 w-8 shrink-0">
           {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">

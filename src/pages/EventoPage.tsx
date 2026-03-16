@@ -761,7 +761,7 @@ const EventoPage = () => {
                     const parentNome = parentComment?.profilo ? `${parentComment.profilo.nome || "Utente"} ${parentComment.profilo.cognome || ""}`.trim() : "Utente";
 
                     return (
-                      <div key={c.id} className="flex gap-3">
+                      <div key={c.id} id={`comment-${c.id}`} className="flex gap-3">
                         <Avatar className="w-8 h-8 shrink-0">
                           {c.profilo?.avatar_url && <AvatarImage src={c.profilo.avatar_url} />}
                           <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>
