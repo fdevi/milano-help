@@ -456,7 +456,7 @@ const GruppoDetail = () => {
                       const parentName = parentProfile ? `${parentProfile.nome || "Utente"} ${parentProfile.cognome || ""}`.trim() : "Utente";
 
                       return (
-                        <div key={msg.id} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"} group`}>
+                        <div key={msg.id} id={`message-${msg.id}`} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"} group transition-all duration-300`}>
                           {!isMine && (
                             <Avatar className="h-7 w-7 shrink-0">
                               <AvatarImage src={p?.avatar_url || undefined} />
