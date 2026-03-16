@@ -54,15 +54,16 @@ const PannelloNotifiche = () => {
     // Badge API – aggiorna il badge sull'icona dell'app (PWA)
     // Il valore è SEMPRE basato sulla query DB (letta = false), mai sulle push
     try {
+      console.log("[Badge][DB] sync request", { source, userId: user.id, unread });
       if (unread > 0 && "setAppBadge" in navigator) {
-        (navigator as any).setAppBadge(unread);
-        console.log(`[Badge] setAppBadge(${unread})`);
+        await (navigator as any).setAppBadge(unread);
+        console.log("[Badge][DB] setAppBadge called", { value: unread, source, userId: user.id });
       } else if (unread === 0 && "clearAppBadge" in navigator) {
-        (navigator as any).clearAppBadge();
-        console.log("[Badge] clearAppBadge()");
+        await (navigator as any).clearAppBadge();
+        console.log("[Badge][DB] clearAppBadge called", { source, userId: user.id });
       }
     } catch (e) {
-      // Badge API non supportata o permessi mancanti
+      console.warn("[Badge][DB] sync failed", e);
     }
 
     setNotifiche(
@@ -127,6 +128,7 @@ const PannelloNotifiche = () => {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         logRealtimeEvento("INSERT", payload);
+        console.log("[Realtime][notifiche][INSERT] refresh da DB (caricaNotifiche)");
         caricaNotifiche("realtime_insert");
       })
       .on("postgres_changes", {
@@ -169,8 +171,11 @@ const PannelloNotifiche = () => {
 
   const handleClick = async (n: NotificaItem) => {
     setOpen(false);
-    await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
-    caricaNotifiche("read");
+    const { error } = await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
+    if (error) {
+      console.error("[NotificheDebug][read] errore update letta", { id: n.id, error });
+    }
+    await caricaNotifiche("read");
     if (n.link) navigate(n.link);
   };
 
