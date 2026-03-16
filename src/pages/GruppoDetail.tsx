@@ -225,12 +225,17 @@ const GruppoDetail = () => {
   }, [id, isMember, queryClient]);
 
   useEffect(() => {
-    if (!(messaggi as any[]).length) return;
     const params = new URLSearchParams(window.location.search);
     const messageId = params.get('message');
-    if (messageId) {
-      setTimeout(() => {
+    console.log('[GruppoDetail] scroll useEffect', { messageId, messaggiCount: (messaggi as any[]).length });
+
+    if (messageId && (messaggi as any[]).length > 0) {
+      let attempts = 0;
+      const maxAttempts = 10;
+      const tryScroll = () => {
+        attempts++;
         const element = document.getElementById(`message-${messageId}`);
+        console.log(`[GruppoDetail] tryScroll attempt=${attempts}`, { found: !!element, messageId });
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           element.classList.add('ring-2', 'ring-primary', 'rounded-lg');
@@ -238,9 +243,14 @@ const GruppoDetail = () => {
           const url = new URL(window.location.href);
           url.searchParams.delete('message');
           window.history.replaceState({}, '', url.toString());
+        } else if (attempts < maxAttempts) {
+          setTimeout(tryScroll, 300);
+        } else {
+          console.warn('[GruppoDetail] message element not found after max attempts', { messageId });
         }
-      }, 500);
-    } else if (scrollRef.current) {
+      };
+      setTimeout(tryScroll, 300);
+    } else if (!messageId && (messaggi as any[]).length > 0 && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messaggi]);
