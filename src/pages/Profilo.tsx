@@ -82,7 +82,7 @@ const Profilo = () => {
   const [passwordForEmail, setPasswordForEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [updatingEmail, setUpdatingEmail] = useState(false);
-  const [resettingBadge, setResettingBadge] = useState(false);
+  
 
   const handleEmailChange = async (e: React.FormEvent) => {
     e.preventDefault();

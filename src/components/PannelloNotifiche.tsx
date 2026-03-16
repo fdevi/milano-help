@@ -58,80 +58,9 @@ const PannelloNotifiche = () => {
       .order("created_at", { ascending: false })
       .limit(30);
 
-    // Query 3: messaggi privati non letti
-    let totaleMessaggiPrivati = 0;
-    const { data: convPrivate } = await supabase
-      .from("conversazioni_private")
-      .select("id")
-      .or(`acquirente_id.eq.${user.id},venditore_id.eq.${user.id}`);
-
-    if (convPrivate && convPrivate.length > 0) {
-      const { data: lettiPrivati } = await supabase
-        .from("messaggi_privati_letti")
-        .select("conversazione_id, ultimo_letto")
-        .eq("user_id", user.id);
-      const mapLettiPriv = new Map(lettiPrivati?.map(l => [l.conversazione_id, l.ultimo_letto]) || []);
-
-      const risultati = await Promise.all(convPrivate.map(async (conv) => {
-        const ultimoLetto = mapLettiPriv.get(conv.id) || new Date(0).toISOString();
-        const { count: c } = await supabase
-          .from("messaggi_privati")
-          .select("*", { count: "exact", head: true })
-          .eq("conversazione_id", conv.id)
-          .neq("mittente_id", user.id)
-          .gt("created_at", ultimoLetto);
-        return c || 0;
-      }));
-      totaleMessaggiPrivati = risultati.reduce((a, b) => a + b, 0);
-    }
-
-    // Query 4: messaggi di gruppo non letti
-    let totaleMessaggiGruppo = 0;
-    const { data: membri } = await supabase
-      .from("gruppi_membri")
-      .select("gruppo_id")
-      .eq("user_id", user.id)
-      .eq("stato", "approvato");
-
-    if (membri && membri.length > 0) {
-      const { data: lettiGruppo } = await supabase
-        .from("messaggi_letti")
-        .select("gruppo_id, ultimo_letto")
-        .eq("user_id", user.id);
-      const mapLettiGruppo = new Map(lettiGruppo?.map(l => [l.gruppo_id, l.ultimo_letto]) || []);
-
-      const risultati = await Promise.all(membri.map(async (m) => {
-        const ultimoLetto = mapLettiGruppo.get(m.gruppo_id) || new Date(0).toISOString();
-        const { count: c } = await supabase
-          .from("gruppi_messaggi")
-          .select("*", { count: "exact", head: true })
-          .eq("gruppo_id", m.gruppo_id)
-          .neq("mittente_id", user.id)
-          .gt("created_at", ultimoLetto);
-        return c || 0;
-      }));
-      totaleMessaggiGruppo = risultati.reduce((a, b) => a + b, 0);
-    }
-
     const unreadBell = totaleCampanella || 0;
-    const unreadAll = (totaleNotifiche || 0) + totaleMessaggiPrivati + totaleMessaggiGruppo;
-    console.log(`[Badge] campanella: ${unreadBell}, badge app: ${unreadAll} (notifiche: ${totaleNotifiche || 0}, msgPriv: ${totaleMessaggiPrivati}, msgGruppo: ${totaleMessaggiGruppo}, source: ${source})`);
+    console.log(`[Notifiche] campanella: ${unreadBell} (totale notifiche non lette: ${totaleNotifiche || 0}, source: ${source})`);
     setTotale(unreadBell);
-
-    // Badge API – usa il totale COMPLETO (inclusi messaggi)
-    try {
-      if (!("setAppBadge" in navigator) && !("clearAppBadge" in navigator)) {
-        console.log("[Badge][DB] Badge API non supportata");
-      } else if (unreadAll > 0 && "setAppBadge" in navigator) {
-        await (navigator as any).setAppBadge(unreadAll);
-        console.log("[Badge][DB] setAppBadge", { value: unreadAll, source });
-      } else if (unreadAll === 0 && "clearAppBadge" in navigator) {
-        await (navigator as any).clearAppBadge();
-        console.log("[Badge][DB] clearAppBadge", { source });
-      }
-    } catch (e) {
-      console.warn("[Badge][DB] sync failed", e);
-    }
 
     setNotifiche(
       (data || []).map((n: any) => ({
