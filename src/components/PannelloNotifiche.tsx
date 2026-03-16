@@ -171,8 +171,11 @@ const PannelloNotifiche = () => {
 
   const handleClick = async (n: NotificaItem) => {
     setOpen(false);
-    await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
-    caricaNotifiche("read");
+    const { error } = await supabase.from("notifiche").update({ letta: true } as any).eq("id", n.id);
+    if (error) {
+      console.error("[NotificheDebug][read] errore update letta", { id: n.id, error });
+    }
+    await caricaNotifiche("read");
     if (n.link) navigate(n.link);
   };
 
