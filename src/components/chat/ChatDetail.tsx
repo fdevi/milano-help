@@ -51,12 +51,17 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!messages.length) return;
     const params = new URLSearchParams(window.location.search);
     const messageId = params.get('message');
-    if (messageId) {
-      setTimeout(() => {
+    console.log('[ChatDetail] scroll useEffect', { messageId, messagesCount: messages.length });
+
+    if (messageId && messages.length > 0) {
+      let attempts = 0;
+      const maxAttempts = 10;
+      const tryScroll = () => {
+        attempts++;
         const element = document.getElementById(`message-${messageId}`);
+        console.log(`[ChatDetail] tryScroll attempt=${attempts}`, { found: !!element, messageId });
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           element.classList.add('ring-2', 'ring-primary', 'rounded-lg');
@@ -64,9 +69,14 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
           const url = new URL(window.location.href);
           url.searchParams.delete('message');
           window.history.replaceState({}, '', url.toString());
+        } else if (attempts < maxAttempts) {
+          setTimeout(tryScroll, 300);
+        } else {
+          console.warn('[ChatDetail] message element not found after max attempts', { messageId });
         }
-      }, 500);
-    } else if (scrollRef.current) {
+      };
+      setTimeout(tryScroll, 300);
+    } else if (!messageId && messages.length > 0 && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
