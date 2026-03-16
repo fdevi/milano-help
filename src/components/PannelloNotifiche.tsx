@@ -16,6 +16,8 @@ interface NotificaItem {
   link?: string;
 }
 
+const POLLING_INTERVAL_MS = 5000;
+
 const PannelloNotifiche = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -55,7 +57,9 @@ const PannelloNotifiche = () => {
     // Il valore è SEMPRE basato sulla query DB (letta = false), mai sulle push
     try {
       console.log("[Badge][DB] sync request", { source, userId: user.id, unread });
-      if (unread > 0 && "setAppBadge" in navigator) {
+      if (!("setAppBadge" in navigator) && !("clearAppBadge" in navigator)) {
+        console.log("[Badge][DB] Badge API non supportata su questo dispositivo/browser", { source, userId: user.id, unread });
+      } else if (unread > 0 && "setAppBadge" in navigator) {
         await (navigator as any).setAppBadge(unread);
         console.log("[Badge][DB] setAppBadge called", { value: unread, source, userId: user.id });
       } else if (unread === 0 && "clearAppBadge" in navigator) {
@@ -91,8 +95,9 @@ const PannelloNotifiche = () => {
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(() => {
+      console.log("[NotificheDebug] polling tick", { userId: user.id, intervalMs: POLLING_INTERVAL_MS });
       caricaNotifiche("poll");
-    }, 5000);
+    }, POLLING_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [user]);
 

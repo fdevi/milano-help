@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,7 @@ const GruppoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -225,35 +226,64 @@ const GruppoDetail = () => {
   }, [id, isMember, queryClient]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const messageId = params.get('message');
-    console.log('[GruppoDetail] scroll useEffect', { messageId, messaggiCount: (messaggi as any[]).length });
+    const params = new URLSearchParams(location.search);
+    const messageId = params.get("message");
+    const messaggiList = messaggi as any[];
+    console.log("[GruppoDetail] scroll useEffect", { messageId, messaggiCount: messaggiList.length, search: location.search });
 
-    if (messageId && (messaggi as any[]).length > 0) {
+    let initialTimeout: number | undefined;
+    let retryTimeout: number | undefined;
+
+    if (messageId && messaggiList.length > 0) {
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20;
+
       const tryScroll = () => {
-        attempts++;
+        attempts += 1;
         const element = document.getElementById(`message-${messageId}`);
         console.log(`[GruppoDetail] tryScroll attempt=${attempts}`, { found: !!element, messageId });
+
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('ring-2', 'ring-primary', 'rounded-lg');
-          setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'rounded-lg'), 3000);
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("ring-2", "ring-primary", "rounded-lg");
+          setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
+
           const url = new URL(window.location.href);
-          url.searchParams.delete('message');
-          window.history.replaceState({}, '', url.toString());
-        } else if (attempts < maxAttempts) {
-          setTimeout(tryScroll, 300);
+          url.searchParams.delete("message");
+          url.searchParams.delete("like");
+          window.history.replaceState({}, "", url.toString());
+          return;
+        }
+
+        if (attempts < maxAttempts) {
+          retryTimeout = window.setTimeout(tryScroll, 300);
         } else {
-          console.warn('[GruppoDetail] message element not found after max attempts', { messageId });
+          console.warn("[GruppoDetail] message element not found after max attempts", { messageId, maxAttempts });
         }
       };
-      setTimeout(tryScroll, 300);
-    } else if (!messageId && (messaggi as any[]).length > 0 && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+
+      initialTimeout = window.setTimeout(tryScroll, 1000);
+    } else if (!messageId && messaggiList.length > 0) {
+      initialTimeout = window.setTimeout(() => {
+        const lastMessage =
+          scrollRef.current?.querySelector<HTMLElement>('[data-last-message="true"]') ||
+          (scrollRef.current?.querySelectorAll<HTMLElement>('[id^="message-"]') || [])[messaggiList.length - 1];
+
+        if (lastMessage) {
+          console.log("[GruppoDetail] default scroll to last message", { id: lastMessage.id });
+          lastMessage.scrollIntoView({ behavior: "smooth", block: "end" });
+        } else if (scrollRef.current) {
+          console.log("[GruppoDetail] fallback scrollTop=scrollHeight");
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 300);
     }
-  }, [messaggi]);
+
+    return () => {
+      if (initialTimeout) window.clearTimeout(initialTimeout);
+      if (retryTimeout) window.clearTimeout(retryTimeout);
+    };
+  }, [messaggi, location.search]);
 
   const sendMessage = useMutation({
     mutationFn: async () => {
@@ -471,7 +501,7 @@ const GruppoDetail = () => {
                       Nessun messaggio. Inizia la conversazione!
                     </div>
                   ) : (
-                    (messaggi as any[]).map((msg) => {
+                    (messaggi as any[]).map((msg, index, arr) => {
                       const isMine = msg.mittente_id === user?.id;
                       const p = profileMap[msg.mittente_id];
                       const initials = p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U";
@@ -483,7 +513,12 @@ const GruppoDetail = () => {
                       const parentName = parentProfile ? `${parentProfile.nome || "Utente"} ${parentProfile.cognome || ""}`.trim() : "Utente";
 
                       return (
-                        <div key={msg.id} id={`message-${msg.id}`} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"} group transition-all duration-300`}>
+                        <div
+                          key={msg.id}
+                          id={`message-${msg.id}`}
+                          data-last-message={index === arr.length - 1 ? "true" : undefined}
+                          className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"} group transition-all duration-300`}
+                        >
                           {!isMine && (
                             <Avatar className="h-7 w-7 shrink-0">
                               <AvatarImage src={p?.avatar_url || undefined} />
