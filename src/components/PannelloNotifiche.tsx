@@ -46,6 +46,7 @@ const PannelloNotifiche = () => {
       .select("*", { count: "exact" })
       .eq("user_id", user.id)
       .eq("letta", false)
+      .not("tipo", "in", '("messaggio_privato","messaggio_gruppo")')
       .order("created_at", { ascending: false })
       .limit(30);
 
