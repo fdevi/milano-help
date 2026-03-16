@@ -129,7 +129,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
             const liked = hasLiked(msg.id);
 
             return (
-              <div key={msg.id} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"}`}>
+              <div key={msg.id} id={`message-${msg.id}`} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"} transition-all duration-300`}>
                 {!isMine && (
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={p?.avatar_url || undefined} />
