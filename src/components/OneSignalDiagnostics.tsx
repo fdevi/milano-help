@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,9 @@ interface DiagResult {
   playerId: string | null;
   token: string | null;
   notificationPermission: string;
+  badgeApiSetSupported: boolean;
+  badgeApiClearSupported: boolean;
+  oneSignalInitError: string | null;
   serviceWorkers: { scriptURL: string; state: string; scope: string }[];
   oneSignalSWFound: boolean;
   oneSignalUserDefined: boolean;
@@ -25,6 +28,14 @@ export default function OneSignalDiagnostics() {
   const [regenerating, setRegenerating] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const nav = navigator as any;
+    console.log("[Badge API] supporto rilevato", {
+      setAppBadge: typeof nav.setAppBadge === "function",
+      clearAppBadge: typeof nav.clearAppBadge === "function",
+    });
+  }, []);
+
   const runDiagnostics = async () => {
     setLoading(true);
     const diag: DiagResult = {
@@ -34,6 +45,9 @@ export default function OneSignalDiagnostics() {
       playerId: null,
       token: null,
       notificationPermission: "unknown",
+      badgeApiSetSupported: false,
+      badgeApiClearSupported: false,
+      oneSignalInitError: null,
       serviceWorkers: [],
       oneSignalSWFound: false,
       oneSignalUserDefined: false,
@@ -46,8 +60,17 @@ export default function OneSignalDiagnostics() {
 
     try {
       const w = window as any;
+      const nav = navigator as any;
       diag.oneSignalReady = !!w.oneSignalReady;
       diag.notificationPermission = typeof Notification !== "undefined" ? Notification.permission : "not supported";
+      diag.badgeApiSetSupported = typeof nav.setAppBadge === "function";
+      diag.badgeApiClearSupported = typeof nav.clearAppBadge === "function";
+      diag.oneSignalInitError = typeof w.oneSignalInitError === "string" ? w.oneSignalInitError : null;
+
+      console.log("[Badge API] supporto rilevato", {
+        setAppBadge: diag.badgeApiSetSupported,
+        clearAppBadge: diag.badgeApiClearSupported,
+      });
 
       // OneSignal data
       try {
@@ -82,6 +105,8 @@ export default function OneSignalDiagnostics() {
           diag.oneSignalSWFound = regs.some(r =>
             (r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || "").includes("OneSignal")
           );
+
+          console.log("[SW] registrazioni attive", diag.serviceWorkers);
         } else {
           diag.errors.push("Service Worker non supportato dal browser");
         }
@@ -150,6 +175,9 @@ export default function OneSignalDiagnostics() {
           <div className="rounded-md bg-muted p-3 text-xs font-mono space-y-2 overflow-x-auto">
             <Row label="oneSignalReady" value={result.oneSignalReady ? "✅ true" : "❌ false"} ok={result.oneSignalReady} />
             <Row label="Permission" value={result.notificationPermission} ok={result.notificationPermission === "granted"} />
+            <Row label="Badge API setAppBadge" value={result.badgeApiSetSupported ? "✅ supportata" : "❌ non supportata"} ok={result.badgeApiSetSupported} />
+            <Row label="Badge API clearAppBadge" value={result.badgeApiClearSupported ? "✅ supportata" : "❌ non supportata"} ok={result.badgeApiClearSupported} />
+            <Row label="OneSignal init error" value={result.oneSignalInitError || "—"} ok={!result.oneSignalInitError} />
             <Row label="User definito" value={result.oneSignalUserDefined ? "✅ sì" : "❌ no"} ok={result.oneSignalUserDefined} />
             <Row label="Logged in (OS)" value={result.oneSignalLoggedIn ? "✅ sì" : "❌ no"} ok={result.oneSignalLoggedIn} />
             <Row label="External ID" value={result.externalId || "—"} ok={!!result.externalId} />
