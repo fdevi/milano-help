@@ -70,7 +70,7 @@ const PannelloNotifiche = () => {
     setLoading(false);
   };
 
-  // Polling fallback every 5s to ensure badge updates even if Realtime fails
+  // Polling fallback ogni 5s per mantenere aggiornata la campanella
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(() => {
