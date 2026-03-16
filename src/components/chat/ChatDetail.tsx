@@ -175,7 +175,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
             Nessun messaggio. Inizia la conversazione!
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, index) => {
             const isMine = msg.mittenteId === currentUserId;
             const p = profiles[msg.mittenteId];
             const parentMsg = msg.parentId ? messages.find((m) => m.id === msg.parentId) : null;
@@ -184,7 +184,12 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
             const liked = hasLiked(msg.id);
 
             return (
-              <div key={msg.id} id={`message-${msg.id}`} className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"} transition-all duration-300`}>
+              <div
+                key={msg.id}
+                id={`message-${msg.id}`}
+                data-last-message={index === messages.length - 1 ? "true" : undefined}
+                className={`flex items-end gap-2 group ${isMine ? "justify-end" : "justify-start"} transition-all duration-300`}
+              >
                 {!isMine && (
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={p?.avatar_url || undefined} />

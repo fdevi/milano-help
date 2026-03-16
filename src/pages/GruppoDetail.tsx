@@ -501,7 +501,7 @@ const GruppoDetail = () => {
                       Nessun messaggio. Inizia la conversazione!
                     </div>
                   ) : (
-                    (messaggi as any[]).map((msg) => {
+                    (messaggi as any[]).map((msg, index, arr) => {
                       const isMine = msg.mittente_id === user?.id;
                       const p = profileMap[msg.mittente_id];
                       const initials = p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U";
@@ -513,7 +513,12 @@ const GruppoDetail = () => {
                       const parentName = parentProfile ? `${parentProfile.nome || "Utente"} ${parentProfile.cognome || ""}`.trim() : "Utente";
 
                       return (
-                        <div key={msg.id} id={`message-${msg.id}`} className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"} group transition-all duration-300`}>
+                        <div
+                          key={msg.id}
+                          id={`message-${msg.id}`}
+                          data-last-message={index === arr.length - 1 ? "true" : undefined}
+                          className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"} group transition-all duration-300`}
+                        >
                           {!isMine && (
                             <Avatar className="h-7 w-7 shrink-0">
                               <AvatarImage src={p?.avatar_url || undefined} />

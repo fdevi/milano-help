@@ -95,8 +95,9 @@ const PannelloNotifiche = () => {
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(() => {
+      console.log("[NotificheDebug] polling tick", { userId: user.id, intervalMs: POLLING_INTERVAL_MS });
       caricaNotifiche("poll");
-    }, 5000);
+    }, POLLING_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [user]);
 
