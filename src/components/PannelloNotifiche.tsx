@@ -16,6 +16,8 @@ interface NotificaItem {
   link?: string;
 }
 
+const POLLING_INTERVAL_MS = 5000;
+
 const PannelloNotifiche = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
