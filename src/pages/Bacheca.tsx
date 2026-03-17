@@ -7,6 +7,14 @@ import FeedCard, { FeedItem, FeedItemType } from "@/components/feed/FeedCard";
 import { Loader2, Rss } from "lucide-react";
 
 const PAGE_SIZE = 100;
+const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
+const ADMIN_PROFILE = {
+  user_id: ADMIN_USER_ID,
+  nome: "Admin",
+  cognome: "MilanoHelp",
+  avatar_url: "/logo/logo-192.png",
+  quartiere: "Milano",
+};
 
 const Bacheca = () => {
   const { user } = useAuth();
@@ -45,7 +53,7 @@ const Bacheca = () => {
 
       supabase
         .from("eventi")
-        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace")
+        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace, fonte_esterna")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 19),
@@ -120,6 +128,9 @@ const Bacheca = () => {
     });
 
     eventi.forEach((e) => {
+      // Use Admin profile for imported events
+      const isImported = !!(e as any).fonte_esterna;
+      const authorProfile = isImported ? ADMIN_PROFILE : (profileMap.get(e.organizzatore_id) || null);
       feedItems.push({
         id: e.id,
         type: "evento",
@@ -127,7 +138,7 @@ const Bacheca = () => {
         text: e.descrizione,
         images: e.immagine ? [e.immagine] : [],
         created_at: e.created_at!,
-        author: profileMap.get(e.organizzatore_id) || null,
+        author: authorProfile,
         link: `/evento/${e.id}`,
         likes_count: e.mi_piace ?? 0,
       });
@@ -210,7 +221,12 @@ const Bacheca = () => {
         async (payload) => {
           const e = payload.new as any;
           if (e.stato !== "attivo") return;
-          const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
+          const isImported = !!e.fonte_esterna;
+          let authorProfile = ADMIN_PROFILE;
+          if (!isImported) {
+            const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
+            authorProfile = prof || ADMIN_PROFILE;
+          }
           const newItem: FeedItem = {
             id: e.id,
             type: "evento",
@@ -218,7 +234,7 @@ const Bacheca = () => {
             text: e.descrizione,
             images: e.immagine ? [e.immagine] : [],
             created_at: e.created_at,
-            author: prof || null,
+            author: authorProfile,
             link: `/evento/${e.id}`,
             likes_count: 0,
           };

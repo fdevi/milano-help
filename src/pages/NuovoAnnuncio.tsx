@@ -5,17 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useTipoAccount } from "@/hooks/useTipoAccount";
+import { useRoleCheck } from "@/hooks/useRoleCheck";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Loader2, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Loader2, X, Image as ImageIcon, AlertCircle, MapPin, Shield } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { Link } from "react-router-dom";
 
 const MAX_IMAGES = 5;
+const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
 
 const NuovoAnnuncio = () => {
   const { user } = useAuth();
@@ -24,6 +27,8 @@ const NuovoAnnuncio = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isProfessionista, isNegoziante } = useTipoAccount();
+  const { isAdmin } = useRoleCheck();
+  const [publishAsAdmin, setPublishAsAdmin] = useState(false);
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
@@ -160,7 +165,7 @@ const NuovoAnnuncio = () => {
       }
 
       const payload: Record<string, any> = {
-        user_id: user.id,
+        user_id: publishAsAdmin ? ADMIN_USER_ID : user.id,
         titolo: titolo.trim(),
         descrizione: descrizione.trim() || null,
         categoria_id: categoriaId,
@@ -226,6 +231,17 @@ const NuovoAnnuncio = () => {
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>Devi impostare la tua zona prima di pubblicare.</span>
             <Link to="/profilo" className="ml-auto text-primary underline text-xs whitespace-nowrap">Vai al Profilo</Link>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
+            <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Pubblica come Admin</p>
+              <p className="text-xs text-muted-foreground">L'annuncio apparirà come pubblicato da "Admin MilanoHelp"</p>
+            </div>
+            <Switch checked={publishAsAdmin} onCheckedChange={setPublishAsAdmin} />
           </div>
         )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, Mail } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -234,7 +234,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
             {author?.user_id && currentUserId && author.user_id !== currentUserId && (
               <>
                 <DropdownMenuItem onClick={handleContact}>
-                  <Mail className="w-4 h-4 mr-2" /> Contatta
+                  <MessageSquare className="w-4 h-4 mr-2" /> Contatta
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>

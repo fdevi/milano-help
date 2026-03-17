@@ -4,11 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useRoleCheck } from "@/hooks/useRoleCheck";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Loader2, ArrowLeft, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { CalendarIcon, Loader2, ArrowLeft, X, Image as ImageIcon, AlertCircle, MapPin, Shield } from "lucide-react";
 import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -23,12 +25,16 @@ import AuthLayout from "@/components/AuthLayout";
 
 const MAX_IMAGES = 5;
 
+const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
+
 const NuovoEvento = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useRoleCheck();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [publishAsAdmin, setPublishAsAdmin] = useState(false);
   const [date, setDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [images, setImages] = useState<File[]>([]);
@@ -113,7 +119,7 @@ const NuovoEvento = () => {
         descrizione: form.descrizione || null,
         data: date.toISOString(),
         luogo: form.luogo,
-        organizzatore_id: user.id,
+        organizzatore_id: publishAsAdmin ? ADMIN_USER_ID : user.id,
         stato: "in_moderazione",
         gratuito: form.gratuito,
         prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,
@@ -168,6 +174,17 @@ const NuovoEvento = () => {
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>Devi impostare la tua zona di appartenenza prima di pubblicare.</span>
             <Link to="/profilo" className="ml-auto text-primary underline text-xs whitespace-nowrap">Vai al Profilo</Link>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="mb-6 flex items-center gap-3 rounded-lg border bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
+            <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Pubblica come Admin</p>
+              <p className="text-xs text-muted-foreground">L'evento apparirà come pubblicato da "Admin MilanoHelp"</p>
+            </div>
+            <Switch checked={publishAsAdmin} onCheckedChange={setPublishAsAdmin} />
           </div>
         )}
 
