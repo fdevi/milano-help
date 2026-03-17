@@ -66,6 +66,28 @@ const Gruppi = () => {
     }
   };
 
+  const handleCreateFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast({ title: "Seleziona un'immagine", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Max 5MB", variant: "destructive" }); return; }
+    setUploadingFile(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `gruppi/avatar-${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("annunci-images").upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("annunci-images").getPublicUrl(path);
+      setImmagine(data.publicUrl);
+      toast({ title: "Immagine caricata!" });
+    } catch (err: any) {
+      toast({ title: "Errore upload", description: err?.message, variant: "destructive" });
+    } finally {
+      setUploadingFile(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
   const { data: gruppi = [], isLoading } = useQuery({
     queryKey: ["gruppi"],
     queryFn: async () => {
