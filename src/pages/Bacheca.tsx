@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppSidebar from "@/components/AppSidebar";
 import TopNavbar from "@/components/TopNavbar";
 import FeedCard, { FeedItem, FeedItemType } from "@/components/feed/FeedCard";
-import { Button } from "@/components/ui/button";
 import { Loader2, Rss } from "lucide-react";
 
 const PAGE_SIZE = 100;
@@ -16,45 +15,57 @@ const Bacheca = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Cache membership dates for filtering group posts
+  const membershipDatesRef = useRef<Map<string, string>>(new Map());
 
   const fetchFeed = useCallback(async (startOffset: number) => {
     if (!user) return [];
 
-    // Fetch all sources in parallel
-    const [annunciRes, eventiRes, gruppiMsgRes, profilesCache, gruppiCache] = await Promise.all([
-      // Annunci (includes negozi & professionisti via categoria)
+    // Step 1: Fetch user's group memberships to filter posts by join date
+    const { data: memberships } = await supabase
+      .from("gruppi_membri")
+      .select("gruppo_id, created_at")
+      .eq("user_id", user.id)
+      .eq("stato", "approvato");
+
+    const memberMap = new Map<string, string>();
+    (memberships || []).forEach((m) => memberMap.set(m.gruppo_id, m.created_at));
+    membershipDatesRef.current = memberMap;
+
+    // Step 2: Fetch all sources in parallel
+    const [annunciRes, eventiRes, gruppiMsgRes] = await Promise.all([
       supabase
         .from("annunci")
-        .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome)")
+        .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome), mi_piace")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 49),
 
-      // Eventi
       supabase
         .from("eventi")
-        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo")
+        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 19),
 
-      // Group posts from user's groups
       supabase
         .from("gruppi_messaggi")
         .select("id, testo, immagini, created_at, mittente_id, gruppo_id, parent_id")
         .is("parent_id", null)
         .order("created_at", { ascending: false })
         .range(0, 29),
-
-      // Will resolve profiles later
-      Promise.resolve(null),
-      // Will resolve group names later
-      Promise.resolve(null),
     ]);
 
     const annunci = annunciRes.data || [];
     const eventi = eventiRes.data || [];
-    const gruppiMsg = gruppiMsgRes.data || [];
+    // Filter group messages: only those posted after the user joined
+    const gruppiMsg = (gruppiMsgRes.data || []).filter((m) => {
+      const joinDate = memberMap.get(m.gruppo_id);
+      if (!joinDate) return false; // user is not a member
+      return new Date(m.created_at) >= new Date(joinDate);
+    });
 
     // Collect user IDs for profile lookup
     const userIds = new Set<string>();
@@ -104,6 +115,7 @@ const Bacheca = () => {
         link: `/annuncio/${a.id}`,
         categoria_label: type === "annuncio" ? categoriaLabel : null,
         categoria_nome: type === "annuncio" ? categoriaNome : null,
+        likes_count: a.mi_piace ?? 0,
       });
     });
 
@@ -117,6 +129,7 @@ const Bacheca = () => {
         created_at: e.created_at!,
         author: profileMap.get(e.organizzatore_id) || null,
         link: `/evento/${e.id}`,
+        likes_count: e.mi_piace ?? 0,
       });
     });
 
@@ -132,6 +145,7 @@ const Bacheca = () => {
         gruppo_nome: gruppoMap.get(m.gruppo_id) || "Gruppo",
         gruppo_id: m.gruppo_id,
         link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
+        likes_count: 0,
       });
     });
 
@@ -143,22 +157,130 @@ const Bacheca = () => {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    fetchFeed(0).then((items) => {
-      setItems(items);
-      setHasMore(items.length >= PAGE_SIZE);
-      setOffset(items.length);
+    fetchFeed(0).then((result) => {
+      setItems(result);
+      setHasMore(result.length >= PAGE_SIZE);
+      setOffset(result.length);
       setLoading(false);
     });
   }, [user, fetchFeed]);
 
-  const loadMore = async () => {
-    setLoadingMore(true);
-    const more = await fetchFeed(offset);
-    setItems((prev) => [...prev, ...more]);
-    setHasMore(more.length >= PAGE_SIZE);
-    setOffset((prev) => prev + more.length);
-    setLoadingMore(false);
-  };
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("bacheca-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "annunci" },
+        async (payload) => {
+          const a = payload.new as any;
+          if (a.stato !== "attivo") return;
+          // Fetch category + profile
+          const [catRes, profRes] = await Promise.all([
+            a.categoria_id
+              ? supabase.from("categorie_annunci").select("label, nome").eq("id", a.categoria_id).single()
+              : Promise.resolve({ data: null }),
+            supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", a.user_id).single(),
+          ]);
+          let type: FeedItemType = "annuncio";
+          const cat = (a.categoria_attivita || "").toLowerCase();
+          if (cat.includes("negozio") || cat.includes("negozi")) type = "negozio";
+          else if (cat.includes("professionista") || cat.includes("professionisti")) type = "professionista";
+          const newItem: FeedItem = {
+            id: a.id,
+            type,
+            title: a.titolo,
+            text: a.descrizione,
+            images: a.immagini || [],
+            created_at: a.created_at,
+            author: profRes.data || null,
+            link: `/annuncio/${a.id}`,
+            categoria_label: type === "annuncio" ? catRes.data?.label || null : null,
+            categoria_nome: type === "annuncio" ? catRes.data?.nome || null : null,
+            likes_count: 0,
+          };
+          setItems((prev) => [newItem, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "eventi" },
+        async (payload) => {
+          const e = payload.new as any;
+          if (e.stato !== "attivo") return;
+          const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
+          const newItem: FeedItem = {
+            id: e.id,
+            type: "evento",
+            title: e.titolo,
+            text: e.descrizione,
+            images: e.immagine ? [e.immagine] : [],
+            created_at: e.created_at,
+            author: prof || null,
+            link: `/evento/${e.id}`,
+            likes_count: 0,
+          };
+          setItems((prev) => [newItem, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "gruppi_messaggi" },
+        async (payload) => {
+          const m = payload.new as any;
+          if (m.parent_id) return; // skip comments
+          // Check membership date
+          const joinDate = membershipDatesRef.current.get(m.gruppo_id);
+          if (!joinDate || new Date(m.created_at) < new Date(joinDate)) return;
+          const [profRes, gruppoRes] = await Promise.all([
+            supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", m.mittente_id).single(),
+            supabase.from("gruppi").select("id, nome").eq("id", m.gruppo_id).single(),
+          ]);
+          const newItem: FeedItem = {
+            id: m.id,
+            type: "post_gruppo",
+            title: null,
+            text: m.testo,
+            images: m.immagini || [],
+            created_at: m.created_at,
+            author: profRes.data || null,
+            gruppo_nome: gruppoRes.data?.nome || "Gruppo",
+            gruppo_id: m.gruppo_id,
+            link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
+            likes_count: 0,
+          };
+          setItems((prev) => [newItem, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  // Infinite scroll with IntersectionObserver
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || loadingMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          setLoadingMore(true);
+          fetchFeed(offset).then((more) => {
+            setItems((prev) => [...prev, ...more]);
+            setHasMore(more.length >= PAGE_SIZE);
+            setOffset((prev) => prev + more.length);
+            setLoadingMore(false);
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, offset, fetchFeed]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -185,15 +307,14 @@ const Bacheca = () => {
             ) : (
               <div className="space-y-4">
                 {items.map((item) => (
-                  <FeedCard key={`${item.type}-${item.id}`} item={item} />
+                  <FeedCard key={`${item.type}-${item.id}`} item={item} currentUserId={user?.id} />
                 ))}
 
-                {hasMore && (
+                {/* Infinite scroll sentinel */}
+                <div ref={sentinelRef} className="h-4" />
+                {loadingMore && (
                   <div className="flex justify-center py-4">
-                    <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
-                      {loadingMore ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Carica altri
-                    </Button>
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 )}
               </div>
