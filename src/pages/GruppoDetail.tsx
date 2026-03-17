@@ -235,12 +235,9 @@ const GruppoDetail = () => {
     if (!id || !isMember) return;
     const channel = supabase
       .channel(`gruppo-${id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
         queryClient.invalidateQueries({ queryKey: ["msg_profiles"] });
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "gruppi_messaggi" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "gruppi_messaggi_piace" }, () => {
         queryClient.invalidateQueries({ queryKey: ["gruppi_messaggi_piace", id] });
