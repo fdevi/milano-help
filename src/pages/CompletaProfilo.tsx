@@ -275,7 +275,7 @@ const CompletaProfilo = () => {
     }
 
     toast({ title: "Profilo completato!" });
-    window.location.href = "/home";
+    window.location.href = "/bacheca";
   };
 
   const SectionTitle = ({ children, number }: { children: string; number: number }) => (
