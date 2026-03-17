@@ -535,19 +535,34 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         >
           <MessageCircle className="w-5 h-5" /> Commenta
         </Button>
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
-              <Share2 className="w-5 h-5" /> Condividi
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 z-[100]">
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>Email</DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isMobile ? (
+          <Drawer open={shareOpen} onOpenChange={setShareOpen}>
+            <DrawerTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                <Share2 className="w-5 h-5" /> Condividi
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>Condividi</DrawerTitle>
+              </DrawerHeader>
+              <div className="px-2 pb-6">
+                {renderShareItems(() => setShareOpen(false))}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        ) : (
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                <Share2 className="w-5 h-5" /> Condividi
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 z-[100]">
+              {renderShareItems(() => {})}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Ricordamelo Sheet */}
