@@ -240,6 +240,7 @@ const Bacheca = () => {
               author: authorProfile,
               link: `/evento/${e.id}`,
               likes_count: 0,
+              data: e.data,
             };
             setItems((prev) => [newItem, ...prev]);
           }
