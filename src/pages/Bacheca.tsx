@@ -53,7 +53,10 @@ const Bacheca = () => {
 
       supabase
         .from("eventi")
-        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace")
+        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace, fonte_esterna")
+        .eq("stato", "attivo")
+        .order("created_at", { ascending: false })
+        .range(0, 19),
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 19),
