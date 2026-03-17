@@ -1,13 +1,14 @@
-import { useState } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import PostImageGrid from "@/components/gruppi/PostImageGrid";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo";
 
@@ -30,6 +31,7 @@ export interface FeedItem {
   link: string;
   categoria_label?: string | null;
   categoria_nome?: string | null;
+  likes_count?: number;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; color: string }> = {
@@ -64,8 +66,11 @@ const timeAgo = (date: string) => {
   return new Date(date).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 };
 
-const FeedCard = ({ item }: { item: FeedItem }) => {
+const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: string }) => {
   const [expanded, setExpanded] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(item.likes_count ?? 0);
+  const [likeLoading, setLikeLoading] = useState(false);
   const navigate = useNavigate();
   const config = typeConfig[item.type];
   const TypeIcon = config.icon;
@@ -80,6 +85,59 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
 
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}${item.link}` : item.link;
   const shareTitle = item.title || text.slice(0, 60) || "Guarda su MilanoHelp";
+
+  // Check if user has liked this item
+  useEffect(() => {
+    if (!currentUserId) return;
+    if (item.type === "annuncio" || item.type === "negozio" || item.type === "professionista") {
+      supabase.from("annunci_mi_piace").select("user_id").eq("annuncio_id", item.id).eq("user_id", currentUserId).then(({ data }) => {
+        if (data && data.length > 0) setLiked(true);
+      });
+    } else if (item.type === "evento") {
+      supabase.from("eventi_mi_piace").select("user_id").eq("evento_id", item.id).eq("user_id", currentUserId).then(({ data }) => {
+        if (data && data.length > 0) setLiked(true);
+      });
+    } else if (item.type === "post_gruppo") {
+      supabase.from("gruppi_messaggi_piace").select("user_id").eq("messaggio_id", item.id).eq("user_id", currentUserId).then(({ data }) => {
+        if (data && data.length > 0) setLiked(true);
+      });
+    }
+  }, [currentUserId, item.id, item.type]);
+
+  const handleLike = async () => {
+    if (!currentUserId || likeLoading) return;
+    setLikeLoading(true);
+
+    if (item.type === "annuncio" || item.type === "negozio" || item.type === "professionista") {
+      // Use the RPC for annunci
+      const { data } = await supabase.rpc("toggle_like_annuncio", { _annuncio_id: item.id });
+      if (data !== null && data !== undefined) {
+        setLikesCount(data);
+        setLiked(!liked);
+      }
+    } else if (item.type === "evento") {
+      if (liked) {
+        await supabase.from("eventi_mi_piace").delete().eq("evento_id", item.id).eq("user_id", currentUserId);
+        setLikesCount((c) => Math.max(0, c - 1));
+        setLiked(false);
+      } else {
+        await supabase.from("eventi_mi_piace").insert({ evento_id: item.id, user_id: currentUserId });
+        setLikesCount((c) => c + 1);
+        setLiked(true);
+      }
+    } else if (item.type === "post_gruppo") {
+      if (liked) {
+        await supabase.from("gruppi_messaggi_piace").delete().eq("messaggio_id", item.id).eq("user_id", currentUserId);
+        setLikesCount((c) => Math.max(0, c - 1));
+        setLiked(false);
+      } else {
+        await supabase.from("gruppi_messaggi_piace").insert({ messaggio_id: item.id, user_id: currentUserId });
+        setLikesCount((c) => c + 1);
+        setLiked(true);
+      }
+    }
+    setLikeLoading(false);
+  };
 
   const handleShare = (platform: string) => {
     const encodedUrl = encodeURIComponent(shareUrl);
@@ -98,6 +156,42 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
         navigator.clipboard.writeText(shareUrl);
         toast.success("Link copiato!");
         break;
+    }
+  };
+
+  const handleContact = async () => {
+    if (!currentUserId || !author?.user_id || currentUserId === author.user_id) return;
+
+    // For annunci/negozi/professionisti, try to find or create a conversazione_privata
+    if (item.type === "annuncio" || item.type === "negozio" || item.type === "professionista") {
+      const { data: existing } = await supabase
+        .from("conversazioni_private")
+        .select("id")
+        .eq("annuncio_id", item.id)
+        .or(`acquirente_id.eq.${currentUserId},venditore_id.eq.${currentUserId}`)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        navigate(`/chat/${existing[0].id}`);
+        return;
+      }
+
+      const { data: newConv } = await supabase
+        .from("conversazioni_private")
+        .insert({
+          annuncio_id: item.id,
+          acquirente_id: currentUserId,
+          venditore_id: author.user_id,
+        })
+        .select("id")
+        .single();
+
+      if (newConv) {
+        navigate(`/chat/${newConv.id}`);
+      }
+    } else {
+      // For events and group posts, navigate to the detail
+      navigate(item.link);
     }
   };
 
@@ -137,6 +231,14 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {author?.user_id && currentUserId && author.user_id !== currentUserId && (
+              <>
+                <DropdownMenuItem onClick={handleContact}>
+                  <Mail className="w-4 h-4 mr-2" /> Contatta
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleShare("email")}>Email</DropdownMenuItem>
@@ -179,20 +281,39 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
         </div>
       )}
 
-      {/* Share bar */}
+      {/* Action bar: Mi piace, Commenta, Condividi */}
       <div className="px-2 py-1 flex items-center border-t">
-        <Button variant="ghost" size="sm" onClick={() => handleShare("whatsapp")} className="flex-1 gap-1.5 text-muted-foreground text-xs">
-          WhatsApp
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLike}
+          disabled={likeLoading || !currentUserId}
+          className={`flex-1 gap-1.5 text-xs ${liked ? "text-red-500" : "text-muted-foreground"}`}
+        >
+          <Heart className={`w-4 h-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+          {likesCount > 0 ? likesCount : ""} Mi piace
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => handleShare("facebook")} className="flex-1 gap-1.5 text-muted-foreground text-xs">
-          Facebook
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(item.link)}
+          className="flex-1 gap-1.5 text-muted-foreground text-xs"
+        >
+          <MessageCircle className="w-4 h-4" /> Commenta
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => handleShare("email")} className="flex-1 gap-1.5 text-muted-foreground text-xs">
-          Email
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => handleShare("copy")} className="flex-1 gap-1.5 text-muted-foreground text-xs">
-          <Share2 className="w-3.5 h-3.5" /> Link
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs">
+              <Share2 className="w-4 h-4" /> Condividi
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleShare("email")}>Email</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </Card>
   );
