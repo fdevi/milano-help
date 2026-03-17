@@ -42,6 +42,7 @@ const Gruppi = () => {
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const generateImage = async () => {
     if (!aiPrompt.trim()) return;
@@ -62,6 +63,28 @@ const Gruppi = () => {
       toast({ title: "Errore", description: err?.message || "Impossibile generare l'immagine.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleCreateFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast({ title: "Seleziona un'immagine", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Max 5MB", variant: "destructive" }); return; }
+    setUploadingFile(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `gruppi/avatar-${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("annunci-images").upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("annunci-images").getPublicUrl(path);
+      setImmagine(data.publicUrl);
+      toast({ title: "Immagine caricata!" });
+    } catch (err: any) {
+      toast({ title: "Errore upload", description: err?.message, variant: "destructive" });
+    } finally {
+      setUploadingFile(false);
+      if (e.target) e.target.value = "";
     }
   };
 
@@ -403,6 +426,13 @@ const Gruppi = () => {
                 </Button>
               </div>
               
+              {/* File upload */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Oppure carica un file</Label>
+                <Input type="file" accept="image/*" onChange={handleCreateFileUpload} disabled={uploadingFile} />
+                {uploadingFile && <p className="text-xs text-muted-foreground mt-1">Caricamento in corso...</p>}
+              </div>
+
               {showAiPrompt && (
                 <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
                   <Input
