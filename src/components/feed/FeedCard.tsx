@@ -122,7 +122,11 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
             <Globe className="w-3 h-3" />
           </div>
         </div>
-        <Badge variant="secondary" className={`shrink-0 gap-1 text-[10px] px-1.5 py-0.5 ${config.color}`}>
+        <Badge variant="secondary" className={`shrink-0 gap-1 text-[10px] px-1.5 py-0.5 ${
+          item.type === "annuncio" && item.categoria_nome
+            ? (categoriaBadgeColor[item.categoria_nome] || config.color)
+            : config.color
+        }`}>
           <TypeIcon className="w-3 h-3" />
           {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>

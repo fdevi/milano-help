@@ -91,6 +91,7 @@ const Bacheca = () => {
       else if (cat.includes("professionista") || cat.includes("professionisti")) type = "professionista";
 
       const categoriaLabel = (a as any).categorie_annunci?.label || null;
+      const categoriaNome = (a as any).categorie_annunci?.nome || null;
 
       feedItems.push({
         id: a.id,
@@ -102,6 +103,7 @@ const Bacheca = () => {
         author: profileMap.get(a.user_id) || null,
         link: `/annuncio/${a.id}`,
         categoria_label: type === "annuncio" ? categoriaLabel : null,
+        categoria_nome: type === "annuncio" ? categoriaNome : null,
       });
     });
 
