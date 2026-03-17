@@ -64,6 +64,7 @@ import ConfirmEmail from "./pages/ConfirmEmail";
 import ConfirmEmailChange from "./pages/ConfirmEmailChange";
 import CompletaProfilo from "./pages/CompletaProfilo";
 import Fermate from "./pages/Fermate";
+import Bacheca from "./pages/Bacheca";
 import ImportFermate from "./pages/ImportFermate";
 import OneSignalInit from "./components/OneSignalInit";
 import ScrollToTop from "./components/ScrollToTop";
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/gruppo/:id" element={<ProtectedRoute><GruppoDetail /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/bacheca" element={<ProtectedRoute><Bacheca /></ProtectedRoute>} />
             <Route path="/sezioni" element={<ProtectedRoute><Sezioni /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
