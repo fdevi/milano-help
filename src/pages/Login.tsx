@@ -25,7 +25,7 @@ const Login = () => {
   // If already logged in, redirect to home
   const { user } = useAuth();
   useEffect(() => {
-    if (user) navigate("/home", { replace: true });
+    if (user) navigate("/bacheca", { replace: true });
   }, [user, navigate]);
 
   const handleGoogleLogin = async () => {
