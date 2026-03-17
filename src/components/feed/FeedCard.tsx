@@ -296,17 +296,17 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         </Badge>
 
         {/* Three-dots menu - always DropdownMenu */}
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </Button>
-          </DropdownMenuTrigger>
+        <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto z-[100]" sideOffset={4}>
             {/* Event-specific actions */}
             {item.type === "evento" && currentUserId && (
@@ -359,7 +359,8 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
               <Copy className="w-4 h-4" /> Copia link
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Title */}
