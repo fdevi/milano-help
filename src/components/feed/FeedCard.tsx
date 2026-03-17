@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import PostImageGrid from "@/components/gruppi/PostImageGrid";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo";
 
@@ -66,12 +68,82 @@ const timeAgo = (date: string) => {
   return new Date(date).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 };
 
+/* ---- Shared menu items rendered in both Drawer and Dropdown ---- */
+const ShareMenuItems = ({
+  onShare,
+  onContact,
+  showContact,
+  asDrawer,
+  onClose,
+}: {
+  onShare: (p: string) => void;
+  onContact?: () => void;
+  showContact: boolean;
+  asDrawer?: boolean;
+  onClose?: () => void;
+}) => {
+  const handleAction = (fn: () => void) => {
+    fn();
+    onClose?.();
+  };
+
+  if (asDrawer) {
+    return (
+      <div className="flex flex-col gap-1 p-4 pb-8">
+        {showContact && (
+          <>
+            <button
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left"
+              onClick={() => handleAction(onContact!)}
+            >
+              <MessageSquare className="w-5 h-5 text-primary" /> Contatta
+            </button>
+            <div className="h-px bg-border my-1" />
+          </>
+        )}
+        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("whatsapp"))}>
+          <Share2 className="w-5 h-5 text-green-600" /> WhatsApp
+        </button>
+        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("facebook"))}>
+          <Globe className="w-5 h-5 text-blue-600" /> Facebook
+        </button>
+        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("email"))}>
+          <Mail className="w-5 h-5 text-muted-foreground" /> Email
+        </button>
+        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("copy"))}>
+          <Copy className="w-5 h-5 text-muted-foreground" /> Copia link
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {showContact && (
+        <>
+          <DropdownMenuItem onClick={onContact}>
+            <MessageSquare className="w-4 h-4 mr-2" /> Contatta
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </>
+      )}
+      <DropdownMenuItem onClick={() => onShare("whatsapp")}>WhatsApp</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => onShare("facebook")}>Facebook</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => onShare("email")}>Email</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => onShare("copy")}>Copia link</DropdownMenuItem>
+    </>
+  );
+};
+
 const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: string }) => {
   const [expanded, setExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(item.likes_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const config = typeConfig[item.type];
   const TypeIcon = config.icon;
 
@@ -85,6 +157,8 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
 
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}${item.link}` : item.link;
   const shareTitle = item.title || text.slice(0, 60) || "Guarda su MilanoHelp";
+
+  const showContact = !!(author?.user_id && currentUserId && author.user_id !== currentUserId);
 
   // Check if user has liked this item
   useEffect(() => {
@@ -109,7 +183,6 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
     setLikeLoading(true);
 
     if (item.type === "annuncio" || item.type === "negozio" || item.type === "professionista") {
-      // Use the RPC for annunci
       const { data } = await supabase.rpc("toggle_like_annuncio", { _annuncio_id: item.id });
       if (data !== null && data !== undefined) {
         setLikesCount(data);
@@ -162,7 +235,6 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
   const handleContact = async () => {
     if (!currentUserId || !author?.user_id || currentUserId === author.user_id) return;
 
-    // For annunci/negozi/professionisti, try to find or create a conversazione_privata
     if (item.type === "annuncio" || item.type === "negozio" || item.type === "professionista") {
       const { data: existing } = await supabase
         .from("conversazioni_private")
@@ -190,9 +262,91 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         navigate(`/chat/${newConv.id}`);
       }
     } else {
-      // For events and group posts, navigate to the detail
       navigate(item.link);
     }
+  };
+
+  /* ---- Three-dots menu: Drawer on mobile, DropdownMenu on desktop ---- */
+  const renderMoreMenu = () => {
+    if (isMobile) {
+      return (
+        <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+          <DrawerTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0">
+              <MoreHorizontal className="w-5 h-5" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-2 mt-2" />
+            <ShareMenuItems
+              onShare={handleShare}
+              onContact={handleContact}
+              showContact={showContact}
+              asDrawer
+              onClose={() => setMoreOpen(false)}
+            />
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <ShareMenuItems
+            onShare={handleShare}
+            onContact={handleContact}
+            showContact={showContact}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  /* ---- Share button in action bar: Drawer on mobile, DropdownMenu on desktop ---- */
+  const renderShareButton = () => {
+    if (isMobile) {
+      return (
+        <Drawer open={shareOpen} onOpenChange={setShareOpen}>
+          <DrawerTrigger asChild>
+            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px]">
+              <Share2 className="w-5 h-5" /> Condividi
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-2 mt-2" />
+            <ShareMenuItems
+              onShare={handleShare}
+              onContact={handleContact}
+              showContact={false}
+              asDrawer
+              onClose={() => setShareOpen(false)}
+            />
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs">
+            <Share2 className="w-4 h-4" /> Condividi
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleShare("email")}>Email</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   return (
@@ -224,27 +378,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           <TypeIcon className="w-3 h-3" />
           {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {author?.user_id && currentUserId && author.user_id !== currentUserId && (
-              <>
-                <DropdownMenuItem onClick={handleContact}>
-                  <MessageSquare className="w-4 h-4 mr-2" /> Contatta
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare("email")}>Email</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {renderMoreMenu()}
       </div>
 
       {/* Title */}
@@ -265,8 +399,8 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           </p>
           {isLong && (
             <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-sm font-medium text-primary hover:underline mt-1"
+              onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+              className="text-sm font-medium text-primary hover:underline mt-1 min-h-[44px] flex items-center"
             >
               {expanded ? "Riduci" : "Continua a leggere"}
             </button>
@@ -288,32 +422,20 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           size="sm"
           onClick={handleLike}
           disabled={likeLoading || !currentUserId}
-          className={`flex-1 gap-1.5 text-xs ${liked ? "text-red-500" : "text-muted-foreground"}`}
+          className={`flex-1 gap-1.5 text-xs min-h-[44px] ${liked ? "text-red-500" : "text-muted-foreground"}`}
         >
-          <Heart className={`w-4 h-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+          <Heart className={`w-5 h-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
           {likesCount > 0 ? likesCount : ""} Mi piace
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate(item.link)}
-          className="flex-1 gap-1.5 text-muted-foreground text-xs"
+          className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px]"
         >
-          <MessageCircle className="w-4 h-4" /> Commenta
+          <MessageCircle className="w-5 h-5" /> Commenta
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs">
-              <Share2 className="w-4 h-4" /> Condividi
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare("email")}>Email</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {renderShareButton()}
       </div>
     </Card>
   );

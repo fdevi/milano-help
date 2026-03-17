@@ -176,104 +176,120 @@ const Bacheca = () => {
     });
   }, [user, fetchFeed]);
 
-  // Realtime subscriptions
+  // Realtime subscriptions with visibility-change reconnection
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel("bacheca-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "annunci" },
-        async (payload) => {
-          const a = payload.new as any;
-          if (a.stato !== "attivo") return;
-          // Fetch category + profile
-          const [catRes, profRes] = await Promise.all([
-            a.categoria_id
-              ? supabase.from("categorie_annunci").select("label, nome").eq("id", a.categoria_id).single()
-              : Promise.resolve({ data: null }),
-            supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", a.user_id).single(),
-          ]);
-          let type: FeedItemType = "annuncio";
-          const cat = (a.categoria_attivita || "").toLowerCase();
-          if (cat.includes("negozio") || cat.includes("negozi")) type = "negozio";
-          else if (cat.includes("professionista") || cat.includes("professionisti")) type = "professionista";
-          const newItem: FeedItem = {
-            id: a.id,
-            type,
-            title: a.titolo,
-            text: a.descrizione,
-            images: a.immagini || [],
-            created_at: a.created_at,
-            author: profRes.data || null,
-            link: `/annuncio/${a.id}`,
-            categoria_label: type === "annuncio" ? catRes.data?.label || null : null,
-            categoria_nome: type === "annuncio" ? catRes.data?.nome || null : null,
-            likes_count: 0,
-          };
-          setItems((prev) => [newItem, ...prev]);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "eventi" },
-        async (payload) => {
-          const e = payload.new as any;
-          if (e.stato !== "attivo") return;
-          const isImported = !!e.fonte_esterna;
-          let authorProfile = ADMIN_PROFILE;
-          if (!isImported) {
-            const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
-            authorProfile = prof || ADMIN_PROFILE;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const createChannel = () => {
+      channel = supabase
+        .channel("bacheca-realtime")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "annunci" },
+          async (payload) => {
+            const a = payload.new as any;
+            if (a.stato !== "attivo") return;
+            const [catRes, profRes] = await Promise.all([
+              a.categoria_id
+                ? supabase.from("categorie_annunci").select("label, nome").eq("id", a.categoria_id).single()
+                : Promise.resolve({ data: null }),
+              supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", a.user_id).single(),
+            ]);
+            let type: FeedItemType = "annuncio";
+            const cat = (a.categoria_attivita || "").toLowerCase();
+            if (cat.includes("negozio") || cat.includes("negozi")) type = "negozio";
+            else if (cat.includes("professionista") || cat.includes("professionisti")) type = "professionista";
+            const newItem: FeedItem = {
+              id: a.id,
+              type,
+              title: a.titolo,
+              text: a.descrizione,
+              images: a.immagini || [],
+              created_at: a.created_at,
+              author: profRes.data || null,
+              link: `/annuncio/${a.id}`,
+              categoria_label: type === "annuncio" ? catRes.data?.label || null : null,
+              categoria_nome: type === "annuncio" ? catRes.data?.nome || null : null,
+              likes_count: 0,
+            };
+            setItems((prev) => [newItem, ...prev]);
           }
-          const newItem: FeedItem = {
-            id: e.id,
-            type: "evento",
-            title: e.titolo,
-            text: e.descrizione,
-            images: e.immagine ? [e.immagine] : [],
-            created_at: e.created_at,
-            author: authorProfile,
-            link: `/evento/${e.id}`,
-            likes_count: 0,
-          };
-          setItems((prev) => [newItem, ...prev]);
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "eventi" },
+          async (payload) => {
+            const e = payload.new as any;
+            if (e.stato !== "attivo") return;
+            const isImported = !!e.fonte_esterna;
+            let authorProfile = ADMIN_PROFILE;
+            if (!isImported) {
+              const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
+              authorProfile = prof || ADMIN_PROFILE;
+            }
+            const newItem: FeedItem = {
+              id: e.id,
+              type: "evento",
+              title: e.titolo,
+              text: e.descrizione,
+              images: e.immagine ? [e.immagine] : [],
+              created_at: e.created_at,
+              author: authorProfile,
+              link: `/evento/${e.id}`,
+              likes_count: 0,
+            };
+            setItems((prev) => [newItem, ...prev]);
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "gruppi_messaggi" },
+          async (payload) => {
+            const m = payload.new as any;
+            if (m.parent_id) return;
+            const joinDate = membershipDatesRef.current.get(m.gruppo_id);
+            if (!joinDate || new Date(m.created_at) < new Date(joinDate)) return;
+            const [profRes, gruppoRes] = await Promise.all([
+              supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", m.mittente_id).single(),
+              supabase.from("gruppi").select("id, nome").eq("id", m.gruppo_id).single(),
+            ]);
+            const newItem: FeedItem = {
+              id: m.id,
+              type: "post_gruppo",
+              title: null,
+              text: m.testo,
+              images: m.immagini || [],
+              created_at: m.created_at,
+              author: profRes.data || null,
+              gruppo_nome: gruppoRes.data?.nome || "Gruppo",
+              gruppo_id: m.gruppo_id,
+              link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
+              likes_count: 0,
+            };
+            setItems((prev) => [newItem, ...prev]);
+          }
+        )
+        .subscribe();
+    };
+
+    createChannel();
+
+    // Re-establish realtime when app comes back to foreground (mobile)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (channel) {
+          supabase.removeChannel(channel);
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "gruppi_messaggi" },
-        async (payload) => {
-          const m = payload.new as any;
-          if (m.parent_id) return; // skip comments
-          // Check membership date
-          const joinDate = membershipDatesRef.current.get(m.gruppo_id);
-          if (!joinDate || new Date(m.created_at) < new Date(joinDate)) return;
-          const [profRes, gruppoRes] = await Promise.all([
-            supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", m.mittente_id).single(),
-            supabase.from("gruppi").select("id, nome").eq("id", m.gruppo_id).single(),
-          ]);
-          const newItem: FeedItem = {
-            id: m.id,
-            type: "post_gruppo",
-            title: null,
-            text: m.testo,
-            images: m.immagini || [],
-            created_at: m.created_at,
-            author: profRes.data || null,
-            gruppo_nome: gruppoRes.data?.nome || "Gruppo",
-            gruppo_id: m.gruppo_id,
-            link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
-            likes_count: 0,
-          };
-          setItems((prev) => [newItem, ...prev]);
-        }
-      )
-      .subscribe();
+        createChannel();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [user]);
 
