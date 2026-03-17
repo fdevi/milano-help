@@ -426,6 +426,13 @@ const Gruppi = () => {
                 </Button>
               </div>
               
+              {/* File upload */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Oppure carica un file</Label>
+                <Input type="file" accept="image/*" onChange={handleCreateFileUpload} disabled={uploadingFile} />
+                {uploadingFile && <p className="text-xs text-muted-foreground mt-1">Caricamento in corso...</p>}
+              </div>
+
               {showAiPrompt && (
                 <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
                   <Input
