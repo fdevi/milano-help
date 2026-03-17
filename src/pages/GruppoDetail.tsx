@@ -234,11 +234,40 @@ const GruppoDetail = () => {
     const messageId = params.get("message");
     const messaggiList = messaggi as any[];
 
-    if (!messaggiList.length) return;
+    console.log("[GruppoDetail scroll] useEffect", {
+      messageId,
+      messagesCount: messaggiList.length,
+      hasScrollRef: !!scrollRef.current,
+    });
+
+    if (!messaggiList.length) {
+      console.log("[GruppoDetail scroll] nessun messaggio, skip");
+      return;
+    }
+
+    const scrollToBottom = (reason: string) => {
+      const container = scrollRef.current;
+      if (!container) {
+        console.log("[GruppoDetail scroll] tentativo scroll al fondo ma ref assente", { reason });
+        return false;
+      }
+
+      container.scrollTop = container.scrollHeight;
+      console.log("[GruppoDetail scroll] tentativo scroll al fondo", {
+        reason,
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight,
+      });
+      return true;
+    };
 
     const scrollToElement = (elId: string) => {
       const element = document.getElementById(elId);
+      console.log("[GruppoDetail scroll] ricerca messaggio", { elId, found: !!element });
+
       if (!element) return false;
+
+      console.log("[GruppoDetail scroll] trovato messaggio, eseguo scroll", { elId });
       element.scrollIntoView({ behavior: "smooth", block: "center" });
       element.classList.add("ring-2", "ring-primary", "rounded-lg");
       setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
@@ -253,51 +282,94 @@ const GruppoDetail = () => {
     };
 
     if (messageId) {
-      // Scroll to specific message
       hasScrolledRef.current = true;
-      if (scrollToElement(`message-${messageId}`)) { cleanUrl(); return; }
+      const targetId = `message-${messageId}`;
+
+      if (scrollToElement(targetId)) {
+        cleanUrl();
+        return;
+      }
 
       let observer: MutationObserver | null = null;
       let fallbackTimer: number | undefined;
+      let attachObserverTimer: number | undefined;
       let attempts = 0;
 
-      const tryScroll = () => {
-        if (scrollToElement(`message-${messageId}`)) {
+      const tryScroll = (source: string) => {
+        console.log("[GruppoDetail scroll] tentativo scroll al messaggio", {
+          source,
+          targetId,
+          attempt: attempts,
+        });
+
+        if (scrollToElement(targetId)) {
           cleanUrl();
           observer?.disconnect();
           if (fallbackTimer) clearTimeout(fallbackTimer);
+          if (attachObserverTimer) clearTimeout(attachObserverTimer);
           return true;
         }
+
         return false;
       };
 
-      if (scrollRef.current) {
-        observer = new MutationObserver(() => { tryScroll(); });
-        observer.observe(scrollRef.current, { childList: true, subtree: true });
+      const attachObserver = () => {
+        const container = scrollRef.current;
+        if (!container) {
+          console.log("[GruppoDetail scroll] observer non agganciato: ref non disponibile");
+          return false;
+        }
+
+        if (observer) return true;
+
+        observer = new MutationObserver(() => {
+          console.log("[GruppoDetail scroll] observer: mutazione rilevata");
+          tryScroll("observer");
+        });
+        observer.observe(container, { childList: true, subtree: true });
+        console.log("[GruppoDetail scroll] observer agganciato");
+        return true;
+      };
+
+      if (!attachObserver()) {
+        let refAttempts = 0;
+        const retryAttach = () => {
+          refAttempts++;
+          if (attachObserver()) return;
+          if (refAttempts < 15) {
+            attachObserverTimer = window.setTimeout(retryAttach, 100);
+          }
+        };
+        attachObserverTimer = window.setTimeout(retryAttach, 50);
       }
 
       const retryFn = () => {
         attempts++;
-        if (tryScroll()) return;
+        if (tryScroll("retry")) return;
+
         if (attempts < 30) {
           fallbackTimer = window.setTimeout(retryFn, 300);
         } else {
+          console.log("[GruppoDetail scroll] max tentativi raggiunti, fallback fondo");
           observer?.disconnect();
-          // Fallback: scroll to bottom if message not found
-          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          scrollToBottom("fallback-message-not-found");
         }
       };
+
       fallbackTimer = window.setTimeout(retryFn, 200);
 
-      return () => { observer?.disconnect(); if (fallbackTimer) clearTimeout(fallbackTimer); };
-    } else {
-      // Always scroll to bottom (last message) on open and when new messages arrive
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
+      return () => {
+        observer?.disconnect();
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        if (attachObserverTimer) clearTimeout(attachObserverTimer);
+      };
     }
+
+    const timer = window.setTimeout(() => {
+      scrollToBottom("default-open");
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [messaggi, location.search]);
 
   const sendMessage = useMutation({
