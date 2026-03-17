@@ -234,7 +234,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
             {author?.user_id && currentUserId && author.user_id !== currentUserId && (
               <>
                 <DropdownMenuItem onClick={handleContact}>
-                  <Mail className="w-4 h-4 mr-2" /> Contatta
+                  <MessageSquare className="w-4 h-4 mr-2" /> Contatta
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
