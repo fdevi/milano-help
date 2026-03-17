@@ -440,71 +440,44 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>
 
-        {/* Three-dots menu - always DropdownMenu */}
+        {/* Three-dots menu: Drawer on mobile, Dropdown on desktop */}
         <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto z-[100]" sideOffset={4}>
-            {/* Event-specific actions */}
-            {item.type === "evento" && currentUserId && (
-              <>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("confermato")}>
-                  <CheckCircle2 className={`w-4 h-4 ${partecipazione === "confermato" ? "text-green-600" : ""}`} />
-                  {partecipazione === "confermato" ? "✓ Parteciperò" : "Parteciperò"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("forse")}>
-                  <HelpCircle className={`w-4 h-4 ${partecipazione === "forse" ? "text-amber-500" : ""}`} />
-                  {partecipazione === "forse" ? "✓ Forse" : "Forse"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("interessato")}>
-                  <Star className={`w-4 h-4 ${partecipazione === "interessato" ? "text-yellow-500" : ""}`} />
-                  {partecipazione === "interessato" ? "✓ Sono interessato" : "Sono interessato"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={(e) => { e.preventDefault(); setReminderOpen(true); }}>
-                  <Bell className="w-4 h-4" />
-                  Ricordamelo
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handleSavePreferito()}>
-                  <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current text-primary" : ""}`} />
-                  {isSaved ? "Salvato ✓" : "Salva nei preferiti"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {/* Contact */}
-            {showContact && (
-              <>
-                <DropdownMenuItem className={menuItemClass} onClick={handleContact}>
-                  <MessageSquare className="w-4 h-4" /> Contatta
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {/* Share actions */}
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>
-              <Share2 className="w-4 h-4 text-green-600" /> WhatsApp
-            </DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>
-              <Globe className="w-4 h-4 text-blue-600" /> Facebook
-            </DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>
-              <Mail className="w-4 h-4" /> Email
-            </DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>
-              <Copy className="w-4 h-4" /> Copia link
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-          </DropdownMenu>
+          {isMobile ? (
+            <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+              <DrawerTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Opzioni</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-2 pb-6">
+                  {renderMenuItems(() => setMoreOpen(false))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto z-[100]" sideOffset={4}>
+                {renderMenuItems(() => {})}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
