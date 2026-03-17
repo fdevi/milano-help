@@ -25,7 +25,7 @@ const Bacheca = () => {
       // Annunci (includes negozi & professionisti via categoria)
       supabase
         .from("annunci")
-        .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label)")
+        .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome)")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 49),
