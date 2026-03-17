@@ -39,6 +39,21 @@ const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; 
   post_gruppo: { icon: Users, label: "Gruppo", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
 };
 
+const categoriaBadgeColor: Record<string, string> = {
+  "in_vendita":             "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  "regalo":                 "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  "immobili":               "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+  "cerco":                  "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  "offro_servizio":         "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+  "studenti_e_insegnanti":  "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+  "aiuto_anziani":          "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  "negozi_di_quartiere":    "bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-400",
+  "bambini":                "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400",
+  "evento":                 "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  "Professionisti":         "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  "dog_sitter":             "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+};
+
 const timeAgo = (date: string) => {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
   if (seconds < 60) return "adesso";
