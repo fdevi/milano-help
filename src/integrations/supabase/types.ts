@@ -857,6 +857,7 @@ export type Database = {
           created_at: string
           gruppo_id: string
           id: string
+          immagini: string[] | null
           mittente_id: string
           parent_id: string | null
           testo: string
@@ -865,6 +866,7 @@ export type Database = {
           created_at?: string
           gruppo_id: string
           id?: string
+          immagini?: string[] | null
           mittente_id: string
           parent_id?: string | null
           testo: string
@@ -873,6 +875,7 @@ export type Database = {
           created_at?: string
           gruppo_id?: string
           id?: string
+          immagini?: string[] | null
           mittente_id?: string
           parent_id?: string | null
           testo?: string
@@ -914,6 +917,100 @@ export type Database = {
           {
             foreignKeyName: "gruppi_messaggi_piace_messaggio_id_fkey"
             columns: ["messaggio_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi_messaggi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gruppi_post_commenti: {
+        Row: {
+          created_at: string
+          gruppo_id: string
+          id: string
+          parent_id: string | null
+          post_id: string
+          testo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gruppo_id: string
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          testo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gruppo_id?: string
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          testo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gruppi_post_commenti_gruppo_id_fkey"
+            columns: ["gruppo_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gruppi_post_commenti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi_post_commenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gruppi_post_commenti_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi_messaggi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gruppi_post_condivisioni: {
+        Row: {
+          created_at: string
+          gruppo_destinazione_id: string | null
+          id: string
+          post_originale_id: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gruppo_destinazione_id?: string | null
+          id?: string
+          post_originale_id: string
+          tipo?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gruppo_destinazione_id?: string | null
+          id?: string
+          post_originale_id?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gruppi_post_condivisioni_gruppo_destinazione_id_fkey"
+            columns: ["gruppo_destinazione_id"]
+            isOneToOne: false
+            referencedRelation: "gruppi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gruppi_post_condivisioni_post_originale_id_fkey"
+            columns: ["post_originale_id"]
             isOneToOne: false
             referencedRelation: "gruppi_messaggi"
             referencedColumns: ["id"]
