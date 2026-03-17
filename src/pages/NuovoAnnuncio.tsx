@@ -18,6 +18,7 @@ import AuthLayout from "@/components/AuthLayout";
 import { Link } from "react-router-dom";
 
 const MAX_IMAGES = 5;
+const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
 
 const NuovoAnnuncio = () => {
   const { user } = useAuth();
@@ -26,6 +27,8 @@ const NuovoAnnuncio = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isProfessionista, isNegoziante } = useTipoAccount();
+  const { isAdmin } = useRoleCheck();
+  const [publishAsAdmin, setPublishAsAdmin] = useState(false);
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
