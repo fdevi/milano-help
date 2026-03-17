@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Stethoscope, RefreshCw, Copy, Loader2 } from "lucide-react";
+import { Stethoscope, RefreshCw, Copy, Loader2, BellRing } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DiagResult {
@@ -22,10 +22,14 @@ interface DiagResult {
   errors: string[];
 }
 
+type BadgeTestStatus = "idle" | "running" | "success" | "error";
+
 export default function OneSignalDiagnostics() {
   const [result, setResult] = useState<DiagResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [badgeTestStatus, setBadgeTestStatus] = useState<BadgeTestStatus>("idle");
+  const [badgeTestMessage, setBadgeTestMessage] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function OneSignalDiagnostics() {
     };
 
     // Wait 2s for subscription to settle
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     try {
       const w = window as any;
@@ -76,33 +80,43 @@ export default function OneSignalDiagnostics() {
       try {
         diag.oneSignalUserDefined = !!w.OneSignal?.User;
         if (w.OneSignal?.User) {
-          // Use property access instead of method call
-          try { diag.externalId = w.OneSignal.User.externalId ?? null; } catch (e: any) { diag.errors.push("externalId: " + e.message); }
-          try { diag.onesignalId = w.OneSignal.User.onesignalId ?? null; } catch (e: any) { diag.errors.push("onesignalId: " + e.message); }
+          try {
+            diag.externalId = w.OneSignal.User.externalId ?? null;
+          } catch (e: any) {
+            diag.errors.push("externalId: " + e.message);
+          }
+          try {
+            diag.onesignalId = w.OneSignal.User.onesignalId ?? null;
+          } catch (e: any) {
+            diag.errors.push("onesignalId: " + e.message);
+          }
           try {
             const sub = w.OneSignal.User.PushSubscription;
             if (sub) {
               diag.playerId = sub.id ?? null;
               diag.token = sub.token ?? null;
             }
-          } catch (e: any) { diag.errors.push("PushSubscription: " + e.message); }
-          // Check if logged in (externalId present = logged in)
+          } catch (e: any) {
+            diag.errors.push("PushSubscription: " + e.message);
+          }
           diag.oneSignalLoggedIn = !!diag.externalId;
         } else {
           diag.errors.push("OneSignal.User non disponibile");
         }
-      } catch (e: any) { diag.errors.push("OneSignal access: " + e.message); }
+      } catch (e: any) {
+        diag.errors.push("OneSignal access: " + e.message);
+      }
 
       // Service workers
       try {
         if ("serviceWorker" in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
-          diag.serviceWorkers = regs.map(r => ({
+          diag.serviceWorkers = regs.map((r) => ({
             scriptURL: r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || "unknown",
             state: r.active?.state || r.installing?.state || r.waiting?.state || "unknown",
             scope: r.scope,
           }));
-          diag.oneSignalSWFound = regs.some(r =>
+          diag.oneSignalSWFound = regs.some((r) =>
             (r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || "").includes("OneSignal")
           );
 
@@ -110,8 +124,9 @@ export default function OneSignalDiagnostics() {
         } else {
           diag.errors.push("Service Worker non supportato dal browser");
         }
-      } catch (e: any) { diag.errors.push("SW check: " + e.message); }
-
+      } catch (e: any) {
+        diag.errors.push("SW check: " + e.message);
+      }
     } catch (e: any) {
       diag.errors.push("Errore generale: " + e.message);
     }
@@ -139,6 +154,41 @@ export default function OneSignalDiagnostics() {
     setRegenerating(false);
   };
 
+  const runBadgeTest = async () => {
+    const nav = navigator as any;
+    const canSet = typeof nav.setAppBadge === "function";
+    const canClear = typeof nav.clearAppBadge === "function";
+
+    setBadgeTestStatus("running");
+    setBadgeTestMessage("Test in corso: imposto badge a 1 e poi lo azzero...");
+    console.log("[Badge API] test avviato", { canSet, canClear });
+
+    if (!canSet) {
+      setBadgeTestStatus("error");
+      setBadgeTestMessage("setAppBadge non disponibile su questo browser/dispositivo.");
+      toast({ title: "Badge test fallito", description: "setAppBadge non disponibile.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await nav.setAppBadge(1);
+      await new Promise((r) => setTimeout(r, 1200));
+      if (canClear) {
+        await nav.clearAppBadge();
+      }
+
+      setBadgeTestStatus("success");
+      setBadgeTestMessage(
+        "API badge invocata (set 1 → clear). Se l'icona non cambia, il blocco è quasi certamente lato iOS/impostazioni sistema."
+      );
+      toast({ title: "Test badge completato", description: "Invocazione set/clear eseguita con successo." });
+    } catch (e: any) {
+      setBadgeTestStatus("error");
+      setBadgeTestMessage(`Errore durante il test badge: ${e?.message || "sconosciuto"}`);
+      toast({ title: "Errore test badge", description: e?.message || "Errore sconosciuto", variant: "destructive" });
+    }
+  };
+
   const copyToClipboard = () => {
     if (!result) return;
     const text = JSON.stringify(result, null, 2);
@@ -160,6 +210,10 @@ export default function OneSignalDiagnostics() {
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Stethoscope className="w-4 h-4" />}
             Diagnostica
           </Button>
+          <Button size="sm" variant="outline" onClick={runBadgeTest} disabled={badgeTestStatus === "running"} className="gap-1.5">
+            {badgeTestStatus === "running" ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellRing className="w-4 h-4" />}
+            Test badge
+          </Button>
           <Button size="sm" variant="outline" onClick={regenerateSW} disabled={regenerating} className="gap-1.5">
             {regenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Rigenera SW
@@ -170,6 +224,13 @@ export default function OneSignalDiagnostics() {
             </Button>
           )}
         </div>
+
+        {badgeTestStatus !== "idle" && (
+          <div className="rounded-md border border-border bg-muted/50 p-2 text-xs">
+            <p className="font-medium text-foreground">Esito Test badge</p>
+            <p className="text-muted-foreground">{badgeTestMessage}</p>
+          </div>
+        )}
 
         {result && (
           <div className="rounded-md bg-muted p-3 text-xs font-mono space-y-2 overflow-x-auto">
@@ -185,7 +246,7 @@ export default function OneSignalDiagnostics() {
             <Row label="Player ID" value={result.playerId || "—"} ok={!!result.playerId} />
             <Row label="Token" value={result.token ? result.token.slice(0, 40) + "…" : "—"} ok={!!result.token} />
             <Row label="OneSignal SW" value={result.oneSignalSWFound ? "✅ trovato" : "❌ non trovato"} ok={result.oneSignalSWFound} />
-            
+
             <div className="pt-1 border-t border-border">
               <p className="font-semibold text-foreground mb-1">Service Workers ({result.serviceWorkers.length}):</p>
               {result.serviceWorkers.length === 0 && <p className="text-muted-foreground">Nessuno registrato</p>}
@@ -205,13 +266,18 @@ export default function OneSignalDiagnostics() {
               </div>
             )}
 
-            <div className="pt-1 border-t border-border">
-              <p className="font-semibold text-foreground mb-1">ℹ️ Badge non compare su iPhone?</p>
+            <div className="pt-1 border-t border-border space-y-2">
+              <p className="font-semibold text-foreground">ℹ️ Requisiti badge iOS</p>
               <p className="text-muted-foreground leading-relaxed">
-                Se il badge sull'icona non appare dopo la reinstallazione, vai su{" "}
-                <span className="font-medium text-foreground">Impostazioni → Notifiche → Milano Help</span>{" "}
-                e disattiva/riattiva l'opzione <span className="font-medium text-foreground">"Badge"</span>.
-                Questo resetta la cache di sistema del badge.
+                Il badge su iPhone richiede: notifiche consentite e opzione <span className="font-medium text-foreground">Badge</span> attiva in
+                <span className="font-medium text-foreground"> Impostazioni → Notifiche → Milano Help</span>.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Verifica anche lato OneSignal: certificato <span className="font-medium text-foreground">APNS valido</span> e badge
+                <span className="font-medium text-foreground"> abilitato</span> nelle impostazioni dell'app.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Se ancora non compare: disattiva/riattiva "Badge" nelle notifiche dell'app. Ultima risorsa pratica: <span className="font-medium text-foreground">Impostazioni → Generali → Trasferisci o inizializza iPhone → Ripristina → Ripristina impostazioni di rete</span>.
               </p>
             </div>
           </div>
@@ -224,7 +290,9 @@ export default function OneSignalDiagnostics() {
 function Row({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <Badge variant={ok ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">{ok ? "OK" : "—"}</Badge>
+      <Badge variant={ok ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+        {ok ? "OK" : "—"}
+      </Badge>
       <span className="text-muted-foreground">{label}:</span>
       <span className="text-foreground break-all">{value}</span>
     </div>
