@@ -226,6 +226,9 @@ const GruppoDetail = () => {
     return () => { supabase.removeChannel(channel); };
   }, [id, isMember, queryClient]);
 
+  // Scroll: bottom by default, to specific message on ?message=
+  const hasScrolledRef = useRef(false);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const messageId = params.get("message");
@@ -250,14 +253,15 @@ const GruppoDetail = () => {
     };
 
     if (messageId) {
+      // Scroll to specific message
+      hasScrolledRef.current = true;
       if (scrollToElement(`message-${messageId}`)) { cleanUrl(); return; }
 
-      let attempts = 0;
-      const maxAttempts = 30;
       let observer: MutationObserver | null = null;
       let fallbackTimer: number | undefined;
+      let attempts = 0;
 
-      const tryWithObserver = () => {
+      const tryScroll = () => {
         if (scrollToElement(`message-${messageId}`)) {
           cleanUrl();
           observer?.disconnect();
@@ -268,32 +272,31 @@ const GruppoDetail = () => {
       };
 
       if (scrollRef.current) {
-        observer = new MutationObserver(() => { tryWithObserver(); });
+        observer = new MutationObserver(() => { tryScroll(); });
         observer.observe(scrollRef.current, { childList: true, subtree: true });
       }
 
       const retryFn = () => {
         attempts++;
-        if (tryWithObserver()) return;
-        if (attempts < maxAttempts) {
+        if (tryScroll()) return;
+        if (attempts < 30) {
           fallbackTimer = window.setTimeout(retryFn, 300);
         } else {
           observer?.disconnect();
+          // Fallback: scroll to bottom if message not found
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
       };
       fallbackTimer = window.setTimeout(retryFn, 200);
 
-      return () => {
-        observer?.disconnect();
-        if (fallbackTimer) clearTimeout(fallbackTimer);
-      };
+      return () => { observer?.disconnect(); if (fallbackTimer) clearTimeout(fallbackTimer); };
     } else {
-      const timer = window.setTimeout(() => {
+      // Always scroll to bottom (last message) on open and when new messages arrive
+      requestAnimationFrame(() => {
         if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-      }, 150);
-      return () => clearTimeout(timer);
+      });
     }
   }, [messaggi, location.search]);
 
