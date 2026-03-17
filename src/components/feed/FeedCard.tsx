@@ -28,6 +28,7 @@ export interface FeedItem {
   gruppo_nome?: string | null;
   gruppo_id?: string | null;
   link: string;
+  categoria_label?: string | null;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; color: string }> = {
@@ -107,7 +108,7 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
         </div>
         <Badge variant="secondary" className={`shrink-0 gap-1 text-[10px] px-1.5 py-0.5 ${config.color}`}>
           <TypeIcon className="w-3 h-3" />
-          {config.label}
+          {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
