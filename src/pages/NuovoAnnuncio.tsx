@@ -165,7 +165,7 @@ const NuovoAnnuncio = () => {
       }
 
       const payload: Record<string, any> = {
-        user_id: user.id,
+        user_id: publishAsAdmin ? ADMIN_USER_ID : user.id,
         titolo: titolo.trim(),
         descrizione: descrizione.trim() || null,
         categoria_id: categoriaId,
