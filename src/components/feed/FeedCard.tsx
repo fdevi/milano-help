@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Separator } from "@/components/ui/separator";
 import PostImageGrid from "@/components/gruppi/PostImageGrid";
 import RicordameloSheet from "@/components/RicordameloSheet";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo";
 
@@ -73,12 +76,15 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(item.likes_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const config = typeConfig[item.type];
   const TypeIcon = config.icon;
 
   // Event-specific state
-  const [partecipazione, setPartecipazione] = useState<string | null>(null); // "confermato" | "forse" | "interessato"
+  const [partecipazione, setPartecipazione] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderLoading, setReminderLoading] = useState(false);
@@ -265,6 +271,145 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
   // Dropdown menu item style for mobile touch targets
   const menuItemClass = "min-h-[44px] flex items-center gap-2 text-sm px-3 py-2.5 cursor-pointer touch-manipulation";
 
+  const drawerBtnClass = "w-full flex items-center gap-3 px-4 py-3 min-h-[44px] text-sm text-left hover:bg-accent rounded-md touch-manipulation";
+
+  // Reusable menu content for both Drawer and Dropdown
+  const renderMenuItems = (close: () => void) => (
+    <>
+      {item.type === "evento" && currentUserId && (
+        <>
+          {isMobile ? (
+            <>
+              <button className={drawerBtnClass} onClick={() => { handlePartecipazione("confermato"); close(); }}>
+                <CheckCircle2 className={`w-5 h-5 ${partecipazione === "confermato" ? "text-green-600" : "text-muted-foreground"}`} />
+                {partecipazione === "confermato" ? "✓ Parteciperò" : "Parteciperò"}
+              </button>
+              <button className={drawerBtnClass} onClick={() => { handlePartecipazione("forse"); close(); }}>
+                <HelpCircle className={`w-5 h-5 ${partecipazione === "forse" ? "text-amber-500" : "text-muted-foreground"}`} />
+                {partecipazione === "forse" ? "✓ Forse" : "Forse"}
+              </button>
+              <button className={drawerBtnClass} onClick={() => { handlePartecipazione("interessato"); close(); }}>
+                <Star className={`w-5 h-5 ${partecipazione === "interessato" ? "text-yellow-500" : "text-muted-foreground"}`} />
+                {partecipazione === "interessato" ? "✓ Sono interessato" : "Sono interessato"}
+              </button>
+              <button className={drawerBtnClass} onClick={() => { setReminderOpen(true); close(); }}>
+                <Bell className="w-5 h-5 text-muted-foreground" /> Ricordamelo
+              </button>
+              <button className={drawerBtnClass} onClick={() => { handleSavePreferito(); close(); }}>
+                <Bookmark className={`w-5 h-5 ${isSaved ? "fill-current text-primary" : "text-muted-foreground"}`} />
+                {isSaved ? "Salvato ✓" : "Salva nei preferiti"}
+              </button>
+              <Separator className="my-1" />
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("confermato")}>
+                <CheckCircle2 className={`w-4 h-4 ${partecipazione === "confermato" ? "text-green-600" : ""}`} />
+                {partecipazione === "confermato" ? "✓ Parteciperò" : "Parteciperò"}
+              </DropdownMenuItem>
+              <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("forse")}>
+                <HelpCircle className={`w-4 h-4 ${partecipazione === "forse" ? "text-amber-500" : ""}`} />
+                {partecipazione === "forse" ? "✓ Forse" : "Forse"}
+              </DropdownMenuItem>
+              <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("interessato")}>
+                <Star className={`w-4 h-4 ${partecipazione === "interessato" ? "text-yellow-500" : ""}`} />
+                {partecipazione === "interessato" ? "✓ Sono interessato" : "Sono interessato"}
+              </DropdownMenuItem>
+              <DropdownMenuItem className={menuItemClass} onClick={(e) => { e.preventDefault(); setReminderOpen(true); }}>
+                <Bell className="w-4 h-4" /> Ricordamelo
+              </DropdownMenuItem>
+              <DropdownMenuItem className={menuItemClass} onClick={() => handleSavePreferito()}>
+                <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current text-primary" : ""}`} />
+                {isSaved ? "Salvato ✓" : "Salva nei preferiti"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+        </>
+      )}
+
+      {showContact && (
+        <>
+          {isMobile ? (
+            <>
+              <button className={drawerBtnClass} onClick={() => { handleContact(); close(); }}>
+                <MessageSquare className="w-5 h-5 text-muted-foreground" /> Contatta
+              </button>
+              <Separator className="my-1" />
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem className={menuItemClass} onClick={handleContact}>
+                <MessageSquare className="w-4 h-4" /> Contatta
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+        </>
+      )}
+
+      {isMobile ? (
+        <>
+          <button className={drawerBtnClass} onClick={() => { handleShare("whatsapp"); close(); }}>
+            <Share2 className="w-5 h-5 text-green-600" /> WhatsApp
+          </button>
+          <button className={drawerBtnClass} onClick={() => { handleShare("facebook"); close(); }}>
+            <Globe className="w-5 h-5 text-blue-600" /> Facebook
+          </button>
+          <button className={drawerBtnClass} onClick={() => { handleShare("email"); close(); }}>
+            <Mail className="w-5 h-5 text-muted-foreground" /> Email
+          </button>
+          <button className={drawerBtnClass} onClick={() => { handleShare("copy"); close(); }}>
+            <Copy className="w-5 h-5 text-muted-foreground" /> Copia link
+          </button>
+        </>
+      ) : (
+        <>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>
+            <Share2 className="w-4 h-4 text-green-600" /> WhatsApp
+          </DropdownMenuItem>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>
+            <Globe className="w-4 h-4 text-blue-600" /> Facebook
+          </DropdownMenuItem>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>
+            <Mail className="w-4 h-4" /> Email
+          </DropdownMenuItem>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>
+            <Copy className="w-4 h-4" /> Copia link
+          </DropdownMenuItem>
+        </>
+      )}
+    </>
+  );
+
+  const renderShareItems = (close: () => void) => (
+    <>
+      {isMobile ? (
+        <>
+          <button className={drawerBtnClass} onClick={() => { handleShare("whatsapp"); close(); }}>
+            <Share2 className="w-5 h-5 text-green-600" /> WhatsApp
+          </button>
+          <button className={drawerBtnClass} onClick={() => { handleShare("facebook"); close(); }}>
+            <Globe className="w-5 h-5 text-blue-600" /> Facebook
+          </button>
+          <button className={drawerBtnClass} onClick={() => { handleShare("email"); close(); }}>
+            <Mail className="w-5 h-5 text-muted-foreground" /> Email
+          </button>
+          <button className={drawerBtnClass} onClick={() => { handleShare("copy"); close(); }}>
+            <Copy className="w-5 h-5 text-muted-foreground" /> Copia link
+          </button>
+        </>
+      ) : (
+        <>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>Email</DropdownMenuItem>
+          <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
+        </>
+      )}
+    </>
+  );
+
   return (
     <Card className="overflow-hidden">
       {/* Header */}
@@ -295,71 +440,44 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>
 
-        {/* Three-dots menu - always DropdownMenu */}
+        {/* Three-dots menu: Drawer on mobile, Dropdown on desktop */}
         <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto z-[100]" sideOffset={4}>
-            {/* Event-specific actions */}
-            {item.type === "evento" && currentUserId && (
-              <>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("confermato")}>
-                  <CheckCircle2 className={`w-4 h-4 ${partecipazione === "confermato" ? "text-green-600" : ""}`} />
-                  {partecipazione === "confermato" ? "✓ Parteciperò" : "Parteciperò"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("forse")}>
-                  <HelpCircle className={`w-4 h-4 ${partecipazione === "forse" ? "text-amber-500" : ""}`} />
-                  {partecipazione === "forse" ? "✓ Forse" : "Forse"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("interessato")}>
-                  <Star className={`w-4 h-4 ${partecipazione === "interessato" ? "text-yellow-500" : ""}`} />
-                  {partecipazione === "interessato" ? "✓ Sono interessato" : "Sono interessato"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={(e) => { e.preventDefault(); setReminderOpen(true); }}>
-                  <Bell className="w-4 h-4" />
-                  Ricordamelo
-                </DropdownMenuItem>
-                <DropdownMenuItem className={menuItemClass} onClick={() => handleSavePreferito()}>
-                  <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current text-primary" : ""}`} />
-                  {isSaved ? "Salvato ✓" : "Salva nei preferiti"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {/* Contact */}
-            {showContact && (
-              <>
-                <DropdownMenuItem className={menuItemClass} onClick={handleContact}>
-                  <MessageSquare className="w-4 h-4" /> Contatta
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {/* Share actions */}
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>
-              <Share2 className="w-4 h-4 text-green-600" /> WhatsApp
-            </DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>
-              <Globe className="w-4 h-4 text-blue-600" /> Facebook
-            </DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>
-              <Mail className="w-4 h-4" /> Email
-            </DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>
-              <Copy className="w-4 h-4" /> Copia link
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-          </DropdownMenu>
+          {isMobile ? (
+            <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+              <DrawerTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Opzioni</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-2 pb-6">
+                  {renderMenuItems(() => setMoreOpen(false))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto z-[100]" sideOffset={4}>
+                {renderMenuItems(() => {})}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -417,19 +535,34 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         >
           <MessageCircle className="w-5 h-5" /> Commenta
         </Button>
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
-              <Share2 className="w-5 h-5" /> Condividi
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 z-[100]">
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>Email</DropdownMenuItem>
-            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isMobile ? (
+          <Drawer open={shareOpen} onOpenChange={setShareOpen}>
+            <DrawerTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                <Share2 className="w-5 h-5" /> Condividi
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>Condividi</DrawerTitle>
+              </DrawerHeader>
+              <div className="px-2 pb-6">
+                {renderShareItems(() => setShareOpen(false))}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        ) : (
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                <Share2 className="w-5 h-5" /> Condividi
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 z-[100]">
+              {renderShareItems(() => {})}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Ricordamelo Sheet */}
