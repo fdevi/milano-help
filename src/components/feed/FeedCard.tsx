@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail, CheckCircle2, HelpCircle, Star, Bell, Bookmark } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import PostImageGrid from "@/components/gruppi/PostImageGrid";
+import RicordameloSheet from "@/components/RicordameloSheet";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo";
 
@@ -34,6 +33,7 @@ export interface FeedItem {
   categoria_label?: string | null;
   categoria_nome?: string | null;
   likes_count?: number;
+  data?: string | null;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; color: string }> = {
@@ -68,84 +68,20 @@ const timeAgo = (date: string) => {
   return new Date(date).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 };
 
-/* ---- Shared menu items rendered in both Drawer and Dropdown ---- */
-const ShareMenuItems = ({
-  onShare,
-  onContact,
-  showContact,
-  asDrawer,
-  onClose,
-}: {
-  onShare: (p: string) => void;
-  onContact?: () => void;
-  showContact: boolean;
-  asDrawer?: boolean;
-  onClose?: () => void;
-}) => {
-  const handleAction = (fn: () => void) => {
-    fn();
-    onClose?.();
-  };
-
-  if (asDrawer) {
-    return (
-      <div className="flex flex-col gap-1 p-4 pb-8">
-        {showContact && (
-          <>
-            <button
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left"
-              onClick={() => handleAction(onContact!)}
-            >
-              <MessageSquare className="w-5 h-5 text-primary" /> Contatta
-            </button>
-            <div className="h-px bg-border my-1" />
-          </>
-        )}
-        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("whatsapp"))}>
-          <Share2 className="w-5 h-5 text-green-600" /> WhatsApp
-        </button>
-        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("facebook"))}>
-          <Globe className="w-5 h-5 text-blue-600" /> Facebook
-        </button>
-        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("email"))}>
-          <Mail className="w-5 h-5 text-muted-foreground" /> Email
-        </button>
-        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-base active:bg-muted transition-colors text-left" onClick={() => handleAction(() => onShare("copy"))}>
-          <Copy className="w-5 h-5 text-muted-foreground" /> Copia link
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {showContact && (
-        <>
-          <DropdownMenuItem onClick={onContact}>
-            <MessageSquare className="w-4 h-4 mr-2" /> Contatta
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-        </>
-      )}
-      <DropdownMenuItem onClick={() => onShare("whatsapp")}>WhatsApp</DropdownMenuItem>
-      <DropdownMenuItem onClick={() => onShare("facebook")}>Facebook</DropdownMenuItem>
-      <DropdownMenuItem onClick={() => onShare("email")}>Email</DropdownMenuItem>
-      <DropdownMenuItem onClick={() => onShare("copy")}>Copia link</DropdownMenuItem>
-    </>
-  );
-};
-
 const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: string }) => {
   const [expanded, setExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(item.likes_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const config = typeConfig[item.type];
   const TypeIcon = config.icon;
+
+  // Event-specific state
+  const [partecipazione, setPartecipazione] = useState<string | null>(null); // "confermato" | "forse" | "interessato"
+  const [isSaved, setIsSaved] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderLoading, setReminderLoading] = useState(false);
 
   const author = item.author;
   const name = author ? `${author.nome || ""} ${author.cognome || ""}`.trim() || "Utente" : "Utente";
@@ -176,6 +112,15 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         if (data && data.length > 0) setLiked(true);
       });
     }
+  }, [currentUserId, item.id, item.type]);
+
+  // Load event participation & saved state
+  useEffect(() => {
+    if (!currentUserId || item.type !== "evento") return;
+    supabase.from("eventi_partecipanti").select("stato").eq("evento_id", item.id).eq("user_id", currentUserId).maybeSingle()
+      .then(({ data }) => { if (data) setPartecipazione(data.stato); });
+    supabase.from("eventi_preferiti").select("id").eq("evento_id", item.id).eq("user_id", currentUserId).maybeSingle()
+      .then(({ data }) => { if (data) setIsSaved(true); });
   }, [currentUserId, item.id, item.type]);
 
   const handleLike = async () => {
@@ -266,88 +211,59 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
     }
   };
 
-  /* ---- Three-dots menu: Drawer on mobile, DropdownMenu on desktop ---- */
-  const renderMoreMenu = () => {
-    if (isMobile) {
-      return (
-        <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
-          <DrawerTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0">
-              <MoreHorizontal className="w-5 h-5" />
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent>
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-2 mt-2" />
-            <ShareMenuItems
-              onShare={handleShare}
-              onContact={handleContact}
-              showContact={showContact}
-              asDrawer
-              onClose={() => setMoreOpen(false)}
-            />
-          </DrawerContent>
-        </Drawer>
-      );
+  // Event-specific actions
+  const handlePartecipazione = async (stato: string) => {
+    if (!currentUserId) return;
+    if (partecipazione === stato) {
+      // Remove participation
+      await supabase.from("eventi_partecipanti").delete().eq("evento_id", item.id).eq("user_id", currentUserId);
+      setPartecipazione(null);
+      toast.success("Partecipazione rimossa");
+    } else {
+      if (partecipazione) {
+        // Update
+        await supabase.from("eventi_partecipanti").update({ stato }).eq("evento_id", item.id).eq("user_id", currentUserId);
+      } else {
+        // Insert
+        await supabase.from("eventi_partecipanti").insert({ evento_id: item.id, user_id: currentUserId, stato });
+      }
+      setPartecipazione(stato);
+      const labels: Record<string, string> = { confermato: "Parteciperò!", forse: "Forse parteciperò", interessato: "Sono interessato" };
+      toast.success(labels[stato] || stato);
     }
-
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <ShareMenuItems
-            onShare={handleShare}
-            onContact={handleContact}
-            showContact={showContact}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
   };
 
-  /* ---- Share button in action bar: Drawer on mobile, DropdownMenu on desktop ---- */
-  const renderShareButton = () => {
-    if (isMobile) {
-      return (
-        <Drawer open={shareOpen} onOpenChange={setShareOpen}>
-          <DrawerTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px]">
-              <Share2 className="w-5 h-5" /> Condividi
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent>
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-2 mt-2" />
-            <ShareMenuItems
-              onShare={handleShare}
-              onContact={handleContact}
-              showContact={false}
-              asDrawer
-              onClose={() => setShareOpen(false)}
-            />
-          </DrawerContent>
-        </Drawer>
-      );
+  const handleSavePreferito = async () => {
+    if (!currentUserId) return;
+    if (isSaved) {
+      await supabase.from("eventi_preferiti").delete().eq("evento_id", item.id).eq("user_id", currentUserId);
+      setIsSaved(false);
+      toast.success("Rimosso dai preferiti");
+    } else {
+      await supabase.from("eventi_preferiti").insert({ evento_id: item.id, user_id: currentUserId });
+      setIsSaved(true);
+      toast.success("Salvato nei preferiti");
     }
-
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs">
-            <Share2 className="w-4 h-4" /> Condividi
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleShare("email")}>Email</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
   };
+
+  const handleReminderSelect = async (minutesBefore: number) => {
+    if (!currentUserId || !item.data) return;
+    setReminderLoading(true);
+    const eventDate = new Date(item.data);
+    const reminderDate = new Date(eventDate.getTime() - minutesBefore * 60 * 1000);
+    await supabase.from("eventi_promemoria").insert({
+      evento_id: item.id,
+      user_id: currentUserId,
+      orario_promemoria: reminderDate.toISOString(),
+      tipo: `${minutesBefore}_min`,
+    });
+    setReminderLoading(false);
+    setReminderOpen(false);
+    toast.success("Promemoria impostato!");
+  };
+
+  // Dropdown menu item style for mobile touch targets
+  const menuItemClass = "min-h-[44px] flex items-center gap-2 text-sm px-3 py-2.5 cursor-pointer touch-manipulation";
 
   return (
     <Card className="overflow-hidden">
@@ -378,7 +294,72 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           <TypeIcon className="w-3 h-3" />
           {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>
-        {renderMoreMenu()}
+
+        {/* Three-dots menu - always DropdownMenu */}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 touch-manipulation"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto z-[100]" sideOffset={4}>
+            {/* Event-specific actions */}
+            {item.type === "evento" && currentUserId && (
+              <>
+                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("confermato")}>
+                  <CheckCircle2 className={`w-4 h-4 ${partecipazione === "confermato" ? "text-green-600" : ""}`} />
+                  {partecipazione === "confermato" ? "✓ Parteciperò" : "Parteciperò"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("forse")}>
+                  <HelpCircle className={`w-4 h-4 ${partecipazione === "forse" ? "text-amber-500" : ""}`} />
+                  {partecipazione === "forse" ? "✓ Forse" : "Forse"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className={menuItemClass} onClick={() => handlePartecipazione("interessato")}>
+                  <Star className={`w-4 h-4 ${partecipazione === "interessato" ? "text-yellow-500" : ""}`} />
+                  {partecipazione === "interessato" ? "✓ Sono interessato" : "Sono interessato"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className={menuItemClass} onClick={(e) => { e.preventDefault(); setReminderOpen(true); }}>
+                  <Bell className="w-4 h-4" />
+                  Ricordamelo
+                </DropdownMenuItem>
+                <DropdownMenuItem className={menuItemClass} onClick={() => handleSavePreferito()}>
+                  <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current text-primary" : ""}`} />
+                  {isSaved ? "Salvato ✓" : "Salva nei preferiti"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+
+            {/* Contact */}
+            {showContact && (
+              <>
+                <DropdownMenuItem className={menuItemClass} onClick={handleContact}>
+                  <MessageSquare className="w-4 h-4" /> Contatta
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+
+            {/* Share actions */}
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>
+              <Share2 className="w-4 h-4 text-green-600" /> WhatsApp
+            </DropdownMenuItem>
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>
+              <Globe className="w-4 h-4 text-blue-600" /> Facebook
+            </DropdownMenuItem>
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>
+              <Mail className="w-4 h-4" /> Email
+            </DropdownMenuItem>
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>
+              <Copy className="w-4 h-4" /> Copia link
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Title */}
@@ -400,7 +381,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           {isLong && (
             <button
               onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-              className="text-sm font-medium text-primary hover:underline mt-1 min-h-[44px] flex items-center"
+              className="text-sm font-medium text-primary hover:underline mt-1 min-h-[44px] flex items-center touch-manipulation"
             >
               {expanded ? "Riduci" : "Continua a leggere"}
             </button>
@@ -422,7 +403,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           size="sm"
           onClick={handleLike}
           disabled={likeLoading || !currentUserId}
-          className={`flex-1 gap-1.5 text-xs min-h-[44px] ${liked ? "text-red-500" : "text-muted-foreground"}`}
+          className={`flex-1 gap-1.5 text-xs min-h-[44px] touch-manipulation ${liked ? "text-red-500" : "text-muted-foreground"}`}
         >
           <Heart className={`w-5 h-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
           {likesCount > 0 ? likesCount : ""} Mi piace
@@ -431,12 +412,32 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           variant="ghost"
           size="sm"
           onClick={() => navigate(item.link)}
-          className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px]"
+          className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation"
         >
           <MessageCircle className="w-5 h-5" /> Commenta
         </Button>
-        {renderShareButton()}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+              <Share2 className="w-5 h-5" /> Condividi
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 z-[100]">
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("whatsapp")}>WhatsApp</DropdownMenuItem>
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("facebook")}>Facebook</DropdownMenuItem>
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("email")}>Email</DropdownMenuItem>
+            <DropdownMenuItem className={menuItemClass} onClick={() => handleShare("copy")}>Copia link</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* Ricordamelo Sheet */}
+      <RicordameloSheet
+        open={reminderOpen}
+        onOpenChange={setReminderOpen}
+        onSelect={handleReminderSelect}
+        loading={reminderLoading}
+      />
     </Card>
   );
 };
