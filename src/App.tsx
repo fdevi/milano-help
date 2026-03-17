@@ -64,6 +64,7 @@ import ConfirmEmail from "./pages/ConfirmEmail";
 import ConfirmEmailChange from "./pages/ConfirmEmailChange";
 import CompletaProfilo from "./pages/CompletaProfilo";
 import Fermate from "./pages/Fermate";
+import Bacheca from "./pages/Bacheca";
 import ImportFermate from "./pages/ImportFermate";
 import OneSignalInit from "./components/OneSignalInit";
 import ScrollToTop from "./components/ScrollToTop";
