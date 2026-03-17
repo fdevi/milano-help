@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const mainItems = [
   { title: "Home", url: "/home", icon: Home },
+  { title: "Bacheca", url: "/bacheca", icon: Rss },
   { title: "Sezioni", url: "/sezioni", icon: LayoutList },
   { title: "Gruppi", url: "/gruppi", icon: Users },
   { title: "Eventi", url: "/eventi", icon: CalendarDays },
