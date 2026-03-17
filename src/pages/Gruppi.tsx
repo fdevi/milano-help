@@ -42,6 +42,7 @@ const Gruppi = () => {
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const generateImage = async () => {
     if (!aiPrompt.trim()) return;
