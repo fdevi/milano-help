@@ -131,6 +131,9 @@ const Bacheca = () => {
     });
 
     eventi.forEach((e) => {
+      // Use Admin profile for imported events
+      const isImported = !!(e as any).fonte_esterna;
+      const authorProfile = isImported ? ADMIN_PROFILE : (profileMap.get(e.organizzatore_id) || null);
       feedItems.push({
         id: e.id,
         type: "evento",
@@ -138,7 +141,7 @@ const Bacheca = () => {
         text: e.descrizione,
         images: e.immagine ? [e.immagine] : [],
         created_at: e.created_at!,
-        author: profileMap.get(e.organizzatore_id) || null,
+        author: authorProfile,
         link: `/evento/${e.id}`,
         likes_count: e.mi_piace ?? 0,
       });
