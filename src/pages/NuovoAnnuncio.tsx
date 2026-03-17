@@ -234,6 +234,17 @@ const NuovoAnnuncio = () => {
           </div>
         )}
 
+        {isAdmin && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
+            <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Pubblica come Admin</p>
+              <p className="text-xs text-muted-foreground">L'annuncio apparirà come pubblicato da "Admin MilanoHelp"</p>
+            </div>
+            <Switch checked={publishAsAdmin} onCheckedChange={setPublishAsAdmin} />
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="categoria">Categoria *</Label>
