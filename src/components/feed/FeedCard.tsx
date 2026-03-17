@@ -28,6 +28,7 @@ export interface FeedItem {
   gruppo_nome?: string | null;
   gruppo_id?: string | null;
   link: string;
+  categoria_label?: string | null;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; color: string }> = {
