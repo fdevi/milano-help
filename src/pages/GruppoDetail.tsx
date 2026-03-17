@@ -452,7 +452,11 @@ const GruppoDetail = () => {
                         hasLiked={hasGroupLiked(post.id)}
                         onToggleLike={handleToggleGroupLike}
                         onDelete={deletePost}
+                        onPostUpdated={() => queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] })}
                         canDelete={post.mittente_id === user?.id || canEditOrDelete}
+                        canEdit={post.mittente_id === user?.id || isGroupAdmin || isSiteAdmin}
+                        members={memberProfiles as any[]}
+                        myProfile={myProfile}
                       />
                     ))}
                   </div>
