@@ -119,7 +119,7 @@ const NuovoEvento = () => {
         descrizione: form.descrizione || null,
         data: date.toISOString(),
         luogo: form.luogo,
-        organizzatore_id: user.id,
+        organizzatore_id: publishAsAdmin ? ADMIN_USER_ID : user.id,
         stato: "in_moderazione",
         gratuito: form.gratuito,
         prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,
