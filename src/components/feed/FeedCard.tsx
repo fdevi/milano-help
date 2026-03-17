@@ -76,12 +76,15 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(item.likes_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const config = typeConfig[item.type];
   const TypeIcon = config.icon;
 
   // Event-specific state
-  const [partecipazione, setPartecipazione] = useState<string | null>(null); // "confermato" | "forse" | "interessato"
+  const [partecipazione, setPartecipazione] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderLoading, setReminderLoading] = useState(false);
