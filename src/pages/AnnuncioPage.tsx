@@ -280,21 +280,56 @@ const AnnuncioPage = () => {
   // Scroll to hash anchor (e.g. #comment-123) when navigating from a notification
   useEffect(() => {
     const hash = window.location.hash;
-    if (!hash) return;
+    if (!hash) {
+      // No hash: scroll to top for like/generic notifications
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const targetId = hash.substring(1);
-    const tryScroll = (attempts = 0) => {
+
+    const scrollToEl = () => {
       const element = document.getElementById(targetId);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('ring-2', 'ring-primary', 'rounded-lg', 'transition-all');
-          setTimeout(() => element.classList.remove('ring-2', 'ring-primary', 'rounded-lg', 'transition-all'), 3000);
-        }, 300);
-      } else if (attempts < 10) {
-        setTimeout(() => tryScroll(attempts + 1), 500);
+      if (!element) return false;
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("ring-2", "ring-primary", "rounded-lg", "transition-all");
+      setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg", "transition-all"), 3000);
+      return true;
+    };
+
+    if (scrollToEl()) return;
+
+    // MutationObserver + retry fallback
+    let attempts = 0;
+    let observer: MutationObserver | null = null;
+    let timer: number | undefined;
+
+    const tryScroll = () => {
+      if (scrollToEl()) {
+        observer?.disconnect();
+        if (timer) clearTimeout(timer);
+        return true;
+      }
+      return false;
+    };
+
+    observer = new MutationObserver(() => { tryScroll(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const retryFn = () => {
+      attempts++;
+      if (tryScroll()) return;
+      if (attempts < 20) {
+        timer = window.setTimeout(retryFn, 400);
+      } else {
+        observer?.disconnect();
       }
     };
-    tryScroll();
+    timer = window.setTimeout(retryFn, 300);
+
+    return () => {
+      observer?.disconnect();
+      if (timer) clearTimeout(timer);
+    };
   }, [annuncio]);
 
   const { data: altriAnnunci = [] } = useQuery({
