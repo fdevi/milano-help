@@ -359,7 +359,8 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
               <Copy className="w-4 h-4" /> Copia link
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Title */}
