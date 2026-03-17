@@ -204,6 +204,16 @@ export default function OneSignalDiagnostics() {
                 ))}
               </div>
             )}
+
+            <div className="pt-1 border-t border-border">
+              <p className="font-semibold text-foreground mb-1">ℹ️ Badge non compare su iPhone?</p>
+              <p className="text-muted-foreground leading-relaxed">
+                Se il badge sull'icona non appare dopo la reinstallazione, vai su{" "}
+                <span className="font-medium text-foreground">Impostazioni → Notifiche → Milano Help</span>{" "}
+                e disattiva/riattiva l'opzione <span className="font-medium text-foreground">"Badge"</span>.
+                Questo resetta la cache di sistema del badge.
+              </p>
+            </div>
           </div>
         )}
       </CardContent>

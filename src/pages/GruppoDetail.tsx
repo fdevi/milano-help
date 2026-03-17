@@ -230,60 +230,71 @@ const GruppoDetail = () => {
     const params = new URLSearchParams(location.search);
     const messageId = params.get("message");
     const messaggiList = messaggi as any[];
-    console.log("[GruppoDetail] scroll useEffect", { messageId, messaggiCount: messaggiList.length, search: location.search });
 
-    let initialTimeout: number | undefined;
-    let retryTimeout: number | undefined;
+    if (!messaggiList.length) return;
 
-    if (messageId && messaggiList.length > 0) {
+    const scrollToElement = (elId: string) => {
+      const element = document.getElementById(elId);
+      if (!element) return false;
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("ring-2", "ring-primary", "rounded-lg");
+      setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
+      return true;
+    };
+
+    const cleanUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("message");
+      url.searchParams.delete("like");
+      window.history.replaceState({}, "", url.toString());
+    };
+
+    if (messageId) {
+      if (scrollToElement(`message-${messageId}`)) { cleanUrl(); return; }
+
       let attempts = 0;
-      const maxAttempts = 20;
+      const maxAttempts = 30;
+      let observer: MutationObserver | null = null;
+      let fallbackTimer: number | undefined;
 
-      const tryScroll = () => {
-        attempts += 1;
-        const element = document.getElementById(`message-${messageId}`);
-        console.log(`[GruppoDetail] tryScroll attempt=${attempts}`, { found: !!element, messageId });
-
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.classList.add("ring-2", "ring-primary", "rounded-lg");
-          setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
-
-          const url = new URL(window.location.href);
-          url.searchParams.delete("message");
-          url.searchParams.delete("like");
-          window.history.replaceState({}, "", url.toString());
-          return;
+      const tryWithObserver = () => {
+        if (scrollToElement(`message-${messageId}`)) {
+          cleanUrl();
+          observer?.disconnect();
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          return true;
         }
-
-        if (attempts < maxAttempts) {
-          retryTimeout = window.setTimeout(tryScroll, 300);
-        } else {
-          console.warn("[GruppoDetail] message element not found after max attempts", { messageId, maxAttempts });
-        }
+        return false;
       };
 
-      initialTimeout = window.setTimeout(tryScroll, 1000);
-    } else if (!messageId && messaggiList.length > 0) {
-      initialTimeout = window.setTimeout(() => {
-        const lastMessage =
-          scrollRef.current?.querySelector<HTMLElement>('[data-last-message="true"]') ||
-          (scrollRef.current?.querySelectorAll<HTMLElement>('[id^="message-"]') || [])[messaggiList.length - 1];
+      if (scrollRef.current) {
+        observer = new MutationObserver(() => { tryWithObserver(); });
+        observer.observe(scrollRef.current, { childList: true, subtree: true });
+      }
 
-        if (lastMessage) {
-          console.log("[GruppoDetail] default scroll to last message", { id: lastMessage.id });
-          lastMessage.scrollIntoView({ behavior: "smooth", block: "end" });
-        } else if (scrollRef.current) {
-          console.log("[GruppoDetail] fallback scrollTop=scrollHeight");
+      const retryFn = () => {
+        attempts++;
+        if (tryWithObserver()) return;
+        if (attempts < maxAttempts) {
+          fallbackTimer = window.setTimeout(retryFn, 300);
+        } else {
+          observer?.disconnect();
+        }
+      };
+      fallbackTimer = window.setTimeout(retryFn, 200);
+
+      return () => {
+        observer?.disconnect();
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+      };
+    } else {
+      const timer = window.setTimeout(() => {
+        if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-      }, 300);
+      }, 150);
+      return () => clearTimeout(timer);
     }
-
-    return () => {
-      if (initialTimeout) window.clearTimeout(initialTimeout);
-      if (retryTimeout) window.clearTimeout(retryTimeout);
-    };
   }, [messaggi, location.search]);
 
   const sendMessage = useMutation({

@@ -55,60 +55,74 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const messageId = params.get("message");
-    console.log("[ChatDetail] scroll useEffect", { messageId, messagesCount: messages.length, search: location.search });
 
-    let initialTimeout: number | undefined;
-    let retryTimeout: number | undefined;
+    if (!messages.length) return;
 
-    if (messageId && messages.length > 0) {
+    const scrollToElement = (elId: string) => {
+      const element = document.getElementById(elId);
+      if (!element) return false;
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("ring-2", "ring-primary", "rounded-lg");
+      setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
+      return true;
+    };
+
+    const cleanUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("message");
+      url.searchParams.delete("like");
+      window.history.replaceState({}, "", url.toString());
+    };
+
+    if (messageId) {
+      // Try immediately, then use MutationObserver as fallback
+      if (scrollToElement(`message-${messageId}`)) { cleanUrl(); return; }
+
       let attempts = 0;
-      const maxAttempts = 20;
+      const maxAttempts = 30;
+      let observer: MutationObserver | null = null;
+      let fallbackTimer: number | undefined;
 
-      const tryScroll = () => {
-        attempts += 1;
-        const element = document.getElementById(`message-${messageId}`);
-        console.log(`[ChatDetail] tryScroll attempt=${attempts}`, { found: !!element, messageId });
-
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.classList.add("ring-2", "ring-primary", "rounded-lg");
-          setTimeout(() => element.classList.remove("ring-2", "ring-primary", "rounded-lg"), 3000);
-
-          const url = new URL(window.location.href);
-          url.searchParams.delete("message");
-          url.searchParams.delete("like");
-          window.history.replaceState({}, "", url.toString());
-          return;
+      const tryWithObserver = () => {
+        if (scrollToElement(`message-${messageId}`)) {
+          cleanUrl();
+          observer?.disconnect();
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          return true;
         }
-
-        if (attempts < maxAttempts) {
-          retryTimeout = window.setTimeout(tryScroll, 300);
-        } else {
-          console.warn("[ChatDetail] message element not found after max attempts", { messageId, maxAttempts });
-        }
+        return false;
       };
 
-      initialTimeout = window.setTimeout(tryScroll, 1000);
-    } else if (!messageId && messages.length > 0) {
-      initialTimeout = window.setTimeout(() => {
-        const lastMessage =
-          scrollRef.current?.querySelector<HTMLElement>('[data-last-message="true"]') ||
-          (scrollRef.current?.querySelectorAll<HTMLElement>('[id^="message-"]') || [])[messages.length - 1];
+      if (scrollRef.current) {
+        observer = new MutationObserver(() => { tryWithObserver(); });
+        observer.observe(scrollRef.current, { childList: true, subtree: true });
+      }
 
-        if (lastMessage) {
-          console.log("[ChatDetail] default scroll to last message", { id: lastMessage.id });
-          lastMessage.scrollIntoView({ behavior: "smooth", block: "end" });
-        } else if (scrollRef.current) {
-          console.log("[ChatDetail] fallback scrollTop=scrollHeight");
+      // Also retry with timer as belt-and-suspenders
+      const retryFn = () => {
+        attempts++;
+        if (tryWithObserver()) return;
+        if (attempts < maxAttempts) {
+          fallbackTimer = window.setTimeout(retryFn, 300);
+        } else {
+          observer?.disconnect();
+        }
+      };
+      fallbackTimer = window.setTimeout(retryFn, 200);
+
+      return () => {
+        observer?.disconnect();
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+      };
+    } else {
+      // No deep-link: scroll to bottom
+      const timer = window.setTimeout(() => {
+        if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-      }, 300);
+      }, 150);
+      return () => clearTimeout(timer);
     }
-
-    return () => {
-      if (initialTimeout) window.clearTimeout(initialTimeout);
-      if (retryTimeout) window.clearTimeout(retryTimeout);
-    };
   }, [messages, location.search]);
 
   const handleSend = () => {

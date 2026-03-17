@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_notify_messaggio_gruppo ON public.gruppi_messaggi;
