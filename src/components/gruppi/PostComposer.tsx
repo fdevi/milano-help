@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,20 +20,48 @@ interface PostComposerProps {
   members: MemberProfile[];
   myProfile?: MemberProfile | null;
   onPostCreated: () => void;
+  // Edit mode props
+  isEditing?: boolean;
+  postId?: string;
+  initialText?: string;
+  initialImages?: string[];
+  onCancelEdit?: () => void;
 }
 
-const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostComposerProps) => {
+const PostComposer = ({
+  gruppoId,
+  members,
+  myProfile,
+  onPostCreated,
+  isEditing = false,
+  postId,
+  initialText = "",
+  initialImages = [],
+  onCancelEdit,
+}: PostComposerProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [text, setText] = useState("");
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [text, setText] = useState(initialText);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newFilePreviews, setNewFilePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>(initialImages);
   const [isPosting, setIsPosting] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
   const [mentionCursorPos, setMentionCursorPos] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Reset state when editing props change
+  useEffect(() => {
+    if (isEditing) {
+      setText(initialText);
+      setExistingImages(initialImages);
+      setNewFiles([]);
+      newFilePreviews.forEach(p => URL.revokeObjectURL(p));
+      setNewFilePreviews([]);
+    }
+  }, [isEditing, postId]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -49,24 +77,29 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
       return true;
     });
 
-    const newImages = [...images, ...validFiles].slice(0, 6);
-    setImages(newImages);
+    const totalAllowed = 6 - existingImages.length;
+    const newImages = [...newFiles, ...validFiles].slice(0, totalAllowed);
+    setNewFiles(newImages);
 
     const newPreviews = newImages.map(f => URL.createObjectURL(f));
-    imagePreviews.forEach(p => URL.revokeObjectURL(p));
-    setImagePreviews(newPreviews);
+    newFilePreviews.forEach(p => URL.revokeObjectURL(p));
+    setNewFilePreviews(newPreviews);
     if (e.target) e.target.value = "";
   };
 
-  const removeImage = (index: number) => {
-    URL.revokeObjectURL(imagePreviews[index]);
-    setImages(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  const removeNewFile = (index: number) => {
+    URL.revokeObjectURL(newFilePreviews[index]);
+    setNewFiles(prev => prev.filter((_, i) => i !== index));
+    setNewFilePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const uploadImages = async (): Promise<string[]> => {
     const urls: string[] = [];
-    for (const file of images) {
+    for (const file of newFiles) {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `gruppi/post-${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
@@ -112,7 +145,7 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
     return name.includes(mentionFilter);
   });
 
-  const createMentionNotifications = async (postText: string, postId: string) => {
+  const createMentionNotifications = async (postText: string, msgId: string) => {
     const mentionRegex = /@([^@\n]+?)(?=\s|$|@)/g;
     let match;
     const mentionedNames: string[] = [];
@@ -135,45 +168,67 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
         tipo: "menzione_gruppo",
         titolo: "Ti hanno menzionato",
         messaggio: `${myName} ti ha menzionato in un post`,
-        link: `/gruppo/${gruppoId}?message=${postId}`,
+        link: `/gruppo/${gruppoId}?message=${msgId}`,
         mittente_id: user?.id,
-        riferimento_id: postId,
+        riferimento_id: msgId,
       });
     }
   };
 
   const handleSubmit = async () => {
-    if (!text.trim() && images.length === 0) return;
+    const hasContent = text.trim() || newFiles.length > 0 || existingImages.length > 0;
+    if (!hasContent) return;
     setIsPosting(true);
 
     try {
       let uploadedUrls: string[] = [];
-      if (images.length > 0) {
+      if (newFiles.length > 0) {
         uploadedUrls = await uploadImages();
       }
 
-      const { data, error } = await supabase
-        .from("gruppi_messaggi")
-        .insert({
-          gruppo_id: gruppoId,
-          mittente_id: user!.id,
-          testo: text.trim() || "(foto)",
-          immagini: uploadedUrls.length > 0 ? uploadedUrls : null,
-        } as any)
-        .select("id")
-        .single();
+      const allImages = [...existingImages, ...uploadedUrls];
 
-      if (error) throw error;
+      if (isEditing && postId) {
+        // UPDATE existing post
+        const { error } = await supabase
+          .from("gruppi_messaggi")
+          .update({
+            testo: text.trim() || "(foto)",
+            immagini: allImages.length > 0 ? allImages : null,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", postId);
 
-      if (data?.id) {
-        await createMentionNotifications(text, data.id);
+        if (error) throw error;
+        toast({ title: "Post aggiornato!" });
+        onPostCreated();
+        onCancelEdit?.();
+      } else {
+        // INSERT new post
+        const { data, error } = await supabase
+          .from("gruppi_messaggi")
+          .insert({
+            gruppo_id: gruppoId,
+            mittente_id: user!.id,
+            testo: text.trim() || "(foto)",
+            immagini: allImages.length > 0 ? allImages : null,
+          } as any)
+          .select("id")
+          .single();
+
+        if (error) throw error;
+
+        if (data?.id) {
+          await createMentionNotifications(text, data.id);
+        }
+
+        setText("");
+        setNewFiles([]);
+        newFilePreviews.forEach(p => URL.revokeObjectURL(p));
+        setNewFilePreviews([]);
+        setExistingImages([]);
+        onPostCreated();
       }
-
-      setText("");
-      setImages([]);
-      imagePreviews.forEach(p => URL.revokeObjectURL(p));
-      setImagePreviews([]);
-      onPostCreated();
     } catch (err: any) {
       toast({ title: "Errore", description: err?.message || "Impossibile pubblicare.", variant: "destructive" });
     } finally {
@@ -185,8 +240,13 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
     ? `${(myProfile.nome || "U")[0]}${(myProfile.cognome || "")[0]}`.toUpperCase()
     : "U";
 
+  const allPreviews = [
+    ...existingImages.map((url, i) => ({ type: "existing" as const, src: url, index: i })),
+    ...newFilePreviews.map((url, i) => ({ type: "new" as const, src: url, index: i })),
+  ];
+
   return (
-    <Card className="mx-4 mt-4 mb-2">
+    <Card className={isEditing ? "" : "mx-4 mt-4 mb-2"}>
       <div className="p-4">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10 shrink-0">
@@ -196,11 +256,11 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
-              placeholder="Scrivi qualcosa al gruppo..."
+              placeholder={isEditing ? "Modifica il tuo post..." : "Scrivi qualcosa al gruppo..."}
               value={text}
               onChange={handleTextChange}
               className="min-h-[60px] resize-none border-none shadow-none focus-visible:ring-0 p-0 text-sm"
-              rows={2}
+              rows={isEditing ? 4 : 2}
             />
             {showMentions && filteredMembers.length > 0 && (
               <div className="absolute left-0 bottom-full mb-1 bg-card border rounded-lg shadow-lg max-h-40 overflow-y-auto z-50 w-64">
@@ -224,13 +284,13 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
           </div>
         </div>
 
-        {imagePreviews.length > 0 && (
+        {allPreviews.length > 0 && (
           <div className="flex gap-2 mt-3 flex-wrap">
-            {imagePreviews.map((preview, i) => (
-              <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted">
-                <img src={preview} alt="" className="w-full h-full object-cover" />
+            {allPreviews.map((preview, i) => (
+              <div key={`${preview.type}-${preview.index}`} className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted">
+                <img src={preview.src} alt="" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => removeImage(i)}
+                  onClick={() => preview.type === "existing" ? removeExistingImage(preview.index) : removeNewFile(preview.index)}
                   className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
                 >
                   <X className="w-3 h-3" />
@@ -259,15 +319,22 @@ const PostComposer = ({ gruppoId, members, myProfile, onPostCreated }: PostCompo
               <ImagePlus className="w-4 h-4" /> Foto
             </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            disabled={isPosting || (!text.trim() && images.length === 0)}
-            className="gap-1.5"
-          >
-            {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Pubblica
-          </Button>
+          <div className="flex gap-2">
+            {isEditing && (
+              <Button variant="outline" size="sm" onClick={onCancelEdit}>
+                Annulla
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={isPosting || (!text.trim() && newFiles.length === 0 && existingImages.length === 0)}
+              className="gap-1.5"
+            >
+              {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {isEditing ? "Salva" : "Pubblica"}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

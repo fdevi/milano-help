@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import PostImageGrid from "./PostImageGrid";
 import PostComments from "./PostComments";
 import ShareDialog from "./ShareDialog";
+import PostComposer from "./PostComposer";
 
 interface PostProfile {
   user_id: string;
@@ -14,6 +15,13 @@ interface PostProfile {
   cognome: string | null;
   avatar_url: string | null;
   quartiere?: string | null;
+}
+
+interface MemberProfile {
+  user_id: string;
+  nome: string | null;
+  cognome: string | null;
+  avatar_url: string | null;
 }
 
 interface PostCardProps {
@@ -27,7 +35,11 @@ interface PostCardProps {
   hasLiked: boolean;
   onToggleLike: (postId: string) => void;
   onDelete?: (postId: string) => void;
+  onPostUpdated?: () => void;
   canDelete?: boolean;
+  canEdit?: boolean;
+  members?: MemberProfile[];
+  myProfile?: MemberProfile | null;
 }
 
 const timeAgo = (date: string) => {
@@ -64,11 +76,16 @@ const PostCard = ({
   hasLiked,
   onToggleLike,
   onDelete,
+  onPostUpdated,
   canDelete,
+  canEdit,
+  members = [],
+  myProfile,
 }: PostCardProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const name = profile ? `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente" : "Utente";
   const initials = profile ? `${(profile.nome || "U")[0]}${(profile.cognome || "")[0]}`.toUpperCase() : "U";
@@ -76,6 +93,27 @@ const PostCard = ({
   const images = post.immagini || [];
   const textLines = (post.testo || "").split("\n");
   const isLong = post.testo?.length > 200 || textLines.length > 4;
+  const wasEdited = post.updated_at && post.updated_at !== post.created_at;
+
+  if (isEditing) {
+    return (
+      <Card className="overflow-hidden" id={`message-${post.id}`}>
+        <div className="p-2">
+          <PostComposer
+            gruppoId={gruppoId}
+            members={members}
+            myProfile={myProfile}
+            onPostCreated={() => onPostUpdated?.()}
+            isEditing
+            postId={post.id}
+            initialText={post.testo === "(foto)" ? "" : post.testo || ""}
+            initialImages={images}
+            onCancelEdit={() => setIsEditing(false)}
+          />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -92,11 +130,12 @@ const PostCard = ({
               <span>{location}</span>
               <span>·</span>
               <span>{timeAgo(post.created_at)}</span>
+              {wasEdited && <><span>·</span><span className="italic">modificato</span></>}
               <span>·</span>
               <Globe className="w-3 h-3" />
             </div>
           </div>
-          {canDelete && (
+          {(canDelete || canEdit) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
@@ -104,12 +143,20 @@ const PostCard = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => onDelete?.(post.id)}
-                >
-                  Elimina post
-                </DropdownMenuItem>
+                {canEdit && (
+                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Modifica post
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => onDelete?.(post.id)}
+                  >
+                    Elimina post
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

@@ -861,6 +861,7 @@ export type Database = {
           mittente_id: string
           parent_id: string | null
           testo: string
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
@@ -870,6 +871,7 @@ export type Database = {
           mittente_id: string
           parent_id?: string | null
           testo: string
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
@@ -879,6 +881,7 @@ export type Database = {
           mittente_id?: string
           parent_id?: string | null
           testo?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
