@@ -57,9 +57,6 @@ const Bacheca = () => {
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 19),
-        .eq("stato", "attivo")
-        .order("created_at", { ascending: false })
-        .range(0, 19),
 
       supabase
         .from("gruppi_messaggi")
