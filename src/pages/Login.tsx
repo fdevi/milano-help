@@ -91,7 +91,7 @@ const Login = () => {
     }
 
     setLoading(false);
-    navigate("/home");
+    navigate("/bacheca");
   };
 
   return (

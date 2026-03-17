@@ -90,6 +90,8 @@ const Bacheca = () => {
       if (cat.includes("negozio") || cat.includes("negozi")) type = "negozio";
       else if (cat.includes("professionista") || cat.includes("professionisti")) type = "professionista";
 
+      const categoriaLabel = (a as any).categorie_annunci?.label || null;
+
       feedItems.push({
         id: a.id,
         type,
@@ -99,6 +101,7 @@ const Bacheca = () => {
         created_at: a.created_at,
         author: profileMap.get(a.user_id) || null,
         link: `/annuncio/${a.id}`,
+        categoria_label: type === "annuncio" ? categoriaLabel : null,
       });
     });
 

@@ -108,7 +108,7 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
         </div>
         <Badge variant="secondary" className={`shrink-0 gap-1 text-[10px] px-1.5 py-0.5 ${config.color}`}>
           <TypeIcon className="w-3 h-3" />
-          {config.label}
+          {item.type === "annuncio" && item.categoria_label ? item.categoria_label.toUpperCase() : config.label}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
