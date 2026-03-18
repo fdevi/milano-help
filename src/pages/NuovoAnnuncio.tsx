@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useTipoAccount } from "@/hooks/useTipoAccount";
-import { useRoleCheck } from "@/hooks/useRoleCheck";
+import { useAdminMode } from "@/hooks/useAdminMode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
