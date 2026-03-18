@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, Loader2, ArrowLeft, X, Image as ImageIcon, AlertCircle, MapPin, Shield } from "lucide-react";
+import { CalendarIcon, Loader2, ArrowLeft, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
 import MapboxLocationPicker from "@/components/MapboxLocationPicker";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
