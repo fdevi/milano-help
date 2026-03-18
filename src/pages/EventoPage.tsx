@@ -297,11 +297,13 @@ const EventoPage = () => {
 
     setSending(true);
     const testoTroncato = commentText.trim();
+    const isPubblicatoComeAdmin = isAdmin && adminMode;
     const { data: inserted, error } = await (supabase as any).from("eventi_commenti").insert({
       evento_id: evento.id,
       user_id: user.id,
       testo: testoTroncato,
       parent_id: replyTo?.id || null,
+      pubblicato_come_admin: isPubblicatoComeAdmin,
     }).select("id").single();
     setSending(false);
 
