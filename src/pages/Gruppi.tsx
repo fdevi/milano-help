@@ -152,7 +152,7 @@ const Gruppi = () => {
       if (!user) {
         throw new Error("Devi effettuare l'accesso per creare un gruppo.");
       }
-      const effectiveCreatorId = publishAsAdmin && isAdmin ? ADMIN_USER_ID : user.id;
+      const effectiveCreatorId = effectiveUserId(user.id);
       const { data, error } = await supabase
         .from("gruppi")
         .insert({
