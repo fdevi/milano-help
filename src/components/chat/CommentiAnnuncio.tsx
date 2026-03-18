@@ -109,19 +109,20 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
 
   const addComment = useMutation({
     mutationFn: async () => {
-      const resolvedUserId = effectiveUserId(user!.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[CommentiAnnuncio] submit", {
         userId: user!.id,
-        resolvedUserId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const { data: inserted, error } = await supabase.from("annunci_commenti").insert({
         annuncio_id: annuncioId,
-        user_id: resolvedUserId,
+        user_id: user!.id,
         testo,
         parent_id: replyTo?.id || null,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       } as any).select("id").single();
       if (error) throw error;
 
