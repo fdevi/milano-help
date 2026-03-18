@@ -224,7 +224,7 @@ const Bacheca = () => {
             const e = payload.new as any;
             if (e.stato !== "attivo") return;
             const isImported = !!e.fonte_esterna;
-            let authorProfile = ADMIN_PROFILE;
+            let authorProfile: any = ADMIN_PROFILE;
             if (!isImported) {
               const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
               authorProfile = prof || ADMIN_PROFILE;
