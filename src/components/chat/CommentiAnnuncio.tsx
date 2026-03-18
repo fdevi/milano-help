@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import EmojiPicker from "emoji-picker-react";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { isAdminUser, ADMIN_PROFILE } from "@/lib/adminProfile";
 
 interface Props {
   annuncioId: string;
