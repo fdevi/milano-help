@@ -8,6 +8,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
 import Index from "./pages/Index";
@@ -81,6 +82,7 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
+          <AdminModeProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/registrati" element={<Register />} />
@@ -144,6 +146,7 @@ const App = () => (
             <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </AdminModeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
