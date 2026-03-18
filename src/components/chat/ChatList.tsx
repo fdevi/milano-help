@@ -19,6 +19,7 @@ interface ChatListProps {
   conversations: MockConversation[];
   activeId?: string;
   onSelect: (id: string) => void;
+  avatarMap?: Record<string, string | null>;
 }
 
 const ChatList = ({ conversations, activeId, onSelect }: ChatListProps) => {
