@@ -484,6 +484,9 @@ const Chat = () => {
                   conversations={chatConversations}
                   activeId={conversationId}
                   onSelect={(id) => navigate(`/chat/${id}`)}
+                  avatarMap={Object.fromEntries(
+                    (otherProfiles as any[]).map((p) => [p.user_id, p.avatar_url])
+                  )}
                 />
               </TabsContent>
 
