@@ -116,10 +116,15 @@ const EventoPage = () => {
         .in("user_id", userIds as string[]);
 
       const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
-      return data.map((c: any) => ({
-        ...c,
-        profilo: profiliMap.get(c.user_id) || null,
-      }));
+      return data.map((c: any) => {
+        const isAdminComment = c.pubblicato_come_admin === true;
+        return {
+          ...c,
+          profilo: isAdminComment
+            ? { user_id: c.user_id, nome: ADMIN_PROFILE.nome, cognome: ADMIN_PROFILE.cognome, avatar_url: ADMIN_PROFILE.avatar_url }
+            : (profiliMap.get(c.user_id) || null),
+        };
+      });
     },
     enabled: !!id,
   });
