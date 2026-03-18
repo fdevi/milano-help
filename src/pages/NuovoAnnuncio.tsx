@@ -219,7 +219,7 @@ const NuovoAnnuncio = () => {
       await queryClient.invalidateQueries({ queryKey: ["categorie_annunci"] });
       await queryClient.invalidateQueries({ queryKey: ["annunci"] });
 
-      toast({ title: "Annuncio inviato!", description: "Il tuo annuncio è in fase di moderazione." });
+      toast({ title: "Annuncio inviato!", description: statoAnnuncio === "attivo" ? "Il tuo annuncio è stato pubblicato automaticamente." : "Il tuo annuncio è in fase di moderazione." });
       navigate("/miei-annunci");
     } catch (err: any) {
       toast({ title: "Errore", description: err.message || "Impossibile creare l'annuncio.", variant: "destructive" });
