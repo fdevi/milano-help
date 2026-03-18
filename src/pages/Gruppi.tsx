@@ -21,12 +21,15 @@ import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
 
+const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
+
 const Gruppi = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { quartieri } = useQuartieri();
+  const { isAdmin } = useRoleCheck();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("tutti");
