@@ -88,8 +88,10 @@ const PostCard = ({
   const [showShare, setShowShare] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const name = profile ? `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente" : "Utente";
-  const initials = profile ? `${(profile.nome || "U")[0]}${(profile.cognome || "")[0]}`.toUpperCase() : "U";
+  const isAdminPost = post.pubblicato_come_admin === true;
+  const displayProfile = isAdminPost ? ADMIN_PROFILE : profile;
+  const name = isAdminPost ? "Admin MilanoHelp" : (profile ? `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente" : "Utente");
+  const initials = isAdminPost ? "MH" : (profile ? `${(profile.nome || "U")[0]}${(profile.cognome || "")[0]}`.toUpperCase() : "U");
   const location = gruppoQuartiere || gruppoNome;
   const images = post.immagini || [];
   const textLines = (post.testo || "").split("\n");
