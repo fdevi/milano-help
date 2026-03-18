@@ -146,6 +146,7 @@ const App = () => (
             <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </AdminModeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
