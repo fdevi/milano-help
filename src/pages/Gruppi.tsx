@@ -185,7 +185,7 @@ const Gruppi = () => {
     },
     onSuccess: (data) => {
       setShowCreate(false);
-      setNome(""); setDescrizione(""); setImmagine(""); setTipo("pubblico"); setCategoria(""); setQuartiere("");
+      setNome(""); setDescrizione(""); setImmagine(""); setTipo("pubblico"); setCategoria(""); setQuartiere(""); setPublishAsAdmin(false);
       queryClient.invalidateQueries({ queryKey: ["gruppi"] });
       queryClient.invalidateQueries({ queryKey: ["my_gruppi_memberships"] });
       queryClient.invalidateQueries({ queryKey: ["gruppo_membri", data.id] });
