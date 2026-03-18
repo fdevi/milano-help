@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar, Mail, Megaphone, Download
+  LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar, Mail, Megaphone, Download, ToggleLeft
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +16,7 @@ const navItems = [
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
   { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci" },
   { to: "/admin/annunci-speciali", icon: Briefcase, label: "Annunci Speciali" },
+  { to: "/admin/approvazione-categorie", icon: ToggleLeft, label: "Approvaz. Categorie" },
   { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", badgeTipo: "moderazione" as const },
   { to: "/admin/eventi", icon: Calendar, label: "Eventi", badgeTipo: "eventi" as const },
   { to: "/admin/importazioni", icon: Download, label: "Importazioni" },

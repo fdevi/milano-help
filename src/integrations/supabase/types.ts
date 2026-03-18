@@ -283,6 +283,7 @@ export type Database = {
       }
       categorie_annunci: {
         Row: {
+          approvazione_automatica: boolean
           created_at: string
           icona: string
           id: string
@@ -292,6 +293,7 @@ export type Database = {
           richiede_prezzo: boolean
         }
         Insert: {
+          approvazione_automatica?: boolean
           created_at?: string
           icona?: string
           id?: string
@@ -301,6 +303,7 @@ export type Database = {
           richiede_prezzo?: boolean
         }
         Update: {
+          approvazione_automatica?: boolean
           created_at?: string
           icona?: string
           id?: string

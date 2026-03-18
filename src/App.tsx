@@ -47,6 +47,7 @@ import AdminEventi from "./pages/admin/AdminEventi";
 import AdminAnnunci from "./pages/admin/AdminAnnunci";
 import AdminAnnunciSpeciali from "./pages/admin/AdminAnnunciSpeciali";
 import AdminImportazioni from "./pages/admin/AdminImportazioni";
+import AdminApprovazioneCategorie from "./pages/admin/AdminApprovazioneCategorie";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
@@ -118,6 +119,7 @@ const App = () => (
             <Route path="/admin/annunci" element={<AdminRoute><AdminAnnunci /></AdminRoute>} />
             <Route path="/admin/annunci-speciali" element={<AdminRoute><AdminAnnunciSpeciali /></AdminRoute>} />
             <Route path="/admin/importazioni" element={<AdminRoute><AdminImportazioni /></AdminRoute>} />
+            <Route path="/admin/approvazione-categorie" element={<AdminRoute><AdminApprovazioneCategorie /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
