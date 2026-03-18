@@ -25,16 +25,13 @@ import AuthLayout from "@/components/AuthLayout";
 
 const MAX_IMAGES = 5;
 
-const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
-
 const NuovoEvento = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin } = useRoleCheck();
+  const { effectiveUserId } = useAdminMode();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const [publishAsAdmin, setPublishAsAdmin] = useState(false);
   const [date, setDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [images, setImages] = useState<File[]>([]);
