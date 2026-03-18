@@ -68,10 +68,18 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
     if (!newComment.trim() || !user) return;
     setIsSubmitting(true);
     try {
+      const resolvedUserId = effectiveUserId(user.id);
+      console.log("[PostComments] submit", {
+        userId: user.id,
+        resolvedUserId,
+        isAdmin,
+        adminMode,
+      });
+
       const { error } = await supabase.from("gruppi_post_commenti" as any).insert({
         post_id: postId,
         gruppo_id: gruppoId,
-        user_id: effectiveUserId(user.id),
+        user_id: resolvedUserId,
         testo: newComment.trim(),
         parent_id: replyTo?.id || null,
       });
