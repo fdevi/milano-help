@@ -506,8 +506,12 @@ const EventoPage = () => {
   }
 
   const isExternalEvent = !!(evento as any)?.fonte_esterna;
-  const orgName = isExternalEvent ? "Milano Help" : (organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente");
-  const orgInitials = isExternalEvent ? "MH" : orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const isAdminCreator = evento?.organizzatore_id === "51aeacbc-1497-440c-8edb-23845ce077d3";
+  const showAsAdmin = isExternalEvent || isAdminCreator;
+  const orgName = showAsAdmin ? "Admin MilanoHelp" : (organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente");
+  const orgInitials = showAsAdmin ? "MH" : orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const orgAvatarUrl = showAsAdmin ? "/logo/logo-192.png" : organizzatore?.avatar_url;
+  const orgQuartiere = showAsAdmin ? "Milano" : organizzatore?.quartiere;
   const confermati = partecipantiCounts?.confermati || 0;
   const forseCnt = partecipantiCounts?.forse || 0;
   const maxReached = !!(evento?.max_partecipanti && confermati >= evento.max_partecipanti);
