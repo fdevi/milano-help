@@ -372,7 +372,12 @@ const Gruppi = () => {
                       </Badge>
                     </div>
                     {g.creatore_nome && (
-                      <p className="text-xs text-muted-foreground mt-2">Creato da {g.creatore_nome}</p>
+                      <div className="flex items-center gap-1.5 mt-2">
+                        {g.creatore_id === ADMIN_USER_ID && (
+                          <img src="/logo/logo.svg" alt="Admin" className="w-4 h-4 rounded-full" />
+                        )}
+                        <p className="text-xs text-muted-foreground">Creato da {g.creatore_nome}</p>
+                      </div>
                     )}
                   </CardContent>
                 </Link>
