@@ -88,9 +88,10 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   };
 
   const renderComment = (comment: any, isReply = false) => {
-    const p = profileMap[comment.user_id];
-    const name = p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente";
-    const initials = p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U";
+    const isAdminComment = isAdminUser(comment.user_id);
+    const p = isAdminComment ? ADMIN_PROFILE : profileMap[comment.user_id];
+    const name = isAdminComment ? "Admin MilanoHelp" : (p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente");
+    const initials = isAdminComment ? "MH" : (p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U");
     const replies = repliesMap[comment.id] || [];
 
     return (
