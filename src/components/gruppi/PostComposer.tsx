@@ -207,6 +207,7 @@ const PostComposer = ({
         onCancelEdit?.();
       } else {
         // INSERT new post
+        const isPubblicatoComeAdmin = isAdmin && adminMode;
         const { data, error } = await supabase
           .from("gruppi_messaggi")
           .insert({
@@ -214,6 +215,7 @@ const PostComposer = ({
             mittente_id: user!.id,
             testo: text.trim() || "(foto)",
             immagini: allImages.length > 0 ? allImages : null,
+            pubblicato_come_admin: isPubblicatoComeAdmin,
           } as any)
           .select("id")
           .single();
