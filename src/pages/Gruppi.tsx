@@ -379,7 +379,7 @@ const Gruppi = () => {
                     </div>
                     {g.creatore_nome && (
                       <div className="flex items-center gap-1.5 mt-2">
-                        {g.creatore_id === ADMIN_USER_ID && (
+                        {g.pubblicato_come_admin && (
                           <img src="/logo/logo.svg" alt="Admin" className="w-4 h-4 rounded-full" />
                         )}
                         <p className="text-xs text-muted-foreground">Creato da {g.creatore_nome}</p>
