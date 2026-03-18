@@ -28,6 +28,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { effectiveUserId } = useAdminMode();
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
