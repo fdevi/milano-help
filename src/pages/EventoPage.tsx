@@ -9,6 +9,8 @@ import EmojiPicker from "emoji-picker-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
