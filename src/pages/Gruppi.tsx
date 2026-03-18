@@ -4,12 +4,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuartieri } from "@/hooks/useQuartieri";
+import { useRoleCheck } from "@/hooks/useRoleCheck";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +21,15 @@ import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
 
+const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
+
 const Gruppi = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { quartieri } = useQuartieri();
+  const { isAdmin } = useRoleCheck();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("tutti");
@@ -43,6 +48,7 @@ const Gruppi = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAiPrompt, setShowAiPrompt] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [publishAsAdmin, setPublishAsAdmin] = useState(false);
 
   const generateImage = async () => {
     if (!aiPrompt.trim()) return;
@@ -145,6 +151,7 @@ const Gruppi = () => {
       if (!user) {
         throw new Error("Devi effettuare l'accesso per creare un gruppo.");
       }
+      const effectiveCreatorId = publishAsAdmin && isAdmin ? ADMIN_USER_ID : user.id;
       const { data, error } = await supabase
         .from("gruppi")
         .insert({
@@ -154,7 +161,7 @@ const Gruppi = () => {
           tipo,
           categoria: categoria?.trim() || null,
           quartiere: quartiere?.trim() || null,
-          creatore_id: user.id,
+          creatore_id: effectiveCreatorId,
         } as any)
         .select("id")
         .single();
@@ -489,6 +496,17 @@ const Gruppi = () => {
                 {quartieri.map((q) => <SelectItem key={q.nome} value={q.nome}>{q.nome}</SelectItem>)}
               </SelectContent>
             </Select>
+
+            {isAdmin && (
+              <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Pubblica come Admin</p>
+                  <p className="text-xs text-muted-foreground">Il gruppo apparirà come creato da "Admin MilanoHelp"</p>
+                </div>
+                <Switch checked={publishAsAdmin} onCheckedChange={setPublishAsAdmin} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Annulla</Button>

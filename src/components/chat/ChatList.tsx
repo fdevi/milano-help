@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle } from "lucide-react";
@@ -19,9 +19,10 @@ interface ChatListProps {
   conversations: MockConversation[];
   activeId?: string;
   onSelect: (id: string) => void;
+  avatarMap?: Record<string, string | null>;
 }
 
-const ChatList = ({ conversations, activeId, onSelect }: ChatListProps) => {
+const ChatList = ({ conversations, activeId, onSelect, avatarMap }: ChatListProps) => {
   const totalUnread = conversations.reduce((sum, c) => sum + c.nonLetti, 0);
 
   return (
@@ -53,6 +54,9 @@ const ChatList = ({ conversations, activeId, onSelect }: ChatListProps) => {
                 }`}
               >
                 <Avatar className="h-11 w-11 shrink-0">
+                  {avatarMap?.[conv.otherUser.id] && (
+                    <AvatarImage src={avatarMap[conv.otherUser.id]!} alt={`${conv.otherUser.nome} ${conv.otherUser.cognome}`} />
+                  )}
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                     {initials}
                   </AvatarFallback>

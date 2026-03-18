@@ -12,7 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageCircle, Users } from "lucide-react";
 
 export interface MockConversation {
@@ -484,6 +484,9 @@ const Chat = () => {
                   conversations={chatConversations}
                   activeId={conversationId}
                   onSelect={(id) => navigate(`/chat/${id}`)}
+                  avatarMap={Object.fromEntries(
+                    (otherProfiles as any[]).map((p) => [p.user_id, p.avatar_url])
+                  )}
                 />
               </TabsContent>
 
@@ -503,6 +506,9 @@ const Chat = () => {
                         className="w-full text-left px-4 py-3 flex items-center gap-3 border-b transition-colors hover:bg-muted/50"
                       >
                         <Avatar className="h-11 w-11 shrink-0">
+                          {g.immagine && (
+                            <AvatarImage src={g.immagine} alt={g.nome} />
+                          )}
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                             {g.nome.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
