@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
 
-import { ADMIN_USER_ID } from "@/lib/adminProfile";
+
 
 const Gruppi = () => {
   const { user } = useAuth();
