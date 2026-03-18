@@ -1,0 +1,2 @@
+ALTER TABLE public.eventi_commenti ADD COLUMN IF NOT EXISTS pubblicato_come_admin boolean DEFAULT false;
+ALTER TABLE public.messaggi_privati ADD COLUMN IF NOT EXISTS pubblicato_come_admin boolean DEFAULT false;
