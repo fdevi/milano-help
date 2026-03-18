@@ -155,12 +155,21 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
     textareaRef.current?.focus();
   };
 
-  const getProfileName = (userId: string) => {
+  const getProfileForMsg = (msg: ChatMessage): ChatUserProfile | undefined => {
+    if (msg.pubblicatoComeAdmin) {
+      return { user_id: msg.mittenteId, nome: ADMIN_PROFILE.nome, cognome: ADMIN_PROFILE.cognome, avatar_url: ADMIN_PROFILE.avatar_url };
+    }
+    return profiles[msg.mittenteId];
+  };
+
+  const getProfileName = (userId: string, msg?: ChatMessage) => {
+    if (msg?.pubblicatoComeAdmin) return `${ADMIN_PROFILE.nome} ${ADMIN_PROFILE.cognome}`;
     const p = profiles[userId];
     return p ? `${p.nome || "Utente"} ${p.cognome || ""}`.trim() : "Utente";
   };
 
-  const getInitials = (userId: string) => {
+  const getInitials = (userId: string, msg?: ChatMessage) => {
+    if (msg?.pubblicatoComeAdmin) return `${ADMIN_PROFILE.nome[0]}${ADMIN_PROFILE.cognome[0]}`.toUpperCase();
     const p = profiles[userId];
     if (!p) return "U";
     return `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase();
