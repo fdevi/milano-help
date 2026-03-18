@@ -25,7 +25,7 @@ const NuovoAnnuncio = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isProfessionista, isNegoziante } = useTipoAccount();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
