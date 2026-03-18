@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Search, LogOut } from "lucide-react";
+import { Search, LogOut, Shield } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
 import DropdownChat from "@/components/DropdownChat";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { Switch } from "@/components/ui/switch";
 
 const TopNavbar = () => {
   const { user } = useAuth();
