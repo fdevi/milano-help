@@ -28,7 +28,7 @@ const Gruppi = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { quartieri } = useQuartieri();
-  const { effectiveUserId } = useAdminMode();
+  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("tutti");
