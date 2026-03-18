@@ -54,6 +54,9 @@ const ChatList = ({ conversations, activeId, onSelect, avatarMap }: ChatListProp
                 }`}
               >
                 <Avatar className="h-11 w-11 shrink-0">
+                  {avatarMap?.[conv.otherUser.id] && (
+                    <AvatarImage src={avatarMap[conv.otherUser.id]!} alt={`${conv.otherUser.nome} ${conv.otherUser.cognome}`} />
+                  )}
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                     {initials}
                   </AvatarFallback>

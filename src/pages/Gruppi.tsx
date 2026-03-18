@@ -496,6 +496,17 @@ const Gruppi = () => {
                 {quartieri.map((q) => <SelectItem key={q.nome} value={q.nome}>{q.nome}</SelectItem>)}
               </SelectContent>
             </Select>
+
+            {isAdmin && (
+              <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Pubblica come Admin</p>
+                  <p className="text-xs text-muted-foreground">Il gruppo apparirà come creato da "Admin MilanoHelp"</p>
+                </div>
+                <Switch checked={publishAsAdmin} onCheckedChange={setPublishAsAdmin} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Annulla</Button>
