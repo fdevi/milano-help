@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 import Navbar from "@/components/Navbar";
 import ChatList from "@/components/chat/ChatList";
 import ChatDetail from "@/components/chat/ChatDetail";
@@ -36,6 +38,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { isAdmin, adminMode } = useAdminMode();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<string>("private");
 
@@ -318,6 +321,7 @@ const Chat = () => {
     createdAt: m.created_at,
     letto: m.letto ?? false,
     parentId: m.parent_id || null,
+    pubblicatoComeAdmin: m.pubblicato_come_admin === true,
   }));
 
   // Likes for private messages
@@ -381,6 +385,7 @@ const Chat = () => {
         mittente_id: user.id,
         testo: text,
         parent_id: parentId || null,
+        pubblicato_come_admin: isAdmin && adminMode,
       } as any);
       await supabase.from("conversazioni_private").update({
         ultimo_messaggio: text,

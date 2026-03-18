@@ -9,6 +9,8 @@ import EmojiPicker from "emoji-picker-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +28,7 @@ import RicordameloSheet from "@/components/RicordameloSheet";
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { isAdmin, adminMode } = useAdminMode();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -113,10 +116,15 @@ const EventoPage = () => {
         .in("user_id", userIds as string[]);
 
       const profiliMap = new Map(profili?.map(p => [p.user_id, p]) || []);
-      return data.map((c: any) => ({
-        ...c,
-        profilo: profiliMap.get(c.user_id) || null,
-      }));
+      return data.map((c: any) => {
+        const isAdminComment = c.pubblicato_come_admin === true;
+        return {
+          ...c,
+          profilo: isAdminComment
+            ? { user_id: c.user_id, nome: ADMIN_PROFILE.nome, cognome: ADMIN_PROFILE.cognome, avatar_url: ADMIN_PROFILE.avatar_url }
+            : (profiliMap.get(c.user_id) || null),
+        };
+      });
     },
     enabled: !!id,
   });
@@ -294,11 +302,13 @@ const EventoPage = () => {
 
     setSending(true);
     const testoTroncato = commentText.trim();
+    const isPubblicatoComeAdmin = isAdmin && adminMode;
     const { data: inserted, error } = await (supabase as any).from("eventi_commenti").insert({
       evento_id: evento.id,
       user_id: user.id,
       testo: testoTroncato,
       parent_id: replyTo?.id || null,
+      pubblicato_come_admin: isPubblicatoComeAdmin,
     }).select("id").single();
     setSending(false);
 

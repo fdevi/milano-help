@@ -540,6 +540,7 @@ export type Database = {
           evento_id: string
           id: string
           parent_id: string | null
+          pubblicato_come_admin: boolean | null
           testo: string
           user_id: string
         }
@@ -548,6 +549,7 @@ export type Database = {
           evento_id: string
           id?: string
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo: string
           user_id: string
         }
@@ -556,6 +558,7 @@ export type Database = {
           evento_id?: string
           id?: string
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo?: string
           user_id?: string
         }
@@ -1177,6 +1180,7 @@ export type Database = {
           letto_at: string | null
           mittente_id: string | null
           parent_id: string | null
+          pubblicato_come_admin: boolean | null
           testo: string
         }
         Insert: {
@@ -1187,6 +1191,7 @@ export type Database = {
           letto_at?: string | null
           mittente_id?: string | null
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo: string
         }
         Update: {
@@ -1197,6 +1202,7 @@ export type Database = {
           letto_at?: string | null
           mittente_id?: string | null
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo?: string
         }
         Relationships: [

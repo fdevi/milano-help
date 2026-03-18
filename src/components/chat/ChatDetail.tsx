@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, Reply, X, Smile, Heart } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
@@ -17,6 +18,7 @@ export interface ChatMessage {
   createdAt: string;
   letto: boolean;
   parentId?: string | null;
+  pubblicatoComeAdmin?: boolean;
 }
 
 export interface ChatUserProfile {
@@ -153,12 +155,21 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
     textareaRef.current?.focus();
   };
 
-  const getProfileName = (userId: string) => {
+  const getProfileForMsg = (msg: ChatMessage): ChatUserProfile | undefined => {
+    if (msg.pubblicatoComeAdmin) {
+      return { user_id: msg.mittenteId, nome: ADMIN_PROFILE.nome, cognome: ADMIN_PROFILE.cognome, avatar_url: ADMIN_PROFILE.avatar_url };
+    }
+    return profiles[msg.mittenteId];
+  };
+
+  const getProfileName = (userId: string, msg?: ChatMessage) => {
+    if (msg?.pubblicatoComeAdmin) return `${ADMIN_PROFILE.nome} ${ADMIN_PROFILE.cognome}`;
     const p = profiles[userId];
     return p ? `${p.nome || "Utente"} ${p.cognome || ""}`.trim() : "Utente";
   };
 
-  const getInitials = (userId: string) => {
+  const getInitials = (userId: string, msg?: ChatMessage) => {
+    if (msg?.pubblicatoComeAdmin) return `${ADMIN_PROFILE.nome[0]}${ADMIN_PROFILE.cognome[0]}`.toUpperCase();
     const p = profiles[userId];
     if (!p) return "U";
     return `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase();
@@ -190,10 +201,10 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
           </div>
         ) : (
           messages.map((msg, index) => {
-            const isMine = msg.mittenteId === currentUserId;
-            const p = profiles[msg.mittenteId];
+            const isMine = msg.mittenteId === currentUserId && !msg.pubblicatoComeAdmin;
+            const p = getProfileForMsg(msg);
             const parentMsg = msg.parentId ? messages.find((m) => m.id === msg.parentId) : null;
-            const parentName = parentMsg ? getProfileName(parentMsg.mittenteId) : null;
+            const parentName = parentMsg ? getProfileName(parentMsg.mittenteId, parentMsg) : null;
             const likeCount = getLikeCount(msg.id);
             const liked = hasLiked(msg.id);
 
@@ -208,7 +219,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={p?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
-                      {getInitials(msg.mittenteId)}
+                      {getInitials(msg.mittenteId, msg)}
                     </AvatarFallback>
                   </Avatar>
                 )}
@@ -217,7 +228,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                     <Avatar className="h-7 w-7 shrink-0">
                       <AvatarImage src={p?.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
-                        {getInitials(msg.mittenteId)}
+                        {getInitials(msg.mittenteId, msg)}
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -236,7 +247,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                     )}
                     <div className="px-3 py-2">
                       {(isGroup && !isMine) && (
-                        <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId)}</p>
+                        <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId, msg)}</p>
                       )}
                       <p>{msg.testo}</p>
                       <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
