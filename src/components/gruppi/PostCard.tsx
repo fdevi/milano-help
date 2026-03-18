@@ -8,6 +8,7 @@ import PostImageGrid from "./PostImageGrid";
 import PostComments from "./PostComments";
 import ShareDialog from "./ShareDialog";
 import PostComposer from "./PostComposer";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 
 interface PostProfile {
   user_id: string;
