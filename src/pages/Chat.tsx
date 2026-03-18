@@ -383,6 +383,7 @@ const Chat = () => {
         mittente_id: user.id,
         testo: text,
         parent_id: parentId || null,
+        pubblicato_come_admin: isAdmin && adminMode,
       } as any);
       await supabase.from("conversazioni_private").update({
         ultimo_messaggio: text,
