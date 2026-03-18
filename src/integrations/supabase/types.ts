@@ -63,6 +63,7 @@ export type Database = {
           orari_apertura: string | null
           prezzo: number | null
           proroghe_effettuate: number
+          pubblicato_come_admin: boolean | null
           quartiere: string | null
           sito_web: string | null
           stato: string
@@ -97,6 +98,7 @@ export type Database = {
           orari_apertura?: string | null
           prezzo?: number | null
           proroghe_effettuate?: number
+          pubblicato_come_admin?: boolean | null
           quartiere?: string | null
           sito_web?: string | null
           stato?: string
@@ -131,6 +133,7 @@ export type Database = {
           orari_apertura?: string | null
           prezzo?: number | null
           proroghe_effettuate?: number
+          pubblicato_come_admin?: boolean | null
           quartiere?: string | null
           sito_web?: string | null
           stato?: string
@@ -157,6 +160,7 @@ export type Database = {
           created_at: string
           id: string
           parent_id: string | null
+          pubblicato_come_admin: boolean | null
           testo: string
           user_id: string
         }
@@ -165,6 +169,7 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo: string
           user_id: string
         }
@@ -173,6 +178,7 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo?: string
           user_id?: string
         }
@@ -468,6 +474,7 @@ export type Database = {
           organizzatore_id: string
           partecipanti: number | null
           prezzo: number | null
+          pubblicato_come_admin: boolean | null
           stato: string | null
           titolo: string
           updated_at: string | null
@@ -493,6 +500,7 @@ export type Database = {
           organizzatore_id: string
           partecipanti?: number | null
           prezzo?: number | null
+          pubblicato_come_admin?: boolean | null
           stato?: string | null
           titolo: string
           updated_at?: string | null
@@ -518,6 +526,7 @@ export type Database = {
           organizzatore_id?: string
           partecipanti?: number | null
           prezzo?: number | null
+          pubblicato_come_admin?: boolean | null
           stato?: string | null
           titolo?: string
           updated_at?: string | null
@@ -790,6 +799,7 @@ export type Database = {
           id: string
           immagine: string | null
           nome: string
+          pubblicato_come_admin: boolean | null
           quartiere: string | null
           tipo: string
         }
@@ -801,6 +811,7 @@ export type Database = {
           id?: string
           immagine?: string | null
           nome: string
+          pubblicato_come_admin?: boolean | null
           quartiere?: string | null
           tipo?: string
         }
@@ -812,6 +823,7 @@ export type Database = {
           id?: string
           immagine?: string | null
           nome?: string
+          pubblicato_come_admin?: boolean | null
           quartiere?: string | null
           tipo?: string
         }
@@ -860,6 +872,7 @@ export type Database = {
           immagini: string[] | null
           mittente_id: string
           parent_id: string | null
+          pubblicato_come_admin: boolean | null
           testo: string
           updated_at: string | null
         }
@@ -870,6 +883,7 @@ export type Database = {
           immagini?: string[] | null
           mittente_id: string
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo: string
           updated_at?: string | null
         }
@@ -880,6 +894,7 @@ export type Database = {
           immagini?: string[] | null
           mittente_id?: string
           parent_id?: string | null
+          pubblicato_come_admin?: boolean | null
           testo?: string
           updated_at?: string | null
         }
@@ -933,6 +948,7 @@ export type Database = {
           id: string
           parent_id: string | null
           post_id: string
+          pubblicato_come_admin: boolean | null
           testo: string
           user_id: string
         }
@@ -942,6 +958,7 @@ export type Database = {
           id?: string
           parent_id?: string | null
           post_id: string
+          pubblicato_come_admin?: boolean | null
           testo: string
           user_id: string
         }
@@ -951,6 +968,7 @@ export type Database = {
           id?: string
           parent_id?: string | null
           post_id?: string
+          pubblicato_come_admin?: boolean | null
           testo?: string
           user_id?: string
         }
