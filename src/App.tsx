@@ -119,6 +119,7 @@ const App = () => (
             <Route path="/admin/annunci" element={<AdminRoute><AdminAnnunci /></AdminRoute>} />
             <Route path="/admin/annunci-speciali" element={<AdminRoute><AdminAnnunciSpeciali /></AdminRoute>} />
             <Route path="/admin/importazioni" element={<AdminRoute><AdminImportazioni /></AdminRoute>} />
+            <Route path="/admin/approvazione-categorie" element={<AdminRoute><AdminApprovazioneCategorie /></AdminRoute>} />
             <Route path="/miei-annunci" element={<ProtectedRoute><MieiAnnunci /></ProtectedRoute>} />
             <Route path="/miei-eventi" element={<ProtectedRoute><MieiEventi /></ProtectedRoute>} />
             <Route path="/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />

@@ -169,6 +169,19 @@ const NuovoAnnuncio = () => {
         pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
+      // Check if category has auto-approval enabled
+      let statoAnnuncio = "in_moderazione";
+      if (categoriaId) {
+        const { data: catData } = await (supabase as any)
+          .from("categorie_annunci")
+          .select("approvazione_automatica")
+          .eq("id", categoriaId)
+          .single();
+        if (catData?.approvazione_automatica) {
+          statoAnnuncio = "attivo";
+        }
+      }
+
       const payload: Record<string, any> = {
         user_id: user.id,
         pubblicato_come_admin: isPubblicatoComeAdmin,
@@ -176,7 +189,7 @@ const NuovoAnnuncio = () => {
         descrizione: descrizione.trim() || null,
         categoria_id: categoriaId,
         quartiere: userQuartiere,
-        stato: "in_moderazione",
+        stato: statoAnnuncio,
         prezzo: richiedePrezzo && prezzo ? parseFloat(prezzo) : null,
         mostra_email: mostraEmail,
         mostra_telefono: mostraTelefono,
