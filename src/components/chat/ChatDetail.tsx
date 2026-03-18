@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, Reply, X, Smile, Heart } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
