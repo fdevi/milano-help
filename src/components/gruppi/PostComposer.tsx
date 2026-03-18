@@ -41,6 +41,7 @@ const PostComposer = ({
   onCancelEdit,
 }: PostComposerProps) => {
   const { user } = useAuth();
+  const { adminMode, isAdmin } = useAdminMode();
   const { toast } = useToast();
   const [text, setText] = useState(initialText);
   const [newFiles, setNewFiles] = useState<File[]>([]);
