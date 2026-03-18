@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 
 const TopNavbar = () => {
   const { user } = useAuth();
+  const { adminMode, toggleAdminMode, isAdmin } = useAdminMode();
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initials, setInitials] = useState("U");
