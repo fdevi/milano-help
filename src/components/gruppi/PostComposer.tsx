@@ -208,6 +208,14 @@ const PostComposer = ({
       } else {
         // INSERT new post
         const isPubblicatoComeAdmin = isAdmin && adminMode;
+        console.log("[PostComposer] submit", {
+          userId: user?.id ?? null,
+          gruppoId,
+          isAdmin,
+          adminMode,
+          pubblicato_come_admin: isPubblicatoComeAdmin,
+        });
+
         const { data, error } = await supabase
           .from("gruppi_messaggi")
           .insert({
