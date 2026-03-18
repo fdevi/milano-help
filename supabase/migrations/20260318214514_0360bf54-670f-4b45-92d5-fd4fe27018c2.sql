@@ -1,0 +1,1 @@
+ALTER TABLE public.categorie_annunci ADD COLUMN approvazione_automatica boolean NOT NULL DEFAULT false;
