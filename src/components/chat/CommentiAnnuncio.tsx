@@ -24,7 +24,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
   const [testo, setTesto] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -109,19 +109,20 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
 
   const addComment = useMutation({
     mutationFn: async () => {
-      const resolvedUserId = effectiveUserId(user!.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[CommentiAnnuncio] submit", {
         userId: user!.id,
-        resolvedUserId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const { data: inserted, error } = await supabase.from("annunci_commenti").insert({
         annuncio_id: annuncioId,
-        user_id: resolvedUserId,
+        user_id: user!.id,
         testo,
         parent_id: replyTo?.id || null,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       } as any).select("id").single();
       if (error) throw error;
 
@@ -216,7 +217,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   };
 
   const renderComment = (c: any) => {
-    const isAdminComment = isAdminUser(c.user_id);
+    const isAdminComment = c.pubblicato_come_admin === true;
     const profile = isAdminComment ? ADMIN_PROFILE : profileMap[c.user_id];
     const nome = isAdminComment ? "Admin MilanoHelp" : (profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente");
     const initials = isAdminComment ? "MH" : (nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U");

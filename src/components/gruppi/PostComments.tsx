@@ -28,7 +28,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,20 +68,21 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
     if (!newComment.trim() || !user) return;
     setIsSubmitting(true);
     try {
-      const resolvedUserId = effectiveUserId(user.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[PostComments] submit", {
         userId: user.id,
-        resolvedUserId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const { error } = await supabase.from("gruppi_post_commenti" as any).insert({
         post_id: postId,
         gruppo_id: gruppoId,
-        user_id: resolvedUserId,
+        user_id: user.id,
         testo: newComment.trim(),
         parent_id: replyTo?.id || null,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
       if (error) throw error;
       setNewComment("");
@@ -96,7 +97,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   };
 
   const renderComment = (comment: any, isReply = false) => {
-    const isAdminComment = isAdminUser(comment.user_id);
+    const isAdminComment = comment.pubblicato_come_admin === true;
     const p = isAdminComment ? ADMIN_PROFILE : profileMap[comment.user_id];
     const name = isAdminComment ? "Admin MilanoHelp" : (p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente");
     const initials = isAdminComment ? "MH" : (p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U");

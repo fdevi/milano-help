@@ -29,7 +29,7 @@ const NuovoEvento = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
@@ -111,12 +111,12 @@ const NuovoEvento = () => {
 
     setLoading(true);
     try {
-      const resolvedOrganizerId = effectiveUserId(user.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[NuovoEvento] submit", {
         userId: user.id,
-        resolvedOrganizerId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const insertData: any = {
@@ -124,7 +124,8 @@ const NuovoEvento = () => {
         descrizione: form.descrizione || null,
         data: date.toISOString(),
         luogo: form.luogo,
-        organizzatore_id: resolvedOrganizerId,
+        organizzatore_id: user.id,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
         stato: "in_moderazione",
         gratuito: form.gratuito,
         prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,

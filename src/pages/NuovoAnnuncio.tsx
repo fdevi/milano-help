@@ -25,7 +25,7 @@ const NuovoAnnuncio = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isProfessionista, isNegoziante } = useTipoAccount();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
 
   const [categoriaId, setCategoriaId] = useState("");
   const [titolo, setTitolo] = useState("");
@@ -161,16 +161,17 @@ const NuovoAnnuncio = () => {
         coords = await geocodeAddress();
       }
 
-      const resolvedUserId = effectiveUserId(user.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[NuovoAnnuncio] submit", {
         userId: user.id,
-        resolvedUserId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const payload: Record<string, any> = {
-        user_id: resolvedUserId,
+        user_id: user.id,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
         titolo: titolo.trim(),
         descrizione: descrizione.trim() || null,
         categoria_id: categoriaId,

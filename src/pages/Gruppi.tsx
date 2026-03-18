@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIE_GRUPPI = ["Generale", "Sport", "Cultura", "Volontariato", "Genitori", "Animali", "Cibo", "Altro"];
 
-import { ADMIN_USER_ID } from "@/lib/adminProfile";
+
 
 const Gruppi = () => {
   const { user } = useAuth();
@@ -28,7 +28,7 @@ const Gruppi = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { quartieri } = useQuartieri();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("tutti");
@@ -112,7 +112,7 @@ const Gruppi = () => {
               .eq("user_id", gruppo.creatore_id)
               .single(),
           ]);
-          const isAdminCreator = gruppo.creatore_id === ADMIN_USER_ID;
+          const isAdminCreator = gruppo.pubblicato_come_admin === true;
           return {
             ...gruppo,
             membri_count: countResult.data ?? 0,
@@ -152,12 +152,12 @@ const Gruppi = () => {
       if (!user) {
         throw new Error("Devi effettuare l'accesso per creare un gruppo.");
       }
-      const effectiveCreatorId = effectiveUserId(user.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[NuovoGruppo] submit", {
         userId: user.id,
-        effectiveCreatorId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const { data, error } = await supabase
@@ -169,7 +169,8 @@ const Gruppi = () => {
           tipo,
           categoria: categoria?.trim() || null,
           quartiere: quartiere?.trim() || null,
-          creatore_id: effectiveCreatorId,
+          creatore_id: user.id,
+          pubblicato_come_admin: isPubblicatoComeAdmin,
         } as any)
         .select("id")
         .single();
@@ -378,7 +379,7 @@ const Gruppi = () => {
                     </div>
                     {g.creatore_nome && (
                       <div className="flex items-center gap-1.5 mt-2">
-                        {g.creatore_id === ADMIN_USER_ID && (
+                        {g.pubblicato_come_admin && (
                           <img src="/logo/logo.svg" alt="Admin" className="w-4 h-4 rounded-full" />
                         )}
                         <p className="text-xs text-muted-foreground">Creato da {g.creatore_nome}</p>

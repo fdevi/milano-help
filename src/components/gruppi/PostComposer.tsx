@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminMode } from "@/hooks/useAdminMode";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,7 @@ const PostComposer = ({
   onCancelEdit,
 }: PostComposerProps) => {
   const { user } = useAuth();
+  const { adminMode, isAdmin } = useAdminMode();
   const { toast } = useToast();
   const [text, setText] = useState(initialText);
   const [newFiles, setNewFiles] = useState<File[]>([]);
@@ -205,6 +207,7 @@ const PostComposer = ({
         onCancelEdit?.();
       } else {
         // INSERT new post
+        const isPubblicatoComeAdmin = isAdmin && adminMode;
         const { data, error } = await supabase
           .from("gruppi_messaggi")
           .insert({
@@ -212,6 +215,7 @@ const PostComposer = ({
             mittente_id: user!.id,
             testo: text.trim() || "(foto)",
             immagini: allImages.length > 0 ? allImages : null,
+            pubblicato_come_admin: isPubblicatoComeAdmin,
           } as any)
           .select("id")
           .single();

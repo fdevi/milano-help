@@ -8,6 +8,7 @@ import PostImageGrid from "./PostImageGrid";
 import PostComments from "./PostComments";
 import ShareDialog from "./ShareDialog";
 import PostComposer from "./PostComposer";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 
 interface PostProfile {
   user_id: string;
@@ -87,8 +88,10 @@ const PostCard = ({
   const [showShare, setShowShare] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const name = profile ? `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente" : "Utente";
-  const initials = profile ? `${(profile.nome || "U")[0]}${(profile.cognome || "")[0]}`.toUpperCase() : "U";
+  const isAdminPost = post.pubblicato_come_admin === true;
+  const displayProfile = isAdminPost ? ADMIN_PROFILE : profile;
+  const name = isAdminPost ? "Admin MilanoHelp" : (profile ? `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente" : "Utente");
+  const initials = isAdminPost ? "MH" : (profile ? `${(profile.nome || "U")[0]}${(profile.cognome || "")[0]}`.toUpperCase() : "U");
   const location = gruppoQuartiere || gruppoNome;
   const images = post.immagini || [];
   const textLines = (post.testo || "").split("\n");
@@ -121,7 +124,7 @@ const PostCard = ({
         {/* Header */}
         <div className="flex items-start gap-3 p-4 pb-2">
           <Avatar className="h-10 w-10 shrink-0">
-            <AvatarImage src={profile?.avatar_url || undefined} />
+            <AvatarImage src={displayProfile?.avatar_url || undefined} />
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
