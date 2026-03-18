@@ -922,32 +922,19 @@ const EventoPage = () => {
                   {isExternalEvent ? "Fonte" : "Organizzato da"}
                 </h3>
                 <div className="flex items-center gap-3">
-                  {isExternalEvent ? (
-                    <>
-                      <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-                        <span className="text-amber-500 font-bold text-sm">⭐</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Evento ufficiale</p>
-                        <p className="text-xs text-muted-foreground">A cura di Milano Help</p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Avatar className="w-12 h-12">
-                        {organizzatore?.avatar_url && <AvatarImage src={organizzatore.avatar_url} />}
-                        <AvatarFallback>{orgInitials}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground">{orgName}</p>
-                        {organizzatore?.quartiere && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {organizzatore.quartiere}
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  <Avatar className="w-12 h-12">
+                    {orgAvatarUrl && <AvatarImage src={orgAvatarUrl} />}
+                    <AvatarFallback>{orgInitials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-foreground">{orgName}</p>
+                    {isExternalEvent && <p className="text-xs text-muted-foreground">A cura di Milano Help</p>}
+                    {!isExternalEvent && orgQuartiere && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {orgQuartiere}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
