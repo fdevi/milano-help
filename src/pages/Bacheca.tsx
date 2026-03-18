@@ -7,14 +7,7 @@ import FeedCard, { FeedItem, FeedItemType } from "@/components/feed/FeedCard";
 import { Loader2, Rss } from "lucide-react";
 
 const PAGE_SIZE = 100;
-const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
-const ADMIN_PROFILE = {
-  user_id: ADMIN_USER_ID,
-  nome: "Admin",
-  cognome: "MilanoHelp",
-  avatar_url: "/logo/logo-192.png",
-  quartiere: "Milano",
-};
+import { ADMIN_USER_ID, ADMIN_PROFILE } from "@/lib/adminProfile";
 
 const Bacheca = () => {
   const { user } = useAuth();
