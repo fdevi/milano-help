@@ -111,7 +111,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
     mutationFn: async () => {
       const { data: inserted, error } = await supabase.from("annunci_commenti").insert({
         annuncio_id: annuncioId,
-        user_id: user!.id,
+        user_id: effectiveUserId(user!.id),
         testo,
         parent_id: replyTo?.id || null,
       } as any).select("id").single();
