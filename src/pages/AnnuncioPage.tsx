@@ -79,8 +79,7 @@ const AnnuncioPage = () => {
     ((annuncio.categorie_annunci as any).nome === "Professionisti" || (annuncio.categorie_annunci as any).nome === "negozi_di_quartiere");
   const isProf = (annuncio?.categorie_annunci as any)?.nome === "Professionisti";
 
-  const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
-  const isAdminCreator = annuncio?.user_id === ADMIN_USER_ID;
+  const isAdminCreator = annuncio?.pubblicato_come_admin === true;
 
   // Fetch author profile
   const { data: autoreRaw } = useQuery({
@@ -111,7 +110,7 @@ const AnnuncioPage = () => {
 
   // Override with admin profile when applicable
   const autore = isAdminCreator
-    ? { user_id: ADMIN_USER_ID, nome: "Admin", cognome: "MilanoHelp", avatar_url: "/logo/logo-192.png", quartiere: "Milano", nome_attivita: null, tipo_account: null, lat: null, lon: null, created_at: null, email: null, telefono: null }
+    ? { user_id: annuncio?.user_id, nome: "Admin", cognome: "MilanoHelp", avatar_url: "/logo/logo-192.png", quartiere: "Milano", nome_attivita: null, tipo_account: null, lat: null, lon: null, created_at: null, email: null, telefono: null }
     : autoreRaw;
 
   // Fetch reviews

@@ -199,12 +199,8 @@ const GruppoDetail = () => {
     },
     enabled: msgUserIds.length > 0,
   });
-  const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
-  const adminProfile = { user_id: ADMIN_USER_ID, nome: "Admin", cognome: "MilanoHelp", avatar_url: "/logo/logo.svg", quartiere: null };
   const profileMap = Object.fromEntries((msgProfiles as any[]).map((p) => [p.user_id, p]));
-  profileMap[ADMIN_USER_ID] = adminProfile;
   const memberProfileMap = Object.fromEntries((memberProfiles as any[]).map((p) => [p.user_id, p]));
-  memberProfileMap[ADMIN_USER_ID] = adminProfile;
 
   // Pending members
   const pendingMembers = (membri as any[]).filter((m) => m.stato === "in_attesa");
@@ -475,13 +471,12 @@ const GruppoDetail = () => {
                 const p = memberProfileMap[uid];
                 const m = (membri as any[]).find((mm) => mm.user_id === uid);
                 const isCreatore = (gruppo as any)?.creatore_id === uid;
-                const isAdminCreator = uid === "51aeacbc-1497-440c-8edb-23845ce077d3";
-                const displayName = isAdminCreator ? "Admin MilanoHelp" : `${p?.nome || "Utente"} ${p?.cognome || ""}`;
-                const displayInitials = isAdminCreator ? "AH" : (p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U");
+                const displayName = `${p?.nome || "Utente"} ${p?.cognome || ""}`.trim();
+                const displayInitials = p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U";
                 return (
                   <div key={uid} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
                     <Avatar className="h-9 w-9 shrink-0">
-                      {!isAdminCreator && <AvatarImage src={p?.avatar_url || undefined} />}
+                      <AvatarImage src={p?.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                         {displayInitials}
                       </AvatarFallback>
