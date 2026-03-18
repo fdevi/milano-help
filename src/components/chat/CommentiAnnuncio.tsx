@@ -24,6 +24,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { effectiveUserId } = useAdminMode();
   const [testo, setTesto] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
