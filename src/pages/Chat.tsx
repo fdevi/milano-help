@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPushNotification } from "@/lib/pushNotification";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 import Navbar from "@/components/Navbar";
 import ChatList from "@/components/chat/ChatList";
 import ChatDetail from "@/components/chat/ChatDetail";
