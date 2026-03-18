@@ -17,6 +17,7 @@ export interface ChatMessage {
   createdAt: string;
   letto: boolean;
   parentId?: string | null;
+  pubblicatoComeAdmin?: boolean;
 }
 
 export interface ChatUserProfile {

@@ -321,6 +321,7 @@ const Chat = () => {
     createdAt: m.created_at,
     letto: m.letto ?? false,
     parentId: m.parent_id || null,
+    pubblicatoComeAdmin: m.pubblicato_come_admin === true,
   }));
 
   // Likes for private messages
