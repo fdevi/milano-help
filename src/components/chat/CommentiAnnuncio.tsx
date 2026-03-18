@@ -208,9 +208,10 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   };
 
   const renderComment = (c: any) => {
-    const profile = profileMap[c.user_id];
-    const nome = profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente";
-    const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U";
+    const isAdminComment = isAdminUser(c.user_id);
+    const profile = isAdminComment ? ADMIN_PROFILE : profileMap[c.user_id];
+    const nome = isAdminComment ? "Admin MilanoHelp" : (profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente");
+    const initials = isAdminComment ? "MH" : (nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U");
     const likesForComment = (allLikes as any[]).filter((l) => l.commento_id === c.id);
     const userLiked = user && likesForComment.some((l) => l.user_id === user.id);
 
