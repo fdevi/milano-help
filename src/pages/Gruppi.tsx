@@ -114,12 +114,15 @@ const Gruppi = () => {
               .eq("user_id", gruppo.creatore_id)
               .single(),
           ]);
+          const isAdminCreator = gruppo.creatore_id === ADMIN_USER_ID;
           return {
             ...gruppo,
             membri_count: countResult.data ?? 0,
-            creatore_nome: creatorResult.data
-              ? `${creatorResult.data.nome || ""} ${creatorResult.data.cognome || ""}`.trim()
-              : null,
+            creatore_nome: isAdminCreator
+              ? "Admin MilanoHelp"
+              : creatorResult.data
+                ? `${creatorResult.data.nome || ""} ${creatorResult.data.cognome || ""}`.trim()
+                : null,
           };
         })
       );
