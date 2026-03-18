@@ -38,6 +38,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { isAdmin, adminMode } = useAdminMode();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<string>("private");
 
