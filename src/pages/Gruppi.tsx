@@ -112,7 +112,7 @@ const Gruppi = () => {
               .eq("user_id", gruppo.creatore_id)
               .single(),
           ]);
-          const isAdminCreator = gruppo.creatore_id === ADMIN_USER_ID;
+          const isAdminCreator = gruppo.pubblicato_come_admin === true;
           return {
             ...gruppo,
             membri_count: countResult.data ?? 0,
