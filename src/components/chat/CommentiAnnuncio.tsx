@@ -217,7 +217,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   };
 
   const renderComment = (c: any) => {
-    const isAdminComment = isAdminUser(c.user_id);
+    const isAdminComment = c.pubblicato_come_admin === true;
     const profile = isAdminComment ? ADMIN_PROFILE : profileMap[c.user_id];
     const nome = isAdminComment ? "Admin MilanoHelp" : (profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente");
     const initials = isAdminComment ? "MH" : (nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U");

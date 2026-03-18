@@ -111,12 +111,12 @@ const NuovoEvento = () => {
 
     setLoading(true);
     try {
-      const resolvedOrganizerId = effectiveUserId(user.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[NuovoEvento] submit", {
         userId: user.id,
-        resolvedOrganizerId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const insertData: any = {
@@ -124,7 +124,8 @@ const NuovoEvento = () => {
         descrizione: form.descrizione || null,
         data: date.toISOString(),
         luogo: form.luogo,
-        organizzatore_id: resolvedOrganizerId,
+        organizzatore_id: user.id,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
         stato: "in_moderazione",
         gratuito: form.gratuito,
         prezzo: form.gratuito ? null : parseFloat(form.prezzo) || null,

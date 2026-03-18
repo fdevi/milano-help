@@ -152,12 +152,12 @@ const Gruppi = () => {
       if (!user) {
         throw new Error("Devi effettuare l'accesso per creare un gruppo.");
       }
-      const effectiveCreatorId = effectiveUserId(user.id);
+      const isPubblicatoComeAdmin = isAdmin && adminMode;
       console.log("[NuovoGruppo] submit", {
         userId: user.id,
-        effectiveCreatorId,
         isAdmin,
         adminMode,
+        pubblicato_come_admin: isPubblicatoComeAdmin,
       });
 
       const { data, error } = await supabase
@@ -169,7 +169,8 @@ const Gruppi = () => {
           tipo,
           categoria: categoria?.trim() || null,
           quartiere: quartiere?.trim() || null,
-          creatore_id: effectiveCreatorId,
+          creatore_id: user.id,
+          pubblicato_come_admin: isPubblicatoComeAdmin,
         } as any)
         .select("id")
         .single();
