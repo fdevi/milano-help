@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuartieri } from "@/hooks/useQuartieri";
-import { useRoleCheck } from "@/hooks/useRoleCheck";
+import { useAdminMode } from "@/hooks/useAdminMode";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
