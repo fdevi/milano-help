@@ -82,6 +82,7 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
+          <AdminModeProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/registrati" element={<Register />} />
