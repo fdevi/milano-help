@@ -22,7 +22,7 @@ interface ChatListProps {
   avatarMap?: Record<string, string | null>;
 }
 
-const ChatList = ({ conversations, activeId, onSelect }: ChatListProps) => {
+const ChatList = ({ conversations, activeId, onSelect, avatarMap }: ChatListProps) => {
   const totalUnread = conversations.reduce((sum, c) => sum + c.nonLetti, 0);
 
   return (
