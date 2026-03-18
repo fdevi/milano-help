@@ -28,6 +28,7 @@ import RicordameloSheet from "@/components/RicordameloSheet";
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { isAdmin, adminMode } = useAdminMode();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
