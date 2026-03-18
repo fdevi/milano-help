@@ -112,6 +112,9 @@ const Bacheca = () => {
       const categoriaLabel = (a as any).categorie_annunci?.label || null;
       const categoriaNome = (a as any).categorie_annunci?.nome || null;
 
+      // Use Admin profile if creator is the admin account
+      const authorProfile = a.user_id === ADMIN_USER_ID ? ADMIN_PROFILE : (profileMap.get(a.user_id) || null);
+
       feedItems.push({
         id: a.id,
         type,
@@ -119,7 +122,7 @@ const Bacheca = () => {
         text: a.descrizione,
         images: a.immagini || [],
         created_at: a.created_at,
-        author: profileMap.get(a.user_id) || null,
+        author: authorProfile,
         link: `/annuncio/${a.id}`,
         categoria_label: type === "annuncio" ? categoriaLabel : null,
         categoria_nome: type === "annuncio" ? categoriaNome : null,
@@ -128,9 +131,10 @@ const Bacheca = () => {
     });
 
     eventi.forEach((e) => {
-      // Use Admin profile for imported events
+      // Use Admin profile for imported events or admin-published events
       const isImported = !!(e as any).fonte_esterna;
-      const authorProfile = isImported ? ADMIN_PROFILE : (profileMap.get(e.organizzatore_id) || null);
+      const isAdminCreator = e.organizzatore_id === ADMIN_USER_ID;
+      const authorProfile = (isImported || isAdminCreator) ? ADMIN_PROFILE : (profileMap.get(e.organizzatore_id) || null);
       feedItems.push({
         id: e.id,
         type: "evento",
@@ -146,6 +150,8 @@ const Bacheca = () => {
     });
 
     gruppiMsg.forEach((m) => {
+      // Use Admin profile if message sender is the admin account
+      const authorProfile = m.mittente_id === ADMIN_USER_ID ? ADMIN_PROFILE : (profileMap.get(m.mittente_id) || null);
       feedItems.push({
         id: m.id,
         type: "post_gruppo",
@@ -153,7 +159,7 @@ const Bacheca = () => {
         text: m.testo,
         images: m.immagini || [],
         created_at: m.created_at,
-        author: profileMap.get(m.mittente_id) || null,
+        author: authorProfile,
         gruppo_nome: gruppoMap.get(m.gruppo_id) || "Gruppo",
         gruppo_id: m.gruppo_id,
         link: `/gruppo/${m.gruppo_id}?message=${m.id}`,

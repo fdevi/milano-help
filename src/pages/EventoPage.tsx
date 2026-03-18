@@ -506,8 +506,12 @@ const EventoPage = () => {
   }
 
   const isExternalEvent = !!(evento as any)?.fonte_esterna;
-  const orgName = isExternalEvent ? "Milano Help" : (organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente");
-  const orgInitials = isExternalEvent ? "MH" : orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const isAdminCreator = evento?.organizzatore_id === "51aeacbc-1497-440c-8edb-23845ce077d3";
+  const showAsAdmin = isExternalEvent || isAdminCreator;
+  const orgName = showAsAdmin ? "Admin MilanoHelp" : (organizzatore ? `${organizzatore.nome || ""} ${organizzatore.cognome || ""}`.trim() || "Utente" : "Utente");
+  const orgInitials = showAsAdmin ? "MH" : orgName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const orgAvatarUrl = showAsAdmin ? "/logo/logo-192.png" : organizzatore?.avatar_url;
+  const orgQuartiere = showAsAdmin ? "Milano" : organizzatore?.quartiere;
   const confermati = partecipantiCounts?.confermati || 0;
   const forseCnt = partecipantiCounts?.forse || 0;
   const maxReached = !!(evento?.max_partecipanti && confermati >= evento.max_partecipanti);
@@ -918,32 +922,19 @@ const EventoPage = () => {
                   {isExternalEvent ? "Fonte" : "Organizzato da"}
                 </h3>
                 <div className="flex items-center gap-3">
-                  {isExternalEvent ? (
-                    <>
-                      <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-                        <span className="text-amber-500 font-bold text-sm">⭐</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Evento ufficiale</p>
-                        <p className="text-xs text-muted-foreground">A cura di Milano Help</p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Avatar className="w-12 h-12">
-                        {organizzatore?.avatar_url && <AvatarImage src={organizzatore.avatar_url} />}
-                        <AvatarFallback>{orgInitials}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground">{orgName}</p>
-                        {organizzatore?.quartiere && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {organizzatore.quartiere}
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  <Avatar className="w-12 h-12">
+                    {orgAvatarUrl && <AvatarImage src={orgAvatarUrl} />}
+                    <AvatarFallback>{orgInitials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-foreground">{orgName}</p>
+                    {isExternalEvent && <p className="text-xs text-muted-foreground">A cura di Milano Help</p>}
+                    {!isExternalEvent && orgQuartiere && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {orgQuartiere}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
