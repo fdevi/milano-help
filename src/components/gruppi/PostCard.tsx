@@ -124,7 +124,7 @@ const PostCard = ({
         {/* Header */}
         <div className="flex items-start gap-3 p-4 pb-2">
           <Avatar className="h-10 w-10 shrink-0">
-            <AvatarImage src={profile?.avatar_url || undefined} />
+            <AvatarImage src={displayProfile?.avatar_url || undefined} />
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
