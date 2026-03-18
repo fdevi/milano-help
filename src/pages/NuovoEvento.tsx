@@ -29,7 +29,7 @@ const NuovoEvento = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
+  const { adminMode, isAdmin } = useAdminMode();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
