@@ -271,6 +271,12 @@ const PostComposer = ({
               placeholder={isEditing ? "Modifica il tuo post..." : "Scrivi qualcosa al gruppo..."}
               value={text}
               onChange={handleTextChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !showMentions) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               className="min-h-[60px] resize-none border-none shadow-none focus-visible:ring-0 p-0 text-sm"
               rows={isEditing ? 4 : 2}
             />
