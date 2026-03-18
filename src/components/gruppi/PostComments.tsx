@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heart, Reply, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { ADMIN_USER_ID, ADMIN_PROFILE, isAdminUser } from "@/lib/adminProfile";
 
 interface PostCommentsProps {
   postId: string;
