@@ -199,12 +199,8 @@ const GruppoDetail = () => {
     },
     enabled: msgUserIds.length > 0,
   });
-  const ADMIN_USER_ID = "51aeacbc-1497-440c-8edb-23845ce077d3";
-  const adminProfile = { user_id: ADMIN_USER_ID, nome: "Admin", cognome: "MilanoHelp", avatar_url: "/logo/logo.svg", quartiere: null };
   const profileMap = Object.fromEntries((msgProfiles as any[]).map((p) => [p.user_id, p]));
-  profileMap[ADMIN_USER_ID] = adminProfile;
   const memberProfileMap = Object.fromEntries((memberProfiles as any[]).map((p) => [p.user_id, p]));
-  memberProfileMap[ADMIN_USER_ID] = adminProfile;
 
   // Pending members
   const pendingMembers = (membri as any[]).filter((m) => m.stato === "in_attesa");
