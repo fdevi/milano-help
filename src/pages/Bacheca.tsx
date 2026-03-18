@@ -5,9 +5,9 @@ import AppSidebar from "@/components/AppSidebar";
 import TopNavbar from "@/components/TopNavbar";
 import FeedCard, { FeedItem, FeedItemType } from "@/components/feed/FeedCard";
 import { Loader2, Rss } from "lucide-react";
+import { ADMIN_PROFILE } from "@/lib/adminProfile";
 
 const PAGE_SIZE = 100;
-import { ADMIN_USER_ID, ADMIN_PROFILE } from "@/lib/adminProfile";
 
 const Bacheca = () => {
   const { user } = useAuth();
@@ -39,21 +39,21 @@ const Bacheca = () => {
     const [annunciRes, eventiRes, gruppiMsgRes] = await Promise.all([
       supabase
         .from("annunci")
-        .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome), mi_piace")
+        .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome), mi_piace, pubblicato_come_admin")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 49),
 
       supabase
         .from("eventi")
-        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace, fonte_esterna, data")
+        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace, fonte_esterna, data, pubblicato_come_admin")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 19),
 
       supabase
         .from("gruppi_messaggi")
-        .select("id, testo, immagini, created_at, mittente_id, gruppo_id, parent_id")
+        .select("id, testo, immagini, created_at, mittente_id, gruppo_id, parent_id, pubblicato_come_admin")
         .is("parent_id", null)
         .order("created_at", { ascending: false })
         .range(0, 29),
@@ -105,8 +105,7 @@ const Bacheca = () => {
       const categoriaLabel = (a as any).categorie_annunci?.label || null;
       const categoriaNome = (a as any).categorie_annunci?.nome || null;
 
-      // Use Admin profile if creator is the admin account
-      const authorProfile = a.user_id === ADMIN_USER_ID ? ADMIN_PROFILE : (profileMap.get(a.user_id) || null);
+      const authorProfile = a.pubblicato_come_admin === true ? ADMIN_PROFILE : (profileMap.get(a.user_id) || null);
 
       feedItems.push({
         id: a.id,
@@ -124,10 +123,10 @@ const Bacheca = () => {
     });
 
     eventi.forEach((e) => {
-      // Use Admin profile for imported events or admin-published events
       const isImported = !!(e as any).fonte_esterna;
-      const isAdminCreator = e.organizzatore_id === ADMIN_USER_ID;
-      const authorProfile = (isImported || isAdminCreator) ? ADMIN_PROFILE : (profileMap.get(e.organizzatore_id) || null);
+      const isAdminPublished = e.pubblicato_come_admin === true;
+      const authorProfile = (isImported || isAdminPublished) ? ADMIN_PROFILE : (profileMap.get(e.organizzatore_id) || null);
+
       feedItems.push({
         id: e.id,
         type: "evento",
@@ -143,8 +142,8 @@ const Bacheca = () => {
     });
 
     gruppiMsg.forEach((m) => {
-      // Use Admin profile if message sender is the admin account
-      const authorProfile = m.mittente_id === ADMIN_USER_ID ? ADMIN_PROFILE : (profileMap.get(m.mittente_id) || null);
+      const authorProfile = m.pubblicato_come_admin === true ? ADMIN_PROFILE : (profileMap.get(m.mittente_id) || null);
+
       feedItems.push({
         id: m.id,
         type: "post_gruppo",
@@ -201,6 +200,8 @@ const Bacheca = () => {
             const cat = (a.categoria_attivita || "").toLowerCase();
             if (cat.includes("negozio") || cat.includes("negozi")) type = "negozio";
             else if (cat.includes("professionista") || cat.includes("professionisti")) type = "professionista";
+
+            const authorProfile = a.pubblicato_come_admin === true ? ADMIN_PROFILE : (profRes.data || null);
             const newItem: FeedItem = {
               id: a.id,
               type,
@@ -208,7 +209,7 @@ const Bacheca = () => {
               text: a.descrizione,
               images: a.immagini || [],
               created_at: a.created_at,
-              author: profRes.data || null,
+              author: authorProfile,
               link: `/annuncio/${a.id}`,
               categoria_label: type === "annuncio" ? catRes.data?.label || null : null,
               categoria_nome: type === "annuncio" ? catRes.data?.nome || null : null,
@@ -224,11 +225,20 @@ const Bacheca = () => {
             const e = payload.new as any;
             if (e.stato !== "attivo") return;
             const isImported = !!e.fonte_esterna;
-            let authorProfile: any = ADMIN_PROFILE;
-            if (!isImported) {
-              const { data: prof } = await supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", e.organizzatore_id).single();
-              authorProfile = prof || ADMIN_PROFILE;
+            const isAdminPublished = e.pubblicato_come_admin === true;
+
+            let authorProfile: any = null;
+            if (isImported || isAdminPublished) {
+              authorProfile = ADMIN_PROFILE;
+            } else {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("user_id, nome, cognome, avatar_url, quartiere")
+                .eq("user_id", e.organizzatore_id)
+                .single();
+              authorProfile = prof || null;
             }
+
             const newItem: FeedItem = {
               id: e.id,
               type: "evento",
@@ -252,10 +262,13 @@ const Bacheca = () => {
             if (m.parent_id) return;
             const joinDate = membershipDatesRef.current.get(m.gruppo_id);
             if (!joinDate || new Date(m.created_at) < new Date(joinDate)) return;
+
             const [profRes, gruppoRes] = await Promise.all([
               supabase.from("profiles").select("user_id, nome, cognome, avatar_url, quartiere").eq("user_id", m.mittente_id).single(),
               supabase.from("gruppi").select("id, nome").eq("id", m.gruppo_id).single(),
             ]);
+
+            const authorProfile = m.pubblicato_come_admin === true ? ADMIN_PROFILE : (profRes.data || null);
             const newItem: FeedItem = {
               id: m.id,
               type: "post_gruppo",
@@ -263,7 +276,7 @@ const Bacheca = () => {
               text: m.testo,
               images: m.immagini || [],
               created_at: m.created_at,
-              author: profRes.data || null,
+              author: authorProfile,
               gruppo_nome: gruppoRes.data?.nome || "Gruppo",
               gruppo_id: m.gruppo_id,
               link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
