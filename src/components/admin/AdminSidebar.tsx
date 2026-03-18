@@ -16,7 +16,7 @@ const navItems = [
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
   { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci" },
   { to: "/admin/annunci-speciali", icon: Briefcase, label: "Annunci Speciali" },
-  { to: "/admin/approvazione-categorie", icon: ShieldAlert, label: "Approvaz. Categorie" },
+  { to: "/admin/approvazione-categorie", icon: ToggleLeft, label: "Approvaz. Categorie" },
   { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", badgeTipo: "moderazione" as const },
   { to: "/admin/eventi", icon: Calendar, label: "Eventi", badgeTipo: "eventi" as const },
   { to: "/admin/importazioni", icon: Download, label: "Importazioni" },
