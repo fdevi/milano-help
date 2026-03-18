@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Search, LogOut } from "lucide-react";
+import { Search, LogOut, Shield } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,9 +8,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PannelloNotifiche from "@/components/PannelloNotifiche";
 import DropdownChat from "@/components/DropdownChat";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { Switch } from "@/components/ui/switch";
 
 const TopNavbar = () => {
   const { user } = useAuth();
+  const { adminMode, toggleAdminMode, isAdmin } = useAdminMode();
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initials, setInitials] = useState("U");
@@ -55,6 +58,13 @@ const TopNavbar = () => {
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          {isAdmin && (
+            <div className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+              <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300 hidden sm:inline">Admin</span>
+              <Switch checked={adminMode} onCheckedChange={toggleAdminMode} className="scale-75" />
+            </div>
+          )}
           <DropdownChat />
           <PannelloNotifiche />
 

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heart, Reply, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { ADMIN_USER_ID, ADMIN_PROFILE, isAdminUser } from "@/lib/adminProfile";
 
 interface PostCommentsProps {
   postId: string;
@@ -26,6 +28,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { effectiveUserId } = useAdminMode();
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +71,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
       const { error } = await supabase.from("gruppi_post_commenti" as any).insert({
         post_id: postId,
         gruppo_id: gruppoId,
-        user_id: user.id,
+        user_id: effectiveUserId(user.id),
         testo: newComment.trim(),
         parent_id: replyTo?.id || null,
       });
@@ -85,9 +88,10 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   };
 
   const renderComment = (comment: any, isReply = false) => {
-    const p = profileMap[comment.user_id];
-    const name = p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente";
-    const initials = p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U";
+    const isAdminComment = isAdminUser(comment.user_id);
+    const p = isAdminComment ? ADMIN_PROFILE : profileMap[comment.user_id];
+    const name = isAdminComment ? "Admin MilanoHelp" : (p ? `${p.nome || ""} ${p.cognome || ""}`.trim() || "Utente" : "Utente");
+    const initials = isAdminComment ? "MH" : (p ? `${(p.nome || "U")[0]}${(p.cognome || "")[0]}`.toUpperCase() : "U");
     const replies = repliesMap[comment.id] || [];
 
     return (

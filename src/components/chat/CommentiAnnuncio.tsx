@@ -11,6 +11,8 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import EmojiPicker from "emoji-picker-react";
+import { useAdminMode } from "@/hooks/useAdminMode";
+import { isAdminUser, ADMIN_PROFILE } from "@/lib/adminProfile";
 
 interface Props {
   annuncioId: string;
@@ -22,6 +24,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { effectiveUserId } = useAdminMode();
   const [testo, setTesto] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -108,7 +111,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
     mutationFn: async () => {
       const { data: inserted, error } = await supabase.from("annunci_commenti").insert({
         annuncio_id: annuncioId,
-        user_id: user!.id,
+        user_id: effectiveUserId(user!.id),
         testo,
         parent_id: replyTo?.id || null,
       } as any).select("id").single();
@@ -205,9 +208,10 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   };
 
   const renderComment = (c: any) => {
-    const profile = profileMap[c.user_id];
-    const nome = profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente";
-    const initials = nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U";
+    const isAdminComment = isAdminUser(c.user_id);
+    const profile = isAdminComment ? ADMIN_PROFILE : profileMap[c.user_id];
+    const nome = isAdminComment ? "Admin MilanoHelp" : (profile ? `${profile.nome || "Utente"} ${profile.cognome || ""}`.trim() : "Utente");
+    const initials = isAdminComment ? "MH" : (nome.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) || "U");
     const likesForComment = (allLikes as any[]).filter((l) => l.commento_id === c.id);
     const userLiked = user && likesForComment.some((l) => l.user_id === user.id);
 
