@@ -24,7 +24,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { effectiveUserId } = useAdminMode();
+  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
   const [testo, setTesto] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; nome: string; testo: string } | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -109,9 +109,17 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
 
   const addComment = useMutation({
     mutationFn: async () => {
+      const resolvedUserId = effectiveUserId(user!.id);
+      console.log("[CommentiAnnuncio] submit", {
+        userId: user!.id,
+        resolvedUserId,
+        isAdmin,
+        adminMode,
+      });
+
       const { data: inserted, error } = await supabase.from("annunci_commenti").insert({
         annuncio_id: annuncioId,
-        user_id: effectiveUserId(user!.id),
+        user_id: resolvedUserId,
         testo,
         parent_id: replyTo?.id || null,
       } as any).select("id").single();

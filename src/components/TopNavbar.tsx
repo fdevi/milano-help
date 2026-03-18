@@ -62,7 +62,14 @@ const TopNavbar = () => {
             <div className="flex items-center gap-1.5 mr-2 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
               <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span className="text-xs font-medium text-amber-700 dark:text-amber-300 hidden sm:inline">Admin</span>
-              <Switch checked={adminMode} onCheckedChange={toggleAdminMode} className="scale-75" />
+              <Switch
+                checked={adminMode}
+                onCheckedChange={(checked) => {
+                  console.log("[TopNavbar] admin switch click", { checked });
+                  toggleAdminMode(checked);
+                }}
+                className="scale-75"
+              />
             </div>
           )}
           <DropdownChat />

@@ -28,7 +28,7 @@ const Gruppi = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { quartieri } = useQuartieri();
-  const { effectiveUserId } = useAdminMode();
+  const { effectiveUserId, adminMode, isAdmin } = useAdminMode();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("tutti");
@@ -153,6 +153,13 @@ const Gruppi = () => {
         throw new Error("Devi effettuare l'accesso per creare un gruppo.");
       }
       const effectiveCreatorId = effectiveUserId(user.id);
+      console.log("[NuovoGruppo] submit", {
+        userId: user.id,
+        effectiveCreatorId,
+        isAdmin,
+        adminMode,
+      });
+
       const { data, error } = await supabase
         .from("gruppi")
         .insert({
