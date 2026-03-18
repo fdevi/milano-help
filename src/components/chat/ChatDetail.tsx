@@ -201,10 +201,10 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
           </div>
         ) : (
           messages.map((msg, index) => {
-            const isMine = msg.mittenteId === currentUserId;
-            const p = profiles[msg.mittenteId];
+            const isMine = msg.mittenteId === currentUserId && !msg.pubblicatoComeAdmin;
+            const p = getProfileForMsg(msg);
             const parentMsg = msg.parentId ? messages.find((m) => m.id === msg.parentId) : null;
-            const parentName = parentMsg ? getProfileName(parentMsg.mittenteId) : null;
+            const parentName = parentMsg ? getProfileName(parentMsg.mittenteId, parentMsg) : null;
             const likeCount = getLikeCount(msg.id);
             const liked = hasLiked(msg.id);
 
@@ -219,7 +219,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarImage src={p?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
-                      {getInitials(msg.mittenteId)}
+                      {getInitials(msg.mittenteId, msg)}
                     </AvatarFallback>
                   </Avatar>
                 )}
@@ -228,7 +228,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                     <Avatar className="h-7 w-7 shrink-0">
                       <AvatarImage src={p?.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
-                        {getInitials(msg.mittenteId)}
+                        {getInitials(msg.mittenteId, msg)}
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -247,7 +247,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                     )}
                     <div className="px-3 py-2">
                       {(isGroup && !isMine) && (
-                        <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId)}</p>
+                        <p className="text-xs font-medium mb-1 opacity-70">{getProfileName(msg.mittenteId, msg)}</p>
                       )}
                       <p>{msg.testo}</p>
                       <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
