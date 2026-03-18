@@ -71,7 +71,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
       const { error } = await supabase.from("gruppi_post_commenti" as any).insert({
         post_id: postId,
         gruppo_id: gruppoId,
-        user_id: user.id,
+        user_id: effectiveUserId(user.id),
         testo: newComment.trim(),
         parent_id: replyTo?.id || null,
       });
