@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail, CheckCircle2, HelpCircle, Star, Bell, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail, CheckCircle2, HelpCircle, Star, Bell, Bookmark, Clock } from "lucide-react";
+import EventStatusBadge from "@/components/EventStatusBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
