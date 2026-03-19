@@ -1,0 +1,1 @@
+ALTER TABLE public.notifiche_approvazione ADD COLUMN IF NOT EXISTS attesa_in_corso boolean NOT NULL DEFAULT false;
