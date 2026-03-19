@@ -554,7 +554,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/sezioni">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20">
+                <Button size="lg" className="bg-[#5e17eb] text-white hover:bg-[#4a12b9] shadow-lg">
                   Esplora le sezioni
                 </Button>
               </Link>
