@@ -38,6 +38,7 @@ export interface FeedItem {
   categoria_nome?: string | null;
   likes_count?: number;
   data?: string | null;
+  fine?: string | null;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; color: string }> = {
