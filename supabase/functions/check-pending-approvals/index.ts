@@ -52,28 +52,13 @@ Deno.serve(async (req) => {
     const totalPending = (annunciPending || 0) + (eventiPending || 0);
 
     if (totalPending === 0) {
-      // No pending items: reset the cycle flag if it was set
-      if (config.attesa_in_corso) {
-        await supabase
-          .from("notifiche_approvazione")
-          .update({ attesa_in_corso: false, updated_at: new Date().toISOString() })
-          .eq("id", 1);
-        console.log("Pending count back to 0, reset attesa_in_corso");
-      }
+      console.log("No pending items, nothing to notify");
       return new Response(JSON.stringify({ skipped: true, reason: "no_pending" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // There are pending items
-    if (config.attesa_in_corso) {
-      console.log("attesa_in_corso=true, skipping (already notified for this cycle)");
-      return new Response(JSON.stringify({ skipped: true, reason: "already_notified" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check if enough time has passed since ultimo_invio based on frequenza
+    // There are pending items — check if enough time has passed since ultimo_invio
     const frequenzaMinuti: Record<string, number> = {
       realtime: 1, "30m": 30, "1h": 60, "3h": 180, "5h": 300, "12h": 720, "24h": 1440,
     };
@@ -82,14 +67,21 @@ Deno.serve(async (req) => {
     if (config.ultimo_invio) {
       const minutiPassati = (Date.now() - new Date(config.ultimo_invio).getTime()) / 60000;
       if (minutiPassati < intervalloMinuti) {
-        console.log(`Only ${minutiPassati.toFixed(1)} min passed, need ${intervalloMinuti}. Skipping.`);
-        return new Response(JSON.stringify({ skipped: true, reason: "interval_not_reached", minutes_passed: minutiPassati.toFixed(1), interval: intervalloMinuti }), {
+        console.log(`Only ${minutiPassati.toFixed(1)} min passed since last send, need ${intervalloMinuti}. Skipping.`);
+        return new Response(JSON.stringify({
+          skipped: true,
+          reason: "interval_not_reached",
+          minutes_passed: minutiPassati.toFixed(1),
+          interval: intervalloMinuti,
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
-    // Interval reached (or first time): send email
+    // Interval reached (or first time ever): send email
+    console.log(`Interval reached (${intervalloMinuti} min). Sending notification email. Pending: annunci=${annunciPending}, eventi=${eventiPending}`);
+
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <img src="https://milanohelp.lovable.app/logo/logo-email-header.png?v=2" alt="Milano Help" style="width: 100%; max-width: 300px; margin-bottom: 20px;">
@@ -125,11 +117,10 @@ Deno.serve(async (req) => {
     const emailResult = await emailRes.json();
     console.log("Email sent:", JSON.stringify(emailResult));
 
-    // Mark cycle as active and update ultimo_invio
+    // Update ultimo_invio timestamp
     await supabase
       .from("notifiche_approvazione")
       .update({
-        attesa_in_corso: true,
         ultimo_invio: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
