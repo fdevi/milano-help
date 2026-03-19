@@ -138,6 +138,7 @@ const Bacheca = () => {
         link: `/evento/${e.id}`,
         likes_count: e.mi_piace ?? 0,
         data: e.data,
+        fine: e.fine || null,
       });
     });
 
