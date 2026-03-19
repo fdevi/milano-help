@@ -46,7 +46,7 @@ const Bacheca = () => {
 
       supabase
         .from("eventi")
-        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace, fonte_esterna, data, pubblicato_come_admin")
+        .select("id, titolo, descrizione, immagine, created_at, organizzatore_id, stato, luogo, mi_piace, fonte_esterna, data, fine, pubblicato_come_admin")
         .eq("stato", "attivo")
         .order("created_at", { ascending: false })
         .range(0, 19),
@@ -138,6 +138,7 @@ const Bacheca = () => {
         link: `/evento/${e.id}`,
         likes_count: e.mi_piace ?? 0,
         data: e.data,
+        fine: e.fine || null,
       });
     });
 
@@ -250,6 +251,7 @@ const Bacheca = () => {
               link: `/evento/${e.id}`,
               likes_count: 0,
               data: e.data,
+              fine: e.fine || null,
             };
             setItems((prev) => [newItem, ...prev]);
           }

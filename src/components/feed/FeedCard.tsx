@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail, CheckCircle2, HelpCircle, Star, Bell, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Globe, Megaphone, CalendarDays, Store, Building2, Users, MessageSquare, Copy, Mail, CheckCircle2, HelpCircle, Star, Bell, Bookmark, Clock } from "lucide-react";
+import EventStatusBadge from "@/components/EventStatusBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,6 +38,7 @@ export interface FeedItem {
   categoria_nome?: string | null;
   likes_count?: number;
   data?: string | null;
+  fine?: string | null;
 }
 
 const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; color: string }> = {
@@ -480,6 +482,27 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
           )}
         </div>
       </div>
+
+      {/* Event status badge + date */}
+      {item.type === "evento" && item.data && (
+        <div className="px-4 pb-1 flex items-center gap-2 flex-wrap">
+          <EventStatusBadge dataInizio={item.data} dataFine={item.fine} className="text-[10px] px-1.5 py-0.5" />
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {(() => {
+              const eventDate = new Date(item.data);
+              const today = new Date();
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const isToday = eventDate.toDateString() === today.toDateString();
+              const isTomorrow = eventDate.toDateString() === tomorrow.toDateString();
+              if (isToday) return "Oggi";
+              if (isTomorrow) return "Domani";
+              return eventDate.toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
+            })()}
+          </span>
+        </div>
+      )}
 
       {/* Title */}
       {item.title && (
