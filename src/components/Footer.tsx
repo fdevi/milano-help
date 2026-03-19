@@ -9,7 +9,11 @@ const Footer = () => {
           {/* Logo e descrizione */}
           <div className="col-span-1 md:col-span-1">
             <a href="/" className="flex items-center gap-2 mb-4">
-              <Logo variant="horizontal" size="sm" />
+              <img
+                src="/logo/logo-scritta-bianca.png"
+                alt="Milano Help"
+                className="h-10 w-auto object-contain"
+              />
             </a>
             <p className="text-sm text-gray-400 mb-4">
               La community del tuo quartiere. Connetti, aiuta e cresci insieme ai tuoi vicini.
