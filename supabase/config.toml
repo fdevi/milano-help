@@ -37,3 +37,5 @@ project_id = "oiljiebciwtjlrtqicty"
     verify_jwt = false
   [functions.daily-report]
     verify_jwt = false
+  [functions.check-pending-approvals]
+    verify_jwt = false
