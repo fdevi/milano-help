@@ -251,6 +251,7 @@ const Bacheca = () => {
               link: `/evento/${e.id}`,
               likes_count: 0,
               data: e.data,
+              fine: e.fine || null,
             };
             setItems((prev) => [newItem, ...prev]);
           }
