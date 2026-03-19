@@ -483,6 +483,27 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         </div>
       </div>
 
+      {/* Event status badge + date */}
+      {item.type === "evento" && item.data && (
+        <div className="px-4 pb-1 flex items-center gap-2 flex-wrap">
+          <EventStatusBadge dataInizio={item.data} dataFine={item.fine} className="text-[10px] px-1.5 py-0.5" />
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {(() => {
+              const eventDate = new Date(item.data);
+              const today = new Date();
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const isToday = eventDate.toDateString() === today.toDateString();
+              const isTomorrow = eventDate.toDateString() === tomorrow.toDateString();
+              if (isToday) return "Oggi";
+              if (isTomorrow) return "Domani";
+              return eventDate.toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
+            })()}
+          </span>
+        </div>
+      )}
+
       {/* Title */}
       {item.title && (
         <div className="px-4 pb-1 cursor-pointer" onClick={() => navigate(item.link)}>
