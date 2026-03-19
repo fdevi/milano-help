@@ -33,3 +33,5 @@ project_id = "oiljiebciwtjlrtqicty"
     verify_jwt = false
   [functions.enhance-existing-events]
     verify_jwt = false
+  [functions.send-birthday-emails]
+    verify_jwt = false
