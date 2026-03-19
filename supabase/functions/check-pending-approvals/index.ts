@@ -67,14 +67,29 @@ Deno.serve(async (req) => {
 
     // There are pending items
     if (config.attesa_in_corso) {
-      // Already sent an email for this cycle, don't send again
       console.log("attesa_in_corso=true, skipping (already notified for this cycle)");
       return new Response(JSON.stringify({ skipped: true, reason: "already_notified" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Transition from 0 -> >0: send email
+    // Check if enough time has passed since ultimo_invio based on frequenza
+    const frequenzaMinuti: Record<string, number> = {
+      realtime: 1, "30m": 30, "1h": 60, "3h": 180, "5h": 300, "12h": 720, "24h": 1440,
+    };
+    const intervalloMinuti = frequenzaMinuti[config.frequenza] ?? 30;
+
+    if (config.ultimo_invio) {
+      const minutiPassati = (Date.now() - new Date(config.ultimo_invio).getTime()) / 60000;
+      if (minutiPassati < intervalloMinuti) {
+        console.log(`Only ${minutiPassati.toFixed(1)} min passed, need ${intervalloMinuti}. Skipping.`);
+        return new Response(JSON.stringify({ skipped: true, reason: "interval_not_reached", minutes_passed: minutiPassati.toFixed(1), interval: intervalloMinuti }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Interval reached (or first time): send email
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <img src="https://milanohelp.lovable.app/logo/logo-email-header.png?v=2" alt="Milano Help" style="width: 100%; max-width: 300px; margin-bottom: 20px;">
