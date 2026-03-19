@@ -1,4 +1,4 @@
-import { MapPin, Mail, Phone, Facebook, Twitter, Instagram } from "lucide-react";
+import { MapPin, Mail, Phone, Facebook, Instagram } from "lucide-react";
 import Logo from "@/components/Logo";
 
 const Footer = () => {
@@ -100,19 +100,16 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-400">
                 <Phone className="w-4 h-4" />
-                <a href="tel:+39021234567" className="hover:text-white transition-colors">
-                  02 1234567
+                <a href="tel:+393207932074" className="hover:text-white transition-colors">
+                  320-7932074
                 </a>
               </li>
             </ul>
             <div className="flex items-center gap-3 mt-4">
-              <a href="#" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <a href="https://www.facebook.com/profile.php?id=61574681570447" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-primary/20 transition-colors">
                 <Facebook className="w-4 h-4 text-gray-400" />
               </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-primary/20 transition-colors">
-                <Twitter className="w-4 h-4 text-gray-400" />
-              </a>
-              <a href="#" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <a href="https://www.instagram.com/milanohelp?igsh=MW9hb3c1aWlsNXlvdA==&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-primary/20 transition-colors">
                 <Instagram className="w-4 h-4 text-gray-400" />
               </a>
             </div>
