@@ -5,16 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FREQ_MINUTES: Record<string, number> = {
-  realtime: 1,
-  "30m": 30,
-  "1h": 60,
-  "3h": 180,
-  "5h": 300,
-  "12h": 720,
-  "24h": 1440,
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,20 +38,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check if enough time has passed
-    const intervalMinutes = FREQ_MINUTES[config.frequenza] || 30;
-    if (config.ultimo_invio) {
-      const lastSent = new Date(config.ultimo_invio).getTime();
-      const now = Date.now();
-      const diffMinutes = (now - lastSent) / 60000;
-      if (diffMinutes < intervalMinutes) {
-        console.log(`Only ${diffMinutes.toFixed(1)}m since last send, need ${intervalMinutes}m`);
-        return new Response(JSON.stringify({ skipped: true, reason: "too_soon" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     // Count pending items
     const { count: annunciPending } = await supabase
       .from("annunci")
@@ -76,13 +52,29 @@ Deno.serve(async (req) => {
     const totalPending = (annunciPending || 0) + (eventiPending || 0);
 
     if (totalPending === 0) {
-      console.log("No pending items");
+      // No pending items: reset the cycle flag if it was set
+      if (config.attesa_in_corso) {
+        await supabase
+          .from("notifiche_approvazione")
+          .update({ attesa_in_corso: false, updated_at: new Date().toISOString() })
+          .eq("id", 1);
+        console.log("Pending count back to 0, reset attesa_in_corso");
+      }
       return new Response(JSON.stringify({ skipped: true, reason: "no_pending" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Send email
+    // There are pending items
+    if (config.attesa_in_corso) {
+      // Already sent an email for this cycle, don't send again
+      console.log("attesa_in_corso=true, skipping (already notified for this cycle)");
+      return new Response(JSON.stringify({ skipped: true, reason: "already_notified" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Transition from 0 -> >0: send email
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <img src="https://milanohelp.lovable.app/logo/logo-email-header.png?v=2" alt="Milano Help" style="width: 100%; max-width: 300px; margin-bottom: 20px;">
@@ -118,10 +110,14 @@ Deno.serve(async (req) => {
     const emailResult = await emailRes.json();
     console.log("Email sent:", JSON.stringify(emailResult));
 
-    // Update ultimo_invio
+    // Mark cycle as active and update ultimo_invio
     await supabase
       .from("notifiche_approvazione")
-      .update({ ultimo_invio: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({
+        attesa_in_corso: true,
+        ultimo_invio: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", 1);
 
     return new Response(JSON.stringify({ sent: true, annunci: annunciPending, eventi: eventiPending }), {

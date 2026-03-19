@@ -1334,6 +1334,7 @@ export type Database = {
       }
       notifiche_approvazione: {
         Row: {
+          attesa_in_corso: boolean
           attivo: boolean
           frequenza: string
           id: number
@@ -1341,6 +1342,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attesa_in_corso?: boolean
           attivo?: boolean
           frequenza?: string
           id?: number
@@ -1348,6 +1350,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attesa_in_corso?: boolean
           attivo?: boolean
           frequenza?: string
           id?: number
