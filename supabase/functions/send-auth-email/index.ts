@@ -46,7 +46,7 @@ serve(async (req) => {
         <body>
           <div class="container">
             <div style="text-align:center; margin-bottom:24px;">
-              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
+              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png?v=2" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
             </div>
             <h2>Benvenuto su Milano Help!</h2>
             <p>Ciao, grazie per esserti registrato.</p>
@@ -86,7 +86,7 @@ serve(async (req) => {
         <body>
           <div class="container">
             <div style="text-align:center; margin-bottom:24px;">
-              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
+              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png?v=2" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
             </div>
             <h2>Richiesta di reset password</h2>
             <p>Hai richiesto di reimpostare la password per il tuo account Milano Help.</p>
@@ -127,7 +127,7 @@ serve(async (req) => {
         <body>
           <div class="container">
             <div style="text-align:center; margin-bottom:24px;">
-              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
+              <img src="https://milanohelp.lovable.app/logo/logo-email-header.png?v=2" alt="Milano Help" width="300" height="auto" style="display:block; margin:0 auto; width:300px; height:auto;">
             </div>
             <h2>Conferma cambio email</h2>
             <p>Hai richiesto di cambiare il tuo indirizzo email su Milano Help.</p>
