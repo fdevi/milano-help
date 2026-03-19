@@ -1332,6 +1332,30 @@ export type Database = {
         }
         Relationships: []
       }
+      notifiche_approvazione: {
+        Row: {
+          attivo: boolean
+          frequenza: string
+          id: number
+          ultimo_invio: string | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          frequenza?: string
+          id?: number
+          ultimo_invio?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          frequenza?: string
+          id?: number
+          ultimo_invio?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       password_resets: {
         Row: {
           created_at: string | null
