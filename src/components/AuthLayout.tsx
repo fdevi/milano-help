@@ -1,5 +1,6 @@
 import TopNavbar from "@/components/TopNavbar";
 import AppSidebar from "@/components/AppSidebar";
+import InstallPWA from "@/components/InstallPWA";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
           {children}
         </div>
       </main>
+      <InstallPWA />
     </div>
   );
 };
