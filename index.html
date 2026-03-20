@@ -166,5 +166,12 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(reg) { console.log('[SW] Service worker registrato:', reg); })
+          .catch(function(err) { console.error('[SW] Errore registrazione:', err); });
+      }
+    </script>
   </body>
 </html>
