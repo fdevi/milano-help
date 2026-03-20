@@ -1,10 +1,13 @@
 {
   "name": "Milano Help",
   "short_name": "MilanoHelp",
+  "description": "Milano Help – la community del tuo quartiere. Scopri eventi, annunci, gruppi e servizi vicino a te.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#00bf63",
+  "orientation": "portrait",
+  "id": "milanohelp",
   "icons": [
     {
       "src": "/logo/logo-192.png",
@@ -15,6 +18,20 @@
       "src": "/logo/logo-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ]
 }
