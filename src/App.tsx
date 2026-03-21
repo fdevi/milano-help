@@ -49,6 +49,7 @@ import AdminAnnunci from "./pages/admin/AdminAnnunci";
 import AdminAnnunciSpeciali from "./pages/admin/AdminAnnunciSpeciali";
 import AdminImportazioni from "./pages/admin/AdminImportazioni";
 import AdminApprovazioneCategorie from "./pages/admin/AdminApprovazioneCategorie";
+import AdminProfiloUtente from "./pages/admin/AdminProfiloUtente";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
