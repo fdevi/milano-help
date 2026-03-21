@@ -11,6 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import ModeratorRoute from "@/components/ModeratorRoute";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -48,6 +49,7 @@ import AdminAnnunci from "./pages/admin/AdminAnnunci";
 import AdminAnnunciSpeciali from "./pages/admin/AdminAnnunciSpeciali";
 import AdminImportazioni from "./pages/admin/AdminImportazioni";
 import AdminApprovazioneCategorie from "./pages/admin/AdminApprovazioneCategorie";
+import AdminProfiloUtente from "./pages/admin/AdminProfiloUtente";
 import MieiEventi from "./pages/MieiEventi";
 import Donazioni from "./pages/Donazioni";
 import Contattaci from "./pages/Contattaci";
@@ -106,17 +108,18 @@ const App = () => (
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/utenti" element={<AdminRoute><AdminUtenti /></AdminRoute>} />
+            <Route path="/admin/utenti/:userId" element={<AdminRoute><AdminProfiloUtente /></AdminRoute>} />
             <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
             <Route path="/admin/categorie" element={<AdminRoute><AdminCategorie /></AdminRoute>} />
             <Route path="/admin/servizi" element={<AdminRoute><AdminServizi /></AdminRoute>} />
             <Route path="/admin/prenotazioni" element={<AdminRoute><AdminPrenotazioni /></AdminRoute>} />
             <Route path="/admin/log" element={<AdminRoute><AdminLog /></AdminRoute>} />
-            <Route path="/admin/moderazione" element={<AdminRoute><AdminModerazione /></AdminRoute>} />
-            <Route path="/admin/moderazione/annunci" element={<AdminRoute><AdminModAnnunci /></AdminRoute>} />
-            <Route path="/admin/moderazione/segnalazioni" element={<AdminRoute><AdminSegnalazioni /></AdminRoute>} />
-            <Route path="/admin/moderazione/storico" element={<AdminRoute><AdminModStorico /></AdminRoute>} />
-            <Route path="/admin/eventi" element={<AdminRoute><AdminEventi /></AdminRoute>} />
-            <Route path="/admin/annunci" element={<AdminRoute><AdminAnnunci /></AdminRoute>} />
+            <Route path="/admin/moderazione" element={<ModeratorRoute><AdminModerazione /></ModeratorRoute>} />
+            <Route path="/admin/moderazione/annunci" element={<ModeratorRoute><AdminModAnnunci /></ModeratorRoute>} />
+            <Route path="/admin/moderazione/segnalazioni" element={<ModeratorRoute><AdminSegnalazioni /></ModeratorRoute>} />
+            <Route path="/admin/moderazione/storico" element={<ModeratorRoute><AdminModStorico /></ModeratorRoute>} />
+            <Route path="/admin/eventi" element={<ModeratorRoute><AdminEventi /></ModeratorRoute>} />
+            <Route path="/admin/annunci" element={<ModeratorRoute><AdminAnnunci /></ModeratorRoute>} />
             <Route path="/admin/annunci-speciali" element={<AdminRoute><AdminAnnunciSpeciali /></AdminRoute>} />
             <Route path="/admin/importazioni" element={<AdminRoute><AdminImportazioni /></AdminRoute>} />
             <Route path="/admin/approvazione-categorie" element={<AdminRoute><AdminApprovazioneCategorie /></AdminRoute>} />
