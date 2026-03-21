@@ -6,21 +6,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import BadgeNotifiche from "./BadgeNotifiche";
+import { useRoleCheck } from "@/hooks/useRoleCheck";
 
-const navItems = [
-  { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/admin/utenti", icon: Users, label: "Utenti" },
-  { to: "/admin/newsletter", icon: Mail, label: "Newsletter" },
-  { to: "/admin/categorie", icon: Grid3X3, label: "Categorie" },
-  { to: "/admin/servizi", icon: Briefcase, label: "Servizi" },
-  { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni" },
-  { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci" },
-  { to: "/admin/annunci-speciali", icon: Briefcase, label: "Annunci Speciali" },
-  { to: "/admin/approvazione-categorie", icon: ToggleLeft, label: "Approvaz. Categorie" },
-  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", badgeTipo: "moderazione" as const },
-  { to: "/admin/eventi", icon: Calendar, label: "Eventi", badgeTipo: "eventi" as const },
-  { to: "/admin/importazioni", icon: Download, label: "Importazioni" },
-  { to: "/admin/log", icon: ScrollText, label: "Log Attività" },
+const allNavItems = [
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", adminOnly: true },
+  { to: "/admin/utenti", icon: Users, label: "Utenti", adminOnly: true },
+  { to: "/admin/newsletter", icon: Mail, label: "Newsletter", adminOnly: true },
+  { to: "/admin/categorie", icon: Grid3X3, label: "Categorie", adminOnly: true },
+  { to: "/admin/servizi", icon: Briefcase, label: "Servizi", adminOnly: true },
+  { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni", adminOnly: true },
+  { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci", adminOnly: false },
+  { to: "/admin/annunci-speciali", icon: Briefcase, label: "Annunci Speciali", adminOnly: true },
+  { to: "/admin/approvazione-categorie", icon: ToggleLeft, label: "Approvaz. Categorie", adminOnly: true },
+  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", adminOnly: false, badgeTipo: "moderazione" as const },
+  { to: "/admin/eventi", icon: Calendar, label: "Eventi", adminOnly: false, badgeTipo: "eventi" as const },
+  { to: "/admin/importazioni", icon: Download, label: "Importazioni", adminOnly: true },
+  { to: "/admin/log", icon: ScrollText, label: "Log Attività", adminOnly: true },
 ];
 
 interface Props {
