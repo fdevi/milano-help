@@ -259,6 +259,16 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative pt-24 pb-12 px-4 overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img 
+            src={milanoTramonto} 
+            alt="Milano al tramonto con il Duomo" 
+            className="w-full h-full object-cover"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
         <div className="container mx-auto max-w-6xl relative">
           <motion.div
