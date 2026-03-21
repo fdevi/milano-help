@@ -1,6 +1,6 @@
-import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase, Train, Building2, Store, Rss } from "lucide-react";
+import { Home, LayoutList, Users, CalendarDays, PlusCircle, Settings, Mail, Handshake, Heart, MessageCircle, Briefcase, Train, Building2, Store, Rss, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useRoleCheck } from "@/hooks/useRoleCheck";
 import { useTipoAccount } from "@/hooks/useTipoAccount";
 import { cn } from "@/lib/utils";
 
