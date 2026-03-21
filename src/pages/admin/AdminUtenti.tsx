@@ -136,8 +136,16 @@ const AdminUtenti = () => {
               <TableBody>
                 {filtered.map((u) => (
                   <TableRow key={u.id} className={u.bloccato ? "opacity-50" : ""}>
-                    <TableCell className="font-medium">{u.nome} {u.cognome}</TableCell>
-                    <TableCell className="text-sm">{u.email}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link to={`/admin/utenti/${u.user_id}`} className="hover:text-primary hover:underline transition-colors">
+                        {u.nome} {u.cognome}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <Link to={`/admin/utenti/${u.user_id}`} className="hover:text-primary hover:underline transition-colors flex items-center gap-1">
+                        {u.email} <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-sm">{u.quartiere ?? "—"}</TableCell>
                     <TableCell className="text-sm capitalize">{u.tipo_account ?? "—"}</TableCell>
                     <TableCell className="text-sm">{new Date(u.created_at).toLocaleDateString("it-IT")}</TableCell>
