@@ -269,7 +269,7 @@ const Index = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
+        
         <div className="container mx-auto max-w-6xl relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
