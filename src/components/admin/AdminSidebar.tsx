@@ -33,6 +33,9 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
   const location = useLocation();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { isAdmin } = useRoleCheck();
+
+  const navItems = allNavItems.filter(item => isAdmin || !item.adminOnly);
 
   const handleSignOut = async () => {
     await signOut();
