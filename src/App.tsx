@@ -11,6 +11,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import ModeratorRoute from "@/components/ModeratorRoute";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
