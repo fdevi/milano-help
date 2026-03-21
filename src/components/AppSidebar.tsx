@@ -41,7 +41,7 @@ const SidebarLink = ({ item }: { item: (typeof mainItems)[0] }) => {
 };
 
 const AppSidebar = () => {
-  const { isAdmin } = useAdminCheck();
+  const { isAdmin, isModerator, isAdminOrModerator } = useRoleCheck();
   const { isProfessionista, isNegoziante } = useTipoAccount();
   const location = useLocation();
 
