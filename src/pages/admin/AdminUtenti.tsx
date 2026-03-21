@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Ban, ShieldCheck } from "lucide-react";
+import { Search, Ban, ShieldCheck, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface UserRow {
   id: string;
