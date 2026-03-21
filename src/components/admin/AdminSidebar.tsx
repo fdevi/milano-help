@@ -8,18 +8,27 @@ import { cn } from "@/lib/utils";
 import BadgeNotifiche from "./BadgeNotifiche";
 import { useRoleCheck } from "@/hooks/useRoleCheck";
 
-const allNavItems = [
+type NavItem = {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  adminOnly?: boolean;
+  moderatorOnly?: boolean;
+  badgeTipo?: "moderazione" | "eventi";
+};
+
+const allNavItems: NavItem[] = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", adminOnly: true },
   { to: "/admin/utenti", icon: Users, label: "Utenti", adminOnly: true },
   { to: "/admin/newsletter", icon: Mail, label: "Newsletter", adminOnly: true },
   { to: "/admin/categorie", icon: Grid3X3, label: "Categorie", adminOnly: true },
   { to: "/admin/servizi", icon: Briefcase, label: "Servizi", adminOnly: true },
   { to: "/admin/prenotazioni", icon: CalendarCheck, label: "Prenotazioni", adminOnly: true },
-  { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci", adminOnly: false },
+  { to: "/admin/annunci", icon: Megaphone, label: "Gestione Annunci", moderatorOnly: true },
   { to: "/admin/annunci-speciali", icon: Briefcase, label: "Annunci Speciali", adminOnly: true },
   { to: "/admin/approvazione-categorie", icon: ToggleLeft, label: "Approvaz. Categorie", adminOnly: true },
-  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", adminOnly: false, badgeTipo: "moderazione" as const },
-  { to: "/admin/eventi", icon: Calendar, label: "Eventi", adminOnly: false, badgeTipo: "eventi" as const },
+  { to: "/admin/moderazione", icon: ShieldAlert, label: "Moderazione", moderatorOnly: true, badgeTipo: "moderazione" },
+  { to: "/admin/eventi", icon: Calendar, label: "Eventi", moderatorOnly: true, badgeTipo: "eventi" },
   { to: "/admin/importazioni", icon: Download, label: "Importazioni", adminOnly: true },
   { to: "/admin/log", icon: ScrollText, label: "Log Attività", adminOnly: true },
 ];
@@ -33,9 +42,13 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
   const location = useLocation();
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const { isAdmin } = useRoleCheck();
+  const { isAdmin, isModerator } = useRoleCheck();
 
-  const navItems = allNavItems.filter(item => isAdmin || !item.adminOnly);
+  const navItems = allNavItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.moderatorOnly && !isAdmin && !isModerator) return false;
+    return true;
+  });
 
   const handleSignOut = async () => {
     await signOut();
