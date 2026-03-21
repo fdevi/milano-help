@@ -57,16 +57,16 @@ const AppSidebar = () => {
         {isNegoziante && (
           <SidebarLink item={{ title: "Negozi", url: "/categoria/negozi_di_quartiere", icon: Store }} />
         )}
-        {isAdmin && (
+        {isAdminOrModerator && (
           <Link
-            to="/admin"
+            to={isAdmin ? "/admin" : "/admin/moderazione"}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors text-sm font-medium",
               location.pathname.startsWith("/admin") && "bg-sidebar-accent text-sidebar-primary font-semibold"
             )}
           >
-            <Settings className="w-5 h-5 shrink-0" />
-            <span className="hidden md:inline">Admin</span>
+            {isAdmin ? <Settings className="w-5 h-5 shrink-0" /> : <ShieldCheck className="w-5 h-5 shrink-0" />}
+            <span className="hidden md:inline">{isAdmin ? "Admin" : "Moderazione"}</span>
           </Link>
         )}
       </nav>
