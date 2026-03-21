@@ -12,6 +12,7 @@ import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
+import { useRoleCheck } from "@/hooks/useRoleCheck";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -75,6 +76,16 @@ import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
+const AdminEntryRoute = () => {
+  const { isAdmin } = useRoleCheck();
+
+  if (isAdmin) {
+    return <AdminDashboard />;
+  }
+
+  return <Navigate to="/admin/moderazione" replace />;
+};
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -106,7 +117,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin" element={<ModeratorRoute><AdminEntryRoute /></ModeratorRoute>} />
             <Route path="/admin/utenti" element={<AdminRoute><AdminUtenti /></AdminRoute>} />
             <Route path="/admin/utenti/:userId" element={<AdminRoute><AdminProfiloUtente /></AdminRoute>} />
             <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
