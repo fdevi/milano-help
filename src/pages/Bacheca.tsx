@@ -67,6 +67,7 @@ const Bacheca = () => {
 
     const annunci = annunciRes.data || [];
     const eventi = eventiRes.data || [];
+    const nuoviGruppi = nuoviGruppiRes.data || [];
     // Filter group messages: only those posted after the user joined
     const gruppiMsg = (gruppiMsgRes.data || []).filter((m) => {
       const joinDate = memberMap.get(m.gruppo_id);
