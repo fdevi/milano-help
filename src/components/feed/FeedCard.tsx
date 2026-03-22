@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo";
+export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo" | "nuovo_gruppo";
 
 export interface FeedItem {
   id: string;
