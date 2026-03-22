@@ -80,6 +80,7 @@ const Bacheca = () => {
     annunci.forEach((a) => userIds.add(a.user_id));
     eventi.forEach((e) => userIds.add(e.organizzatore_id));
     gruppiMsg.forEach((m) => userIds.add(m.mittente_id));
+    nuoviGruppi.forEach((g) => userIds.add(g.creatore_id));
 
     // Collect gruppo IDs
     const gruppoIds = new Set<string>();
