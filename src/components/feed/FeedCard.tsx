@@ -47,6 +47,7 @@ const typeConfig: Record<FeedItemType, { icon: typeof Megaphone; label: string; 
   negozio: { icon: Store, label: "Negozio", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
   professionista: { icon: Building2, label: "Professionista", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
   post_gruppo: { icon: Users, label: "Gruppo", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+  nuovo_gruppo: { icon: UserPlus, label: "Nuovo gruppo", color: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400" },
 };
 
 const categoriaBadgeColor: Record<string, string> = {
