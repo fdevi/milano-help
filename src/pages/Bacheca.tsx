@@ -313,6 +313,40 @@ const Bacheca = () => {
             setItems((prev) => [newItem, ...prev]);
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "gruppi" },
+          async (payload) => {
+            const g = payload.new as any;
+
+            let authorProfile: any = null;
+            if (g.pubblicato_come_admin === true) {
+              authorProfile = ADMIN_PROFILE;
+            } else {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("user_id, nome, cognome, avatar_url, quartiere")
+                .eq("user_id", g.creatore_id)
+                .single();
+              authorProfile = prof || null;
+            }
+
+            const newItem: FeedItem = {
+              id: `nuovo_gruppo_${g.id}`,
+              type: "nuovo_gruppo",
+              title: `🎉 Nuovo gruppo: ${g.nome}`,
+              text: g.descrizione || `È stato creato un nuovo gruppo "${g.nome}". Unisciti alla community!`,
+              images: g.immagine ? [g.immagine] : [],
+              created_at: g.created_at,
+              author: authorProfile,
+              gruppo_nome: g.nome,
+              gruppo_id: g.id,
+              link: `/gruppo/${g.id}`,
+              likes_count: 0,
+            };
+            setItems((prev) => [newItem, ...prev]);
+          }
+        )
         .subscribe();
     };
 
