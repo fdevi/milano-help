@@ -36,7 +36,7 @@ const Bacheca = () => {
     membershipDatesRef.current = memberMap;
 
     // Step 2: Fetch all sources in parallel
-    const [annunciRes, eventiRes, gruppiMsgRes] = await Promise.all([
+    const [annunciRes, eventiRes, gruppiMsgRes, nuoviGruppiRes] = await Promise.all([
       supabase
         .from("annunci")
         .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome), mi_piace, pubblicato_come_admin")
@@ -57,10 +57,17 @@ const Bacheca = () => {
         .is("parent_id", null)
         .order("created_at", { ascending: false })
         .range(0, 29),
+
+      supabase
+        .from("gruppi")
+        .select("id, nome, descrizione, immagine, created_at, creatore_id, pubblicato_come_admin")
+        .order("created_at", { ascending: false })
+        .range(0, 19),
     ]);
 
     const annunci = annunciRes.data || [];
     const eventi = eventiRes.data || [];
+    const nuoviGruppi = nuoviGruppiRes.data || [];
     // Filter group messages: only those posted after the user joined
     const gruppiMsg = (gruppiMsgRes.data || []).filter((m) => {
       const joinDate = memberMap.get(m.gruppo_id);
@@ -73,6 +80,7 @@ const Bacheca = () => {
     annunci.forEach((a) => userIds.add(a.user_id));
     eventi.forEach((e) => userIds.add(e.organizzatore_id));
     gruppiMsg.forEach((m) => userIds.add(m.mittente_id));
+    nuoviGruppi.forEach((g) => userIds.add(g.creatore_id));
 
     // Collect gruppo IDs
     const gruppoIds = new Set<string>();
@@ -156,6 +164,24 @@ const Bacheca = () => {
         gruppo_nome: gruppoMap.get(m.gruppo_id) || "Gruppo",
         gruppo_id: m.gruppo_id,
         link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
+        likes_count: 0,
+      });
+    });
+
+    nuoviGruppi.forEach((g) => {
+      const authorProfile = g.pubblicato_come_admin === true ? ADMIN_PROFILE : (profileMap.get(g.creatore_id) || null);
+
+      feedItems.push({
+        id: `nuovo_gruppo_${g.id}`,
+        type: "nuovo_gruppo",
+        title: `🎉 Nuovo gruppo: ${g.nome}`,
+        text: g.descrizione || `È stato creato un nuovo gruppo "${g.nome}". Unisciti alla community!`,
+        images: g.immagine ? [g.immagine] : [],
+        created_at: g.created_at,
+        author: authorProfile,
+        gruppo_nome: g.nome,
+        gruppo_id: g.id,
+        link: `/gruppo/${g.id}`,
         likes_count: 0,
       });
     });
@@ -282,6 +308,40 @@ const Bacheca = () => {
               gruppo_nome: gruppoRes.data?.nome || "Gruppo",
               gruppo_id: m.gruppo_id,
               link: `/gruppo/${m.gruppo_id}?message=${m.id}`,
+              likes_count: 0,
+            };
+            setItems((prev) => [newItem, ...prev]);
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "gruppi" },
+          async (payload) => {
+            const g = payload.new as any;
+
+            let authorProfile: any = null;
+            if (g.pubblicato_come_admin === true) {
+              authorProfile = ADMIN_PROFILE;
+            } else {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("user_id, nome, cognome, avatar_url, quartiere")
+                .eq("user_id", g.creatore_id)
+                .single();
+              authorProfile = prof || null;
+            }
+
+            const newItem: FeedItem = {
+              id: `nuovo_gruppo_${g.id}`,
+              type: "nuovo_gruppo",
+              title: `🎉 Nuovo gruppo: ${g.nome}`,
+              text: g.descrizione || `È stato creato un nuovo gruppo "${g.nome}". Unisciti alla community!`,
+              images: g.immagine ? [g.immagine] : [],
+              created_at: g.created_at,
+              author: authorProfile,
+              gruppo_nome: g.nome,
+              gruppo_id: g.id,
+              link: `/gruppo/${g.id}`,
               likes_count: 0,
             };
             setItems((prev) => [newItem, ...prev]);
