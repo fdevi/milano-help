@@ -168,6 +168,24 @@ const Bacheca = () => {
       });
     });
 
+    nuoviGruppi.forEach((g) => {
+      const authorProfile = g.pubblicato_come_admin === true ? ADMIN_PROFILE : (profileMap.get(g.creatore_id) || null);
+
+      feedItems.push({
+        id: `nuovo_gruppo_${g.id}`,
+        type: "nuovo_gruppo",
+        title: `🎉 Nuovo gruppo: ${g.nome}`,
+        text: g.descrizione || `È stato creato un nuovo gruppo "${g.nome}". Unisciti alla community!`,
+        images: g.immagine ? [g.immagine] : [],
+        created_at: g.created_at,
+        author: authorProfile,
+        gruppo_nome: g.nome,
+        gruppo_id: g.id,
+        link: `/gruppo/${g.id}`,
+        likes_count: 0,
+      });
+    });
+
     // Sort by created_at desc and limit
     feedItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return feedItems.slice(startOffset, startOffset + PAGE_SIZE);
