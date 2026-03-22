@@ -539,55 +539,96 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         </div>
       )}
 
-      {/* Action bar: Mi piace, Commenta, Condividi */}
-      <div className="px-2 py-1 flex items-center border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLike}
-          disabled={likeLoading || !currentUserId}
-          className={`flex-1 gap-1.5 text-xs min-h-[44px] touch-manipulation ${liked ? "text-red-500" : "text-muted-foreground"}`}
-        >
-          <Heart className={`w-5 h-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
-          {likesCount > 0 ? likesCount : ""} Mi piace
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(item.link)}
-          className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation"
-        >
-          <MessageCircle className="w-5 h-5" /> Commenta
-        </Button>
-        {isMobile ? (
-          <Drawer open={shareOpen} onOpenChange={setShareOpen}>
-            <DrawerTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
-                <Share2 className="w-5 h-5" /> Condividi
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle>Condividi</DrawerTitle>
-              </DrawerHeader>
-              <div className="px-2 pb-6">
-                {renderShareItems(() => setShareOpen(false))}
-              </div>
-            </DrawerContent>
-          </Drawer>
-        ) : (
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
-                <Share2 className="w-5 h-5" /> Condividi
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 z-[100]">
-              {renderShareItems(() => {})}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+      {/* Action bar */}
+      {item.type === "nuovo_gruppo" ? (
+        <div className="px-2 py-1 flex items-center border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(item.link!)}
+            className="flex-1 gap-1.5 text-xs min-h-[44px] touch-manipulation text-primary font-semibold"
+          >
+            <UserPlus className="w-5 h-5" /> Scopri e unisciti
+          </Button>
+          {isMobile ? (
+            <Drawer open={shareOpen} onOpenChange={setShareOpen}>
+              <DrawerTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                  <Share2 className="w-5 h-5" /> Condividi
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Condividi</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-2 pb-6">
+                  {renderShareItems(() => setShareOpen(false))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                  <Share2 className="w-5 h-5" /> Condividi
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 z-[100]">
+                {renderShareItems(() => {})}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      ) : (
+        <div className="px-2 py-1 flex items-center border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLike}
+            disabled={likeLoading || !currentUserId}
+            className={`flex-1 gap-1.5 text-xs min-h-[44px] touch-manipulation ${liked ? "text-red-500" : "text-muted-foreground"}`}
+          >
+            <Heart className={`w-5 h-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+            {likesCount > 0 ? likesCount : ""} Mi piace
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(item.link)}
+            className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation"
+          >
+            <MessageCircle className="w-5 h-5" /> Commenta
+          </Button>
+          {isMobile ? (
+            <Drawer open={shareOpen} onOpenChange={setShareOpen}>
+              <DrawerTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                  <Share2 className="w-5 h-5" /> Condividi
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Condividi</DrawerTitle>
+                </DrawerHeader>
+                <div className="px-2 pb-6">
+                  {renderShareItems(() => setShareOpen(false))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex-1 gap-1.5 text-muted-foreground text-xs min-h-[44px] touch-manipulation">
+                  <Share2 className="w-5 h-5" /> Condividi
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 z-[100]">
+                {renderShareItems(() => {})}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
 
       {/* Ricordamelo Sheet */}
       <RicordameloSheet
