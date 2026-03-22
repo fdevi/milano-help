@@ -36,7 +36,7 @@ const Bacheca = () => {
     membershipDatesRef.current = memberMap;
 
     // Step 2: Fetch all sources in parallel
-    const [annunciRes, eventiRes, gruppiMsgRes] = await Promise.all([
+    const [annunciRes, eventiRes, gruppiMsgRes, nuoviGruppiRes] = await Promise.all([
       supabase
         .from("annunci")
         .select("id, titolo, descrizione, immagini, created_at, user_id, stato, quartiere, categoria_attivita, categoria_id, categorie_annunci(label, nome), mi_piace, pubblicato_come_admin")
@@ -57,6 +57,12 @@ const Bacheca = () => {
         .is("parent_id", null)
         .order("created_at", { ascending: false })
         .range(0, 29),
+
+      supabase
+        .from("gruppi")
+        .select("id, nome, descrizione, immagine, created_at, creatore_id, pubblicato_come_admin")
+        .order("created_at", { ascending: false })
+        .range(0, 19),
     ]);
 
     const annunci = annunciRes.data || [];
