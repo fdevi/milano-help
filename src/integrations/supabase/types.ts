@@ -1359,6 +1359,27 @@ export type Database = {
         }
         Relationships: []
       }
+      notifiche_approvazione_inviate: {
+        Row: {
+          elemento_id: string
+          id: string
+          inviata_at: string
+          tipo: string
+        }
+        Insert: {
+          elemento_id: string
+          id?: string
+          inviata_at?: string
+          tipo: string
+        }
+        Update: {
+          elemento_id?: string
+          id?: string
+          inviata_at?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       password_resets: {
         Row: {
           created_at: string | null
