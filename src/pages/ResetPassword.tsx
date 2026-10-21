@@ -97,7 +97,15 @@ const ResetPassword = () => {
         body: { token, newPassword: password },
       });
 
-      if (fnError) throw new Error(fnError.message || 'Errore durante il reset');
+      if (fnError) {
+        let msg = 'Errore durante il reset';
+        try {
+          const body = await (fnError as any).context?.json?.();
+          if (body?.error) msg = body.error;
+        } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      if (fnData?.error) throw new Error(fnData.error);
 
       toast({
         title: "Password aggiornata",

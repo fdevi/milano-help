@@ -1,55 +1,51 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-}
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { token, newPassword } = await req.json()
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // 1. Verifica token
-    const { data: resetData, error: tokenError } = await supabase
-      .from('password_resets')
-      .select('email')
-      .eq('token', token)
-      .single()
-
-    if (tokenError || !resetData) {
-      return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), { status: 400, headers: corsHeaders })
+    const { token, newPassword } = await req.json().catch(() => ({}))
+    if (typeof token !== 'string' || !token) return json({ error: 'Link non valido.' }, 400)
+    if (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 72) {
+      return json({ error: 'La password deve avere tra 6 e 72 caratteri.' }, 400)
     }
 
-    // 2. Trova l'utente tramite email
-    const { data: users, error: userError } = await supabase.auth.admin.listUsers()
-    const user = users?.users.find(u => u.email === resetData.email)
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Utente non trovato' }), { status: 404, headers: corsHeaders })
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    const { data: resetData } = await supabase
+      .from('password_resets').select('email, expires_at').eq('token', token).maybeSingle()
+    if (!resetData) return json({ error: 'Link non valido o già usato. Richiedi un nuovo reset.' }, 400)
+    if (new Date(resetData.expires_at) < new Date()) {
+      return json({ error: 'Link scaduto. Richiedi un nuovo reset.' }, 400)
     }
 
-    // 3. Aggiorna password
-    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
-      password: newPassword
-    })
+    const email = String(resetData.email).trim().toLowerCase()
+    let userId: string | null = null
+    for (let page = 1; page <= 50 && !userId; page++) {
+      const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 })
+      if (error) throw error
+      userId = data.users.find((u) => u.email?.toLowerCase() === email)?.id ?? null
+      if (data.users.length < 1000) break
+    }
+    if (!userId) return json({ error: 'Nessun account trovato per questa email.' }, 404)
 
-    if (updateError) throw updateError
+    const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password: newPassword })
+    if (updateError) {
+      console.error('updateUserById error:', updateError)
+      const msg = /weak|pwned|leaked/i.test(updateError.message)
+        ? 'Password troppo debole o già compromessa: scegline una più sicura.'
+        : 'Impossibile aggiornare la password: ' + updateError.message
+      return json({ error: msg }, 400)
+    }
 
-    // 4. Elimina il token usato
-    await supabase.from('password_resets').delete().eq('token', token)
-
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
+    await supabase.from('password_resets').delete().eq('email', resetData.email)
+    return json({ success: true })
   } catch (error: any) {
     console.error('Errore in reset-password:', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
+    return json({ error: 'Errore imprevisto, riprova più tardi.' }, 500)
   }
 })
