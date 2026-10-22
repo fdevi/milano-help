@@ -7,13 +7,13 @@
 - [x] Includere gli annunci esistenti senza ripubblicarli: verificati tutti i cinque annunci attivi nell'elenco e nella sitemap.
 
 # Visibilità del sito e nei quartieri
-- [x] Verificare informazioni pubbliche e accesso ai dati Google: sito raggiungibile; nessun account Search Console disponibile qui, indicizzazione non verificata.
+- [x] Verificare informazioni pubbliche e accesso ai dati Google: account Fabio autorizzato; proprietà www.milanohelp.it verificata e homepage indicizzata.
 - [x] Migliorare le informazioni generali per i motori di ricerca dove necessario: canonical homepage, schema WebSite, riferimenti corretti e sitemap in robots; verifiche browser e test superati.
 - [x] Indicare portali locali reali e modalità di segnalazione: Quartoweb, Osservatorio di Muggiano e mosso Milano; nessun messaggio inviato.
-- [ ] Pubblicare le migliorie: in attesa dell'azione dell'utente.
-- [ ] Verificare indicizzazione e inviare sitemap su Google: accesso Search Console autorizzato; verificare le singole pagine e preparare un riepilogo per categoria.
+- [ ] Pubblicare le eventuali migliorie precedenti ancora non online: in attesa dell'azione dell'utente; la sitemap attuale è già online e non richiede un nuovo invio.
+- [x] Verificare indicizzazione e inviare sitemap su Google: inviata e letta il 22/10/2026, 29 URL, zero errori e avvisi.
 
 # Sitemap e stato delle pagine su Google
-- [ ] Verificare e rigenerare la sitemap senza date di modifica artificiali.
-- [ ] Inviare la sitemap pubblica alla proprietà verificata www.milanohelp.it.
-- [ ] Controllare le pagine della sitemap con Google e consegnare il riepilogo per categoria.
+- [x] Verificare e rigenerare la sitemap senza date di modifica artificiali: nessun lastmod, 29 URL; 8 test superati, sitemap identica a quella online.
+- [x] Inviare la sitemap pubblica alla proprietà verificata www.milanohelp.it: Google conferma invio e download con zero errori e avvisi.
+- [x] Controllare le pagine della sitemap con Google e consegnare il riepilogo per categoria: tutte le 29 controllate; 3 indicizzate, 8 scoperte non indicizzate, 18 sconosciute. Report e CSV nei documenti.
