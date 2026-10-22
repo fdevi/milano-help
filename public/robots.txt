@@ -14,3 +14,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.milanohelp.it/sitemap.xml
+Sitemap: https://oiljiebciwtjlrtqicty.supabase.co/functions/v1/sitemap
