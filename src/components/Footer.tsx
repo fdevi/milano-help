@@ -28,6 +28,7 @@ const Footer = () => {
           <div>
             <h3 className="font-heading font-bold text-white mb-4">Link Utili</h3>
             <ul className="space-y-2">
+              <li><a href="/annunci" className="text-sm text-muted-foreground hover:text-primary transition-colors">Annunci</a></li>
               <li>
                 <a href="/registrati" className="text-sm text-gray-400 hover:text-white transition-colors">
                   Registrati

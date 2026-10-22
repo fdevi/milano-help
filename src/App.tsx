@@ -38,6 +38,7 @@ import HowItWorks from "./pages/HowItWorks";
 import MieiAnnunci from "./pages/MieiAnnunci";
 import CategoriaPage from "./pages/CategoriaPage";
 import AnnuncioPage from "./pages/AnnuncioPage";
+import AnnunciPubblici from "./pages/AnnunciPubblici";
 import NuovoAnnuncio from "./pages/NuovoAnnuncio";
 import Gruppi from "./pages/Gruppi";
 import GruppoDetail from "./pages/GruppoDetail";
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="/categories" element={<Categories />} />
             <Route path="/categoria/:nome" element={<CategoriaPage />} />
             <Route path="/annuncio/:id" element={<AnnuncioPage />} />
+            <Route path="/annunci" element={<AnnunciPubblici />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/gruppi" element={<Gruppi />} />
             <Route path="/privacy" element={<Privacy />} />

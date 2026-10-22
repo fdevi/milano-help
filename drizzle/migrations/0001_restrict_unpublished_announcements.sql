@@ -1,0 +1,1 @@
+ALTER POLICY enable_select_for_all ON public.annunci USING (stato = 'attivo' OR auth.uid() = user_id OR public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'moderator'));
