@@ -11,4 +11,9 @@
 - [x] Migliorare le informazioni generali per i motori di ricerca dove necessario: canonical homepage, schema WebSite, riferimenti corretti e sitemap in robots; verifiche browser e test superati.
 - [x] Indicare portali locali reali e modalità di segnalazione: Quartoweb, Osservatorio di Muggiano e mosso Milano; nessun messaggio inviato.
 - [ ] Pubblicare le migliorie: in attesa dell'azione dell'utente.
-- [ ] Verificare indicizzazione e inviare sitemap su Google: serve il collegamento Search Console autorizzato dall'utente.
+- [ ] Verificare indicizzazione e inviare sitemap su Google: accesso Search Console autorizzato; verificare le singole pagine e preparare un riepilogo per categoria.
+
+# Sitemap e stato delle pagine su Google
+- [ ] Verificare e rigenerare la sitemap senza date di modifica artificiali.
+- [ ] Inviare la sitemap pubblica alla proprietà verificata www.milanohelp.it.
+- [ ] Controllare le pagine della sitemap con Google e consegnare il riepilogo per categoria.
