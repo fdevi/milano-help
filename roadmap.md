@@ -7,6 +7,8 @@
 - [x] Includere gli annunci esistenti senza ripubblicarli: verificati tutti i cinque annunci attivi nell'elenco e nella sitemap.
 
 # Visibilità del sito e nei quartieri
-- [ ] Verificare informazioni pubbliche e accesso ai dati Google.
-- [ ] Migliorare le informazioni generali per i motori di ricerca dove necessario.
-- [ ] Indicare portali locali reali e modalità di segnalazione; l'inserimento dipende dai rispettivi gestori.
+- [x] Verificare informazioni pubbliche e accesso ai dati Google: sito raggiungibile; nessun account Search Console disponibile qui, indicizzazione non verificata.
+- [x] Migliorare le informazioni generali per i motori di ricerca dove necessario: canonical homepage, schema WebSite, riferimenti corretti e sitemap in robots; verifiche browser e test superati.
+- [x] Indicare portali locali reali e modalità di segnalazione: Quartoweb, Osservatorio di Muggiano e mosso Milano; nessun messaggio inviato.
+- [ ] Pubblicare le migliorie: in attesa dell'azione dell'utente.
+- [ ] Verificare indicizzazione e inviare sitemap su Google: serve il collegamento Search Console autorizzato dall'utente.
