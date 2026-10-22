@@ -21,6 +21,11 @@ export default function AnnunciPubblici() {
         .select("id, titolo, prezzo, immagini, quartiere", { count: "exact" })
         .eq("stato", "attivo").order("created_at", { ascending: false }).order("id")
         .range(from, from + ANNOUNCEMENTS_PAGE_SIZE - 1);
+      if (error?.code === "PGRST103") {
+        const { count: total, error: countError } = await supabase.from("annunci").select("id", { count: "exact", head: true }).eq("stato", "attivo");
+        if (countError) throw countError;
+        return { items: [], count: total || 0 };
+      }
       if (error) throw error;
       return { items: data || [], count: count || 0 };
     },
