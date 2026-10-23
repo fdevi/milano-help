@@ -74,7 +74,7 @@ const DropdownChat = () => {
             .limit(1);
 
           const msg = msgs?.[0];
-            if (count && count > 0 && msg) {
+          if (count && count > 0 && msg) {
             const { data: profilo } = await supabase
               .from("profiles")
               .select("nome, cognome")
