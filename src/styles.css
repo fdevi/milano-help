@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition (Milano Help palette, ported from the previous theme).
+ * The @theme inline block maps CSS custom properties to Tailwind utility classes.
+ */
+
+@theme inline {
+  --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+  --animate-scale-in: scale-in 0.3s ease-out forwards;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: hsl(40 33% 98%);
+  --foreground: hsl(220 20% 14%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(220 20% 14%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(220 20% 14%);
+  --primary: hsl(158 64% 36%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(38 92% 50%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(40 20% 93%);
+  --muted-foreground: hsl(220 10% 46%);
+  --accent: hsl(12 76% 61%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(40 15% 88%);
+  --input: hsl(40 15% 88%);
+  --ring: hsl(158 64% 36%);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(158 64% 36%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(40 20% 95%);
+  --sidebar-accent-foreground: hsl(220 20% 14%);
+  --sidebar-border: hsl(40 15% 88%);
+  --sidebar-ring: hsl(158 64% 36%);
+
+  --hero-gradient: linear-gradient(135deg, hsl(158 64% 36%), hsl(158 64% 28%));
+  --warm-gradient: linear-gradient(135deg, hsl(38 92% 50%), hsl(12 76% 61%));
+  --card-shadow: 0 4px 24px -4px hsl(220 20% 14% / 0.08);
+  --card-shadow-hover: 0 12px 32px -8px hsl(220 20% 14% / 0.15);
+}
+
+.dark {
+  --background: hsl(220 20% 8%);
+  --foreground: hsl(40 20% 95%);
+  --card: hsl(220 18% 12%);
+  --card-foreground: hsl(40 20% 95%);
+  --popover: hsl(220 18% 12%);
+  --popover-foreground: hsl(40 20% 95%);
+  --primary: hsl(158 64% 42%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(38 80% 45%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(220 15% 18%);
+  --muted-foreground: hsl(40 10% 60%);
+  --accent: hsl(12 76% 55%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 62% 30%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(220 15% 20%);
+  --input: hsl(220 15% 20%);
+  --ring: hsl(158 64% 42%);
+  --sidebar: hsl(220 18% 10%);
+  --sidebar-foreground: hsl(40 20% 95%);
+  --sidebar-primary: hsl(158 64% 42%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(220 15% 16%);
+  --sidebar-accent-foreground: hsl(40 20% 95%);
+  --sidebar-border: hsl(220 15% 20%);
+  --sidebar-ring: hsl(158 64% 42%);
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= 96rem) {
+    max-width: 1400px;
+  }
+}
+
+@utility text-gradient-primary {
+  background-clip: text;
+  color: transparent;
+  background-image: var(--hero-gradient);
+}
+
+@utility text-gradient-warm {
+  background-clip: text;
+  color: transparent;
+  background-image: var(--warm-gradient);
+}
+
+@utility bg-gradient-primary {
+  background-image: var(--hero-gradient);
+}
+
+@utility bg-gradient-warm {
+  background-image: var(--warm-gradient);
+}
+
+@utility shadow-card {
+  box-shadow: var(--card-shadow);
+}
+
+@utility shadow-card-hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
