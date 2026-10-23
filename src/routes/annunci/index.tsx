@@ -3,10 +3,12 @@ import AnnunciPubblici from "@/pages/AnnunciPubblici";
 import { directoryPage, directoryUrl } from "@/lib/announcementSeo";
 
 export const Route = createFileRoute("/annunci/")({
-  validateSearch: (search: Record<string, unknown>): { pagina?: string } =>
-    search["pagina"] != null ? { pagina: String(search["pagina"]) } : {},
+  validateSearch: (search: Record<string, unknown>): { pagina?: number } => {
+    const page = directoryPage(search["pagina"] != null ? String(search["pagina"]) : null);
+    return page > 1 ? { pagina: page } : {};
+  },
   loaderDeps: ({ search }) => ({ pagina: search.pagina }),
-  loader: ({ deps }) => ({ page: directoryPage(deps.pagina ?? null) }),
+  loader: ({ deps }) => ({ page: deps.pagina ?? 1 }),
   head: ({ loaderData }) => {
     const page = loaderData?.page ?? 1;
     const title = `Annunci a Milano${page > 1 ? ` — Pagina ${page}` : ""} | Milano Help`;
