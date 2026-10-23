@@ -18,3 +18,7 @@
 - [x] Inviare la sitemap pubblica alla proprietà verificata www.milanohelp.it: Google conferma invio e download con zero errori e avvisi.
 - [x] Controllare le pagine della sitemap con Google e consegnare il riepilogo per categoria: tutte le 29 controllate; 3 indicizzate, 8 scoperte non indicizzate, 18 sconosciute. Report e CSV nei documenti.
 - [x] Invio automatico sitemap a Google (giornaliero, solo con nuovi annunci) + sitemap sempre aggiornata
+
+# Condivisione annunci sui social
+- [x] Ogni annuncio condiviso mostra titolo, descrizione e foto propri con "Milano Help" (pagine preparate lato server).
+- [ ] Pubblicare l'aggiornamento: in attesa dell'azione dell'utente.

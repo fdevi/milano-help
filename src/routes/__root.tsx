@@ -41,12 +41,14 @@ const JSON_LD = JSON.stringify({
   ],
 });
 
-const GTAG_INIT = `window.dataLayer = window.dataLayer || [];
+const GTAG_INIT = `if (!window.__mhGtag) { window.__mhGtag = true;
+window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-G3B289BL7W');`;
+gtag('config', 'G-G3B289BL7W'); }`;
 
 const ONESIGNAL_INIT = `(function(){
+  if (window.__mhOneSignal) return; window.__mhOneSignal = true;
   async function waitForActivation(registration) {
     if (registration.active) return;
     var sw = registration.installing || registration.waiting;
@@ -94,7 +96,7 @@ const ONESIGNAL_INIT = `(function(){
   else window.addEventListener('load', initOneSignal);
 })();`;
 
-const SW_REGISTER = `if ('serviceWorker' in navigator) {
+const SW_REGISTER = `if ('serviceWorker' in navigator && !window.__mhSw) { window.__mhSw = true;
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/sw.js').catch(function(err) { console.error('[SW] Errore registrazione:', err); });
   });
