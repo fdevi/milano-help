@@ -248,7 +248,7 @@ const ModificaEvento = () => {
                       if (date) {
                         const [hours, minutes] = e.target.value.split(":");
                         const newDate = new Date(date);
-                        newDate.setHours(parseInt(hours), parseInt(minutes));
+                        newDate.setHours(parseInt(hours ?? ""), parseInt(minutes ?? ""));
                         setDate(newDate);
                       }
                     }}
@@ -276,7 +276,7 @@ const ModificaEvento = () => {
                     if (endDate) {
                       const [hours, minutes] = e.target.value.split(":");
                       const newDate = new Date(endDate);
-                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      newDate.setHours(parseInt(hours ?? ""), parseInt(minutes ?? ""));
                       setEndDate(newDate);
                     }
                   }} />

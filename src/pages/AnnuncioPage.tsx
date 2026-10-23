@@ -831,7 +831,7 @@ const AnnuncioPage = () => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Membro dal {format(new Date(autore.created_at), "MMMM yyyy", { locale: it })}
+                    Membro dal {format(new Date(autore.created_at ?? 0), "MMMM yyyy", { locale: it })}
                   </p>
 
                   {/* Contact info */}

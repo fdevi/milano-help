@@ -77,7 +77,7 @@ const MieiEventi = () => {
         ) : (
           <div className="space-y-3">
             {eventi.map((e) => {
-              const config = statoConfig[e.stato] ?? statoConfig.in_moderazione;
+              const config = statoConfig[e.stato] ?? { label: "In moderazione", variant: "secondary" as const, icon: Clock };
               const Icon = config.icon;
               return (
                 <Card key={e.id} className="hover:shadow-card-hover transition-shadow">

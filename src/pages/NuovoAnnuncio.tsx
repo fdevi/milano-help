@@ -96,7 +96,7 @@ const NuovoAnnuncio = () => {
   };
 
   const removeImage = (index: number) => {
-    URL.revokeObjectURL(previews[index]);
+    URL.revokeObjectURL(previews[index] ?? "");
     setImages((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };

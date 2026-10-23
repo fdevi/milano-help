@@ -131,7 +131,7 @@ const ModificaAnnuncio = () => {
 
   const removeExistingImage = (index: number) => setExistingImages((prev) => prev.filter((_, i) => i !== index));
   const removeNewImage = (index: number) => {
-    URL.revokeObjectURL(newPreviews[index]);
+    URL.revokeObjectURL(newPreviews[index] ?? "");
     setNewImages((prev) => prev.filter((_, i) => i !== index));
     setNewPreviews((prev) => prev.filter((_, i) => i !== index));
   };

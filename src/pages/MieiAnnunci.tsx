@@ -138,7 +138,7 @@ const MieiAnnunci = () => {
         ) : (
           <div className="space-y-3">
             {annunci.map((a) => {
-              const config = statoConfig[a.stato] ?? statoConfig.chiuso;
+              const config = statoConfig[a.stato] ?? { label: "Chiuso", variant: "outline" as const, icon: AlertTriangle };
               const Icon = config.icon;
               const firstImg = a.immagini?.filter(Boolean)?.[0];
               const expiry = getExpiryInfo(a);

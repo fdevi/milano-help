@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { motion } from "framer-motion";
 import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
@@ -251,7 +252,7 @@ const Profilo = () => {
   }, [profile]);
 
   const saveMutation = useMutation({
-    mutationFn: async (updates: Record<string, unknown>) => {
+    mutationFn: async (updates: TablesUpdate<"profiles">) => {
       const { error } = await supabase.from("profiles").update(updates).eq("user_id", user!.id);
       if (error) throw error;
     },
@@ -265,7 +266,7 @@ const Profilo = () => {
   });
 
   const handleSaveData = () => {
-    const cleanedForm: Record<string, unknown> = { ...form };
+    const cleanedForm: TablesUpdate<"profiles"> = { ...form };
     // Convert empty strings to null for nullable fields
     if (cleanedForm.data_nascita === "") cleanedForm.data_nascita = null;
     if (cleanedForm.sesso === "") cleanedForm.sesso = null;
@@ -648,7 +649,7 @@ const Profilo = () => {
                         rifiutato: { label: "Rifiutato", variant: "destructive", icon: XCircle },
                         chiuso: { label: "Chiuso", variant: "outline", icon: AlertTriangle },
                       };
-                      const config = statoMap[a.stato] ?? statoMap.chiuso;
+                      const config = statoMap[a.stato] ?? { label: "Chiuso", variant: "outline" as const, icon: AlertTriangle };
                       const StatusIcon = config.icon;
                       const firstImg = a.immagini?.filter(Boolean)?.[0];
                       return (

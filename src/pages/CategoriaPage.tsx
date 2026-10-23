@@ -649,7 +649,7 @@ const CategoriaPage = () => {
                 <div>
                   <h4 className="text-sm font-medium text-foreground mb-2">Quartiere</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {(quartieri.length > 0 ? quartieri : ["Brera", "Isola", "Navigli", "Porta Romana"]).map((q) => (
+                    {(quartieri.length > 0 ? quartieri.map(q => q.nome) : ["Brera", "Isola", "Navigli", "Porta Romana"]).map((q) => (
                       <Button key={q} variant={selectedQuartieri.includes(q) ? "default" : "outline"} size="sm"
                         className="h-7 text-xs rounded-full" onClick={() => toggleQuartiere(q)}>
                         {q}
