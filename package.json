@@ -82,13 +82,12 @@
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.0.0",
     "next-themes": "^0.3.0",
-    
     "react-map-gl": "^7.1.6",
     "rollup": "^4.59.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@lovable.dev/vite-tanstack-config": "2.25.3",
+    "@lovable.dev/vite-tanstack-config": "2.26.5",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.16.5",
