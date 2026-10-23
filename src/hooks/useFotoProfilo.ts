@@ -75,6 +75,7 @@ export const useFotoProfilo = ({ onFileChange }: UseFotoProfiloProps) => {
         window.removeEventListener('touchcancel', handleEnd);
       };
     }
+    return undefined;
   }, [isDraggingFoto, onFotoPanMove, onFotoPanEnd]);
 
   const onFotoImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
