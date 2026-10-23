@@ -125,7 +125,7 @@ const Servizi = () => {
                           </div>
                         )}
                         {s.immagini && s.immagini.length > 1 && (
-                          <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+                          <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded-sm">
                             1/{s.immagini.length}
                           </span>
                         )}

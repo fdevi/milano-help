@@ -754,7 +754,7 @@ const AnnuncioPage = () => {
                         <label className="text-sm font-medium text-foreground block mb-2">Voto</label>
                         <div className="flex items-center gap-1">
                           {Array.from({ length: 5 }).map((_, s) => (
-                            <button key={s} onClick={() => setReviewVoto(s + 1)} className="focus:outline-none">
+                            <button key={s} onClick={() => setReviewVoto(s + 1)} className="focus:outline-hidden">
                               <Star className={`w-6 h-6 transition-colors ${s < reviewVoto ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`} />
                             </button>
                           ))}
@@ -962,7 +962,7 @@ const AnnuncioPage = () => {
               <label className="text-sm font-medium text-foreground block mb-2">Voto</label>
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, s) => (
-                  <button key={s} onClick={() => setEditReviewVoto(s + 1)} className="focus:outline-none">
+                  <button key={s} onClick={() => setEditReviewVoto(s + 1)} className="focus:outline-hidden">
                     <Star className={`w-6 h-6 transition-colors ${s < editReviewVoto ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`} />
                   </button>
                 ))}

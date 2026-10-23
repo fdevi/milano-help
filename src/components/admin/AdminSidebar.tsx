@@ -72,7 +72,7 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
             ADMIN PANEL
           </span>
         )}
-        <button onClick={onToggle} className="ml-auto p-1 rounded hover:bg-muted transition-colors">
+        <button onClick={onToggle} className="ml-auto p-1 rounded-sm hover:bg-muted transition-colors">
           <ChevronLeft className={cn("w-4 h-4 text-muted-foreground transition-transform", collapsed && "rotate-180")} />
         </button>
       </div>

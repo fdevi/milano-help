@@ -120,7 +120,7 @@ function displayNomeLinea(nome: string, routeType: number | null | undefined): s
 function getBadgeStyle(displayName: string, routeType: number | null | undefined): { base: string; color: string } {
   const n = displayName.trim().toUpperCase();
   const square = 'inline-flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold';
-  const rect = 'inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold min-h-[2rem]';
+  const rect = 'inline-flex items-center justify-center px-2 py-1 rounded-sm text-xs font-bold min-h-[2rem]';
   const circle = 'inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold';
   if (n === 'M1') return { base: square, color: 'bg-red-600 text-white' };
   if (n === 'M2') return { base: square, color: 'bg-green-600 text-white' };
@@ -722,7 +722,7 @@ const Fermate: React.FC = () => {
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
             placeholder="Cerca via o indirizzo..."
-            className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400"
+            className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-full bg-gray-50 focus:outline-hidden focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400"
           />
           {showSearchResults && searchResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-50">
@@ -813,7 +813,7 @@ const Fermate: React.FC = () => {
                     {style.metroLines.map(ml => {
                       const mp = METRO_PRIORITY[ml];
                       return (
-                        <div key={ml} className={`w-5 h-5 rounded-sm text-[9px] font-bold flex items-center justify-center shadow-md border border-gray-300 ${mp?.bgClass ?? 'bg-amber-500'} ${mp?.textClass ?? 'text-black'}`}>
+                        <div key={ml} className={`w-5 h-5 rounded-xs text-[9px] font-bold flex items-center justify-center shadow-md border border-gray-300 ${mp?.bgClass ?? 'bg-amber-500'} ${mp?.textClass ?? 'text-black'}`}>
                           {ml}
                         </div>
                       );
@@ -930,7 +930,7 @@ const Fermate: React.FC = () => {
                     className="mb-2 pb-2 border-b border-gray-100 last:border-0"
                   >
                     <div
-                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-1 px-1 py-1.5 rounded active:bg-gray-100"
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-1 px-1 py-1.5 rounded-sm active:bg-gray-100"
                       onClick={() => handleMarkerClick(fermata)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -1140,7 +1140,7 @@ const Fermate: React.FC = () => {
                     <span className="text-base text-gray-500">Dettaglio corsa</span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap mb-4">
-                    <span className="px-2 py-1 border border-orange-400 bg-orange-50 text-orange-800 text-xs font-medium rounded">
+                    <span className="px-2 py-1 border border-orange-400 bg-orange-50 text-orange-800 text-xs font-medium rounded-sm">
                       ATM
                     </span>
                     <span className={`${base} ${color}`}>
@@ -1192,7 +1192,7 @@ const Fermate: React.FC = () => {
                           />
                           <div className="flex-1 min-w-0">
                             {isSelected && (
-                              <div className="mb-1 px-2 py-0.5 rounded text-white text-xs font-medium inline-block" style={{ backgroundColor: lineColor }}>
+                              <div className="mb-1 px-2 py-0.5 rounded-sm text-white text-xs font-medium inline-block" style={{ backgroundColor: lineColor }}>
                                 LA TUA FERMATA
                               </div>
                             )}

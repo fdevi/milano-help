@@ -138,7 +138,7 @@ const AnnuncioCardComponent = ({ annuncio }: { annuncio: AnnuncioCard }) => {
             </div>
           )}
           {annuncio.immagini && annuncio.immagini.length > 1 && (
-            <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+            <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded-sm">
               1/{annuncio.immagini.length}
             </span>
           )}

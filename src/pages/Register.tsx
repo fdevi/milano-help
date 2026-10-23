@@ -776,7 +776,7 @@ useEffect(() => {
                     <Label>Data di nascita (opzionale)</Label>
                     <div className="flex gap-2 mt-1">
                       <select
-                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         value={form.dataNascita?.split('-')[0] || ''}
                         onChange={(e) => {
                           const [y, m, d] = (form.dataNascita || '--').split('-');
@@ -789,7 +789,7 @@ useEffect(() => {
                         ))}
                       </select>
                       <select
-                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         value={form.dataNascita?.split('-')[1] || ''}
                         onChange={(e) => {
                           const [y, m, d] = (form.dataNascita || '--').split('-');
@@ -802,7 +802,7 @@ useEffect(() => {
                         ))}
                       </select>
                       <select
-                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         value={form.dataNascita?.split('-')[2] || ''}
                         onChange={(e) => {
                           const [y, m, d] = (form.dataNascita || '--').split('-');
@@ -857,7 +857,7 @@ useEffect(() => {
                         <>
                           <div className="shrink-0 flex flex-col items-center gap-1.5">
                             <div
-                              className="w-[150px] h-[150px] rounded-full overflow-hidden border-2 border-border bg-muted/30 shadow-sm relative select-none cursor-grab active:cursor-grabbing touch-none"
+                              className="w-[150px] h-[150px] rounded-full overflow-hidden border-2 border-border bg-muted/30 shadow-xs relative select-none cursor-grab active:cursor-grabbing touch-none"
                               style={{ cursor: isDraggingFoto ? "grabbing" : "grab" }}
                               onMouseDown={(e) => {
                                 e.preventDefault();
@@ -927,7 +927,7 @@ useEffect(() => {
                         <>
                           <label
                             htmlFor="foto-profilo"
-                            className="w-[150px] h-[150px] rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted/50 shadow-sm flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-primary/50 hover:bg-muted transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 shrink-0"
+                            className="w-[150px] h-[150px] rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted/50 shadow-xs flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-primary/50 hover:bg-muted transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 shrink-0"
                           >
                             <User className="w-10 h-10 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground text-center px-2">Nessuna foto</span>

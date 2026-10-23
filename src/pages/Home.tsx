@@ -379,7 +379,7 @@ const Home = () => {
                                 <div className="flex items-center justify-center h-full"><ImageIcon className="w-10 h-10 text-muted-foreground/30" /></div>
                               )}
                               {a.immagini && a.immagini.length > 1 && (
-                                <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+                                <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded-sm">
                                   1/{a.immagini.length}
                                 </span>
                               )}

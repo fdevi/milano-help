@@ -260,7 +260,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                   {/* Like count badge below message */}
                   {likeCount > 0 && (
                     <div className={`flex ${isMine ? "justify-end" : "justify-start"} -mt-1`}>
-                      <span className="inline-flex items-center gap-0.5 text-[10px] bg-card border rounded-full px-1.5 py-0.5 shadow-sm">
+                      <span className="inline-flex items-center gap-0.5 text-[10px] bg-card border rounded-full px-1.5 py-0.5 shadow-xs">
                         <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
                         {likeCount}
                       </span>

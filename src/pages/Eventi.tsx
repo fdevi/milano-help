@@ -118,7 +118,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
           })()
         )}
         {/* Date badge */}
-        <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center shadow-sm">
+        <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center shadow-xs">
           <p className="text-xs font-bold text-primary leading-tight">{new Date(event.data).toLocaleDateString("it", { month: "short" }).toUpperCase()}</p>
           <p className="text-lg font-heading font-bold text-foreground leading-tight">{new Date(event.data).getDate()}</p>
         </div>

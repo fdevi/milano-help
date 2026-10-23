@@ -506,7 +506,7 @@ const Profilo = () => {
                       <li key={pref.id}>
                         <Link
                           to={`/fermate?fermata=${pref.stop_id}`}
-                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-sm transition-all"
+                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-xs transition-all"
                         >
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <Train className="w-5 h-5 text-primary" />
@@ -652,7 +652,7 @@ const Profilo = () => {
                       const StatusIcon = config.icon;
                       const firstImg = a.immagini?.filter(Boolean)?.[0];
                       return (
-                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
+                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-xs transition-shadow">
                           <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex-shrink-0">
                             {firstImg ? (
                               <img src={firstImg} alt={a.titolo} className="w-full h-full object-cover" />
@@ -728,7 +728,7 @@ const Profilo = () => {
                 ) : (
                   <div className="space-y-3">
                     {tuttiEventi.map((ev: any) => (
-                      <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
+                      <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-xs transition-shadow">
                         <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex-shrink-0">
                           {ev.immagine ? (
                             <img src={ev.immagine} alt={ev.titolo} className="w-full h-full object-cover" />

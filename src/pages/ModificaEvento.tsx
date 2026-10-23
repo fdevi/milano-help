@@ -312,7 +312,7 @@ const ModificaEvento = () => {
                 id="gratuito"
                 checked={form.gratuito}
                 onChange={(e) => setForm({ ...form, gratuito: e.target.checked })}
-                className="rounded border-gray-300"
+                className="rounded-sm border-gray-300"
               />
               <Label htmlFor="gratuito">Evento gratuito</Label>
             </div>

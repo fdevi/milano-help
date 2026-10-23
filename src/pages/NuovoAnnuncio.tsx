@@ -380,11 +380,11 @@ const NuovoAnnuncio = () => {
           <div className="space-y-2">
             <Label>Contatti visibili nell'annuncio</Label>
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="mostraEmail" checked={mostraEmail} onChange={(e) => setMostraEmail(e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" id="mostraEmail" checked={mostraEmail} onChange={(e) => setMostraEmail(e.target.checked)} className="rounded-sm border-gray-300" />
               <Label htmlFor="mostraEmail" className="text-sm font-normal">Mostra la mia email</Label>
             </div>
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="mostraTelefono" checked={mostraTelefono} onChange={(e) => setMostraTelefono(e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" id="mostraTelefono" checked={mostraTelefono} onChange={(e) => setMostraTelefono(e.target.checked)} className="rounded-sm border-gray-300" />
               <Label htmlFor="mostraTelefono" className="text-sm font-normal">Mostra il mio telefono</Label>
             </div>
           </div>

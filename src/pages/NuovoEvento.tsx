@@ -273,7 +273,7 @@ const NuovoEvento = () => {
           {/* Prezzo */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="gratuito" checked={form.gratuito} onChange={(e) => setForm({ ...form, gratuito: e.target.checked })} className="rounded border-gray-300" />
+              <input type="checkbox" id="gratuito" checked={form.gratuito} onChange={(e) => setForm({ ...form, gratuito: e.target.checked })} className="rounded-sm border-gray-300" />
               <Label htmlFor="gratuito">Evento gratuito</Label>
             </div>
             {!form.gratuito && (
