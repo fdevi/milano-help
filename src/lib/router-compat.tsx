@@ -24,7 +24,11 @@ function parseTo(to: string): { pathname: string; search?: Record<string, string
     // react-router keeps the current path for search-only ("?a=1") and
     // hash-only ("#section") targets; TanStack's "." means current route.
     pathname: pathname || ".",
-    search: searchStr ? Object.fromEntries(new URLSearchParams(searchStr)) : undefined,
+    search: searchStr
+      ? Object.fromEntries(
+          [...new URLSearchParams(searchStr)].map(([k, v]) => [k, /^(0|[1-9]\d{0,14})$/.test(v) ? Number(v) : v]),
+        )
+      : undefined,
     hash: hashStr || undefined,
   };
 }
