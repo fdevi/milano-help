@@ -21,7 +21,7 @@ import {
   CalendarDays, MapPin, Users, Clock, Heart, MessageCircle, Share2,
   Loader2, Calendar, Ticket, FileText, ImageIcon, Pencil, Trash2,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { format } from "date-fns";
 import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";

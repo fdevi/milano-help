@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 
 const PAGE_SIZE = 12;
 

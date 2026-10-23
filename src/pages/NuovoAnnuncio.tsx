@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Loader2, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 
 const MAX_IMAGES = 5;
 

@@ -26,7 +26,7 @@ import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQuartieri } from "@/hooks/useQuartieri";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";
 

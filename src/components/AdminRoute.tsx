@@ -1,5 +1,5 @@
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Navigate } from "react-router-dom";
+import { Navigate } from "@/lib/router-compat";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {

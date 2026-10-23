@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import {
   Wrench, Search, ShoppingBag, Gift, GraduationCap, HeartHandshake,
   Building2, Store, Baby, CalendarDays, MessageCircle, HandCoins,
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 
 const categories = [
   { icon: Wrench, title: "Offro Servizio", color: "#1a9068", count: 24 },

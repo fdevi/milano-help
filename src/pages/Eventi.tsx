@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AuthLayout from "@/components/AuthLayout";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import {
   DropdownMenu,
   DropdownMenuContent,

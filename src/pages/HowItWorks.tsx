@@ -4,7 +4,7 @@ import {
   Search, Award, Globe, Sparkles, ArrowRight, CheckCircle,
   Building2, Sprout, GraduationCap, Briefcase
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { Search, LogOut, Shield } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Input } from "@/components/ui/input";

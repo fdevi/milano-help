@@ -4,7 +4,7 @@ import Map, { Marker, NavigationControl, Source, Layer } from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ChevronDown, ArrowLeft, MapPin, LocateFixed, Heart, Search, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { useFermatePreferite } from '@/hooks/useFermatePreferite';
