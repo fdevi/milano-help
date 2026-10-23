@@ -94,8 +94,8 @@ function colorePerRouteType(routeType: number | null | undefined): string {
 function parseOrarioGtfs(t: string | null): { display: string; minuti: number; isDomani: boolean } | null {
   if (!t) return null;
   const parts = t.trim().split(':');
-  let h = parseInt(parts[0], 10);
-  const m = parts.length >= 2 ? parseInt(parts[1], 10) : 0;
+  let h = parseInt(parts[0] ?? "", 10);
+  const m = parts.length >= 2 ? parseInt(parts[1] ?? "", 10) : 0;
   if (isNaN(h) || isNaN(m)) return null;
   const isDomani = h >= 24;
   const minuti = h * 60 + m; // keep raw for sorting
@@ -273,7 +273,7 @@ const Fermate: React.FC = () => {
   const handleSearchSelect = (result: { place_name: string; center: [number, number] }) => {
     const [lng, lat] = result.center;
     setSearchCenter({ lat, lng });
-    setSearchQuery(result.place_name.split(',')[0]);
+    setSearchQuery(result.place_name.split(',')[0] ?? "");
     setShowSearchResults(false);
     caricaFermateVicine(lat, lng);
     const map = mapRef.current?.getMap?.() ?? mapRef.current;
@@ -975,7 +975,7 @@ const Fermate: React.FC = () => {
                     </div>
                     {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1 mt-0.5 mb-0.5">
-                        {lineePerFermata[fermata.id].map((linea) => {
+                        {lineePerFermata[fermata.id]?.map((linea) => {
                           const dn = displayNomeLinea(linea.nome, linea.tipo);
                           const { base, color } = getBadgeStyle(dn, linea.tipo);
                           return (
@@ -1047,7 +1047,7 @@ const Fermate: React.FC = () => {
                   {/* Badge linee */}
                   {(lineePerFermata[fermata.id]?.length ?? 0) > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      {lineePerFermata[fermata.id].map((linea) => {
+                      {lineePerFermata[fermata.id]?.map((linea) => {
                         const dn = displayNomeLinea(linea.nome, linea.tipo);
                         const { base, color } = getBadgeStyle(dn, linea.tipo);
                         return (

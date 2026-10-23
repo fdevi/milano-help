@@ -95,7 +95,7 @@ export const fermateMooneyGo: FermataMooneyGo[] = [
 /** Nome fermata breve per match con percorsi (es. "Dergano M3") */
 export function nomeBreveFromCompleto(nomeCompleto: string): string {
   const m = nomeCompleto.match(/,\s*([^,]+),\s*Milano$/);
-  return m ? m[1].trim() : nomeCompleto;
+  return m?.[1]?.trim() ?? nomeCompleto;
 }
 
 /** Percorsi per disegnare polyline: chiave "LINEA-DirezioneBreve", valore coordinate in ordine */

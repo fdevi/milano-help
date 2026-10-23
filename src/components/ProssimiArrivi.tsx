@@ -50,7 +50,7 @@ function generaArriviFinti(): Arrivo[] {
   arrivi.sort((a, b) => {
     const order = (d: string) => {
       if (d.endsWith(" min")) return parseInt(d, 10);
-      const [h, m] = d.split(":").map(Number);
+      const [h = NaN, m = NaN] = d.split(":").map(Number);
       return 100 + h * 60 + m;
     };
     return order(a.display) - order(b.display);

@@ -90,7 +90,7 @@ const PostComposer = ({
   };
 
   const removeNewFile = (index: number) => {
-    URL.revokeObjectURL(newFilePreviews[index]);
+    { const preview = newFilePreviews[index]; if (preview !== undefined) URL.revokeObjectURL(preview); }
     setNewFiles(prev => prev.filter((_, i) => i !== index));
     setNewFilePreviews(prev => prev.filter((_, i) => i !== index));
   };
@@ -124,7 +124,7 @@ const PostComposer = ({
 
     if (atMatch) {
       setShowMentions(true);
-      setMentionFilter(atMatch[1].toLowerCase());
+      setMentionFilter((atMatch[1] ?? "").toLowerCase());
       setMentionCursorPos(cursorPos);
     } else {
       setShowMentions(false);
@@ -152,7 +152,7 @@ const PostComposer = ({
     let match;
     const mentionedNames: string[] = [];
     while ((match = mentionRegex.exec(postText)) !== null) {
-      mentionedNames.push(match[1].trim().toLowerCase());
+      mentionedNames.push((match[1] ?? "").trim().toLowerCase());
     }
 
     if (mentionedNames.length === 0) return;

@@ -32,7 +32,7 @@ const MapboxLocationPicker = ({
   const [showResults, setShowResults] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(initialLuogo);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const defaultCenter: [number, number] = [
     initialLon ?? 9.19,

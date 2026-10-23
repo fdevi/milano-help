@@ -75,6 +75,7 @@ const DropdownChat = () => {
 
           if (count && count > 0 && msgs && msgs.length > 0) {
             const msg = msgs[0];
+            if (!msg) continue;
             const { data: profilo } = await supabase
               .from("profiles")
               .select("nome, cognome")
@@ -133,6 +134,7 @@ const DropdownChat = () => {
 
           if (count && count > 0 && msgs && msgs.length > 0) {
             const msg = msgs[0];
+            if (!msg) continue;
             const otherUserId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
             const prof = otherUserId ? mapProfiles.get(otherUserId) : null;
             const nomeAltro = prof ? `${prof.nome || ""} ${prof.cognome || ""}`.trim() || "Utente" : "Utente";
