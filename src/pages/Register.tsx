@@ -864,7 +864,7 @@ useEffect(() => {
                                 onFotoPanStart(e.clientX, e.clientY);
                               }}
                               onTouchStart={(e) => {
-                                if (e.touches.length === 1) onFotoPanStart(e.touches[0].clientX, e.touches[0].clientY);   
+                                { const touch = e.touches[0]; if (e.touches.length === 1 && touch) onFotoPanStart(touch.clientX, touch.clientY); }   
                               }}
                               role="img"
                               aria-label="Trascina per centrare la foto"

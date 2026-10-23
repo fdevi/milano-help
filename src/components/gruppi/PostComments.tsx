@@ -60,8 +60,7 @@ const PostComments = ({ postId, gruppoId }: PostCommentsProps) => {
   const topLevelComments = comments.filter((c: any) => !c.parent_id);
   const repliesMap: Record<string, any[]> = {};
   comments.filter((c: any) => c.parent_id).forEach((c: any) => {
-    if (!repliesMap[c.parent_id]) repliesMap[c.parent_id] = [];
-    repliesMap[c.parent_id].push(c);
+    (repliesMap[c.parent_id] ??= []).push(c);
   });
 
   const submitComment = async () => {

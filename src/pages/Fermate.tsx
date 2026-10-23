@@ -190,7 +190,7 @@ function estraiNomeBase(nome: string): string {
 }
 
 function aggiungiMinuti(orario: string, deltaMinuti: number): string {
-  const [h, m] = orario.split(':').map(Number);
+  const [h = NaN, m = NaN] = orario.split(':').map(Number);
   let total = h * 60 + m + deltaMinuti;
   if (total < 0) total += 24 * 60;
   total = total % (24 * 60);
@@ -347,12 +347,14 @@ const Fermate: React.FC = () => {
       const fermateUnificate: Fermata[] = [];
       const lineePerFermataNew: Record<string, { nome: string; tipo: number }[]> = {};
       gruppi.forEach((g) => {
+        const firstStop = g.stops[0];
+        if (!firstStop) return;
         // Pick representative stop: the one with the most lines, or closest
         const rep = g.stops.reduce((best, s) => {
           const bestLines = (byStopId.get(best.stop_id) ?? []).length;
           const sLines = (byStopId.get(s.stop_id) ?? []).length;
           return sLines > bestLines ? s : best;
-        }, g.stops[0]);
+        }, firstStop);
         const stopIds = g.stops.map(s => s.stop_id);
         const id = stopIds.join('|');
         const fermata: Fermata = {
@@ -462,7 +464,7 @@ const Fermate: React.FC = () => {
     // Group directions under same route
     const byRoute = new MapNative<string, LineaConDirezioni>();
     byKey.forEach((acc, key) => {
-      const [nome, headsign] = key.split('|');
+      const [nome = "", headsign = ""] = key.split('|');
       const routeKey = nome;
       const colore = colorePerRouteType(acc.routeType);
       if (!byRoute.has(routeKey)) {
@@ -584,11 +586,13 @@ const Fermate: React.FC = () => {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
+    if (!touch) return;
     dragRef.current = { startY: touch.clientY, startHeight: sheetHeight };
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     const touch = e.touches[0];
+    if (!touch) return;
     const deltaY = touch.clientY - dragRef.current.startY;
     const newHeight = dragRef.current.startHeight - (deltaY / window.innerHeight) * 100;
     setSheetHeight(Math.max(MIN_SHEET_HEIGHT, Math.min(MAX_SHEET_HEIGHT, newHeight)));
@@ -627,7 +631,7 @@ const Fermate: React.FC = () => {
     setLineaSelezionata(null);
     setVista('linea');
     if (lineeCache[f.id]) {
-      setLineePerFermataSelezionata(lineeCache[f.id]);
+      setLineePerFermataSelezionata(lineeCache[f.id] ?? null);
     } else {
       setLoadingLinee(true);
       setLineePerFermataSelezionata(null);

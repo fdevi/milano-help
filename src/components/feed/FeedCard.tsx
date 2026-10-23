@@ -197,7 +197,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         .or(`acquirente_id.eq.${currentUserId},venditore_id.eq.${currentUserId}`)
         .limit(1);
 
-      if (existing && existing.length > 0) {
+      if (existing?.[0]) {
         navigate(`/chat/${existing[0].id}`);
         return;
       }
