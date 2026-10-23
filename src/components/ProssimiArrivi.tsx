@@ -32,8 +32,8 @@ function generaArriviFinti(): Arrivo[] {
   const arrivi: Arrivo[] = [];
 
   for (let i = 0; i < count; i++) {
-    const linea = LINEE[Math.floor(Math.random() * LINEE.length)];
-    const destinazione = DESTINAZIONI[Math.floor(Math.random() * DESTINAZIONI.length)];
+    const linea = LINEE[Math.floor(Math.random() * LINEE.length)] ?? "";
+    const destinazione = DESTINAZIONI[Math.floor(Math.random() * DESTINAZIONI.length)] ?? "";
     const useMinutes = Math.random() > 0.4;
     let display: string;
     if (useMinutes) {
