@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { MessageCircle, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -75,6 +75,7 @@ const DropdownChat = () => {
 
           if (count && count > 0 && msgs && msgs.length > 0) {
             const msg = msgs[0];
+            if (!msg) continue;
             const { data: profilo } = await supabase
               .from("profiles")
               .select("nome, cognome")
@@ -133,6 +134,7 @@ const DropdownChat = () => {
 
           if (count && count > 0 && msgs && msgs.length > 0) {
             const msg = msgs[0];
+            if (!msg) continue;
             const otherUserId = conv.acquirente_id === user.id ? conv.venditore_id : conv.acquirente_id;
             const prof = otherUserId ? mapProfiles.get(otherUserId) : null;
             const nomeAltro = prof ? `${prof.nome || ""} ${prof.cognome || ""}`.trim() || "Utente" : "Utente";
@@ -264,7 +266,7 @@ const DropdownChat = () => {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-sm font-semibold text-foreground truncate">{item.nome}</span>
-                          <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded shrink-0">
+                          <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded-sm shrink-0">
                             {item.tipo === "gruppo" ? "Gruppo" : "Privata"}
                           </span>
                         </div>

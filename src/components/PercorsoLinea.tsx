@@ -15,7 +15,7 @@ export function PercorsoLinea({ linea, nomeFermataCorrente, onMostraSullaMappa }
   const isMetro = linea.nome.startsWith("M");
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+    <div className="rounded-xl border bg-card overflow-hidden shadow-xs">
       <div
         className="flex items-center gap-2 px-3 py-2.5 border-b"
         style={{ background: colore.bg, color: colore.text }}
@@ -75,7 +75,7 @@ function DirezioneBlocco({
               <span
                 key={nome}
                 className={cn(
-                  "shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors",
+                  "shrink-0 px-2 py-1 rounded-sm text-xs font-medium transition-colors",
                   isCurrent
                     ? "bg-primary text-primary-foreground"
                     : "bg-background text-muted-foreground border"

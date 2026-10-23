@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { toast as sonnerToast } from "sonner";
 
 const AdminEventi = () => {

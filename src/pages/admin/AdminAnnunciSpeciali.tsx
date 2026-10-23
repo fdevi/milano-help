@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, CheckCircle, XCircle, Trash2, Eye, Building2, Store, Pencil, Heart } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 
 const AdminAnnunciSpeciali = () => {
   const { user } = useAuth();

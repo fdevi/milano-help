@@ -57,7 +57,7 @@ export const useFotoProfilo = ({ onFileChange }: UseFotoProfiloProps) => {
     if (isDraggingFoto) {
       const handleMouseMove = (e: MouseEvent) => onFotoPanMove(e.clientX, e.clientY);
       const handleTouchMove = (e: TouchEvent) => {
-        if (e.touches.length === 1) onFotoPanMove(e.touches[0].clientX, e.touches[0].clientY);
+        const touch = e.touches[0]; if (e.touches.length === 1 && touch) onFotoPanMove(touch.clientX, touch.clientY);
       };
       const handleEnd = () => onFotoPanEnd();
 

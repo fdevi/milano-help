@@ -28,3 +28,24 @@ export function sitemapXml(paths: string[]) {
   const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...new Set(paths)].map(path => `  <url><loc>${escape(`${SITE_URL}${path}`)}</loc></url>`).join("\n")}\n</urlset>\n`;
 }
+export interface AnnouncementSeoInput {
+  titolo: string;
+  descrizione: string | null;
+  quartiere: string | null;
+  stato: string;
+  immagini?: (string | null)[] | null;
+}
+
+export function announcementHeadData(id: string, announcement: AnnouncementSeoInput | null) {
+  const active = !!announcement && isIndexableAnnouncement(announcement.stato);
+  const firstImage = active ? announcement.immagini?.find((src): src is string => typeof src === "string" && /^https:\/\//.test(src)) : undefined;
+  return {
+    title: active ? `${announcement.titolo} | Milano Help` : "Annuncio non disponibile | Milano Help",
+    description: active
+      ? announcementDescription(announcement.descrizione, announcement.titolo, announcement.quartiere)
+      : "Annunci della community di Milano Help.",
+    robots: active ? "index,follow" : "noindex,follow",
+    url: announcementUrl(id),
+    image: firstImage ?? null,
+  };
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -243,7 +243,7 @@ const PannelloNotifiche = () => {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-sm font-semibold text-foreground truncate">{n.titolo}</span>
-                          <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded shrink-0">
+                          <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded-sm shrink-0">
                             {getLabel(n.notificaTipo)}
                           </span>
                         </div>

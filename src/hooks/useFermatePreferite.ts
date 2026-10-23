@@ -32,7 +32,7 @@ export function useFermatePreferite() {
       if (!user) throw new Error("Non autenticato");
       // Use first stop_id as representative
       const stopId = stopIds[0];
-      const alreadyFav = preferitiStopIds.has(stopId);
+      const alreadyFav = (stopId !== undefined && preferitiStopIds.has(stopId));
       if (alreadyFav) {
         const { error } = await supabase
           .from("fermate_preferite" as any)

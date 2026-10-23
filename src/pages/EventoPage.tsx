@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, KeyboardEvent } from "react";

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "@/lib/router-compat";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -260,7 +260,7 @@ const ChatDetail = ({ conversationName, conversationSubtitle, messages, currentU
                   {/* Like count badge below message */}
                   {likeCount > 0 && (
                     <div className={`flex ${isMine ? "justify-end" : "justify-start"} -mt-1`}>
-                      <span className="inline-flex items-center gap-0.5 text-[10px] bg-card border rounded-full px-1.5 py-0.5 shadow-sm">
+                      <span className="inline-flex items-center gap-0.5 text-[10px] bg-card border rounded-full px-1.5 py-0.5 shadow-xs">
                         <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
                         {likeCount}
                       </span>

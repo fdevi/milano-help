@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Clock, CheckCircle, XCircle, AlertTriangle, Pencil, Trash2, Calendar, MapPin } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -77,7 +77,7 @@ const MieiEventi = () => {
         ) : (
           <div className="space-y-3">
             {eventi.map((e) => {
-              const config = statoConfig[e.stato] ?? statoConfig.in_moderazione;
+              const config = statoConfig[e.stato] ?? { label: "In moderazione", variant: "secondary" as const, icon: Clock };
               const Icon = config.icon;
               return (
                 <Card key={e.id} className="hover:shadow-card-hover transition-shadow">

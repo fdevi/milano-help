@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { motion } from "framer-motion";
 import {
   Camera, MapPin, CalendarDays, Heart, FileText, Save,
@@ -26,7 +27,7 @@ import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQuartieri } from "@/hooks/useQuartieri";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";
 
@@ -251,7 +252,7 @@ const Profilo = () => {
   }, [profile]);
 
   const saveMutation = useMutation({
-    mutationFn: async (updates: Record<string, unknown>) => {
+    mutationFn: async (updates: TablesUpdate<"profiles">) => {
       const { error } = await supabase.from("profiles").update(updates).eq("user_id", user!.id);
       if (error) throw error;
     },
@@ -265,7 +266,7 @@ const Profilo = () => {
   });
 
   const handleSaveData = () => {
-    const cleanedForm: Record<string, unknown> = { ...form };
+    const cleanedForm: TablesUpdate<"profiles"> = { ...form };
     // Convert empty strings to null for nullable fields
     if (cleanedForm.data_nascita === "") cleanedForm.data_nascita = null;
     if (cleanedForm.sesso === "") cleanedForm.sesso = null;
@@ -506,7 +507,7 @@ const Profilo = () => {
                       <li key={pref.id}>
                         <Link
                           to={`/fermate?fermata=${pref.stop_id}`}
-                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-sm transition-all"
+                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:shadow-xs transition-all"
                         >
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <Train className="w-5 h-5 text-primary" />
@@ -648,11 +649,11 @@ const Profilo = () => {
                         rifiutato: { label: "Rifiutato", variant: "destructive", icon: XCircle },
                         chiuso: { label: "Chiuso", variant: "outline", icon: AlertTriangle },
                       };
-                      const config = statoMap[a.stato] ?? statoMap.chiuso;
+                      const config = statoMap[a.stato] ?? { label: "Chiuso", variant: "outline" as const, icon: AlertTriangle };
                       const StatusIcon = config.icon;
                       const firstImg = a.immagini?.filter(Boolean)?.[0];
                       return (
-                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
+                        <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-xs transition-shadow">
                           <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex-shrink-0">
                             {firstImg ? (
                               <img src={firstImg} alt={a.titolo} className="w-full h-full object-cover" />
@@ -728,7 +729,7 @@ const Profilo = () => {
                 ) : (
                   <div className="space-y-3">
                     {tuttiEventi.map((ev: any) => (
-                      <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow">
+                      <div key={ev.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-xs transition-shadow">
                         <div className="w-12 h-12 rounded-md bg-muted overflow-hidden flex-shrink-0">
                           {ev.immagine ? (
                             <img src={ev.immagine} alt={ev.titolo} className="w-full h-full object-cover" />

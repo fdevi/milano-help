@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from "@/lib/router-compat";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -77,14 +77,14 @@ const NuovoEvento = () => {
   };
 
   const removeImage = (index: number) => {
-    URL.revokeObjectURL(previews[index]);
+    URL.revokeObjectURL(previews[index] ?? "");
     setImages((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const uploadImage = async (eventoId: string): Promise<string | null> => {
-    if (images.length === 0) return null;
     const file = images[0];
+    if (!file) return null;
     const ext = file.name.split(".").pop();
     const path = `${user!.id}/${eventoId}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("annunci-images").upload(path, file);
@@ -215,7 +215,7 @@ const NuovoEvento = () => {
                     if (date) {
                       const [hours, minutes] = e.target.value.split(":");
                       const newDate = new Date(date);
-                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      newDate.setHours(parseInt(hours ?? ""), parseInt(minutes ?? ""));
                       setDate(newDate);
                     }
                   }} />
@@ -242,7 +242,7 @@ const NuovoEvento = () => {
                     if (endDate) {
                       const [hours, minutes] = e.target.value.split(":");
                       const newDate = new Date(endDate);
-                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      newDate.setHours(parseInt(hours ?? ""), parseInt(minutes ?? ""));
                       setEndDate(newDate);
                     }
                   }} />
@@ -273,7 +273,7 @@ const NuovoEvento = () => {
           {/* Prezzo */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="gratuito" checked={form.gratuito} onChange={(e) => setForm({ ...form, gratuito: e.target.checked })} className="rounded border-gray-300" />
+              <input type="checkbox" id="gratuito" checked={form.gratuito} onChange={(e) => setForm({ ...form, gratuito: e.target.checked })} className="rounded-sm border-gray-300" />
               <Label htmlFor="gratuito">Evento gratuito</Label>
             </div>
             {!form.gratuito && (

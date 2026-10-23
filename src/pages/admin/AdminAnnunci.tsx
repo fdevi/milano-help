@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPushNotification } from "@/lib/pushNotification";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -141,7 +142,7 @@ const AdminAnnunci = () => {
   }, []);
 
   const changeStato = async (id: string, newStato: string, motivo?: string) => {
-    const update: Record<string, unknown> = { stato: newStato };
+    const update: TablesUpdate<"annunci"> = { stato: newStato };
     if (motivo) update.motivo_rifiuto = motivo;
     const { error } = await supabase.from("annunci").update(update).eq("id", id);
     if (error) {

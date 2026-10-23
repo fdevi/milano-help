@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";

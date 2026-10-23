@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "@/lib/router-compat";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -555,7 +555,7 @@ const GruppoDetail = () => {
               )}
             </div>
             <div><Label>Tipo</Label>
-              <select className="w-full border rounded px-3 py-2 text-sm" value={editTipo} onChange={(e) => setEditTipo(e.target.value as any)}>
+              <select className="w-full border rounded-sm px-3 py-2 text-sm" value={editTipo} onChange={(e) => setEditTipo(e.target.value as any)}>
                 <option value="pubblico">Pubblico</option><option value="privato">Privato</option>
               </select>
             </div>

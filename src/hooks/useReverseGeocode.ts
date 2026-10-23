@@ -75,7 +75,7 @@ export const useReverseGeocode = (
               );
               result.quartiere = centro
                 ? centro.nome
-                : quartieriComune[0].nome;
+                : quartieriComune[0]?.nome;
             }
           } else {
             // Comune attivo ma senza quartieri → usa "NomeComune/Centro"

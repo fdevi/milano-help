@@ -50,12 +50,12 @@ const AdminImportazioni = () => {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split("T")[0];
+      const key = d.toISOString().split("T")[0] ?? "";
       days[key] = { giorno: d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" }), inseriti: 0 };
     }
     for (const log of (logsRes.data as LogEntry[]) || []) {
-      const key = log.created_at.split("T")[0];
-      if (days[key]) days[key].inseriti += log.eventi_inseriti;
+      const key = log.created_at.split("T")[0] ?? "";
+      { const day = days[key]; if (day) day.inseriti += log.eventi_inseriti; }
     }
     setChartData(Object.values(days));
     setLoading(false);

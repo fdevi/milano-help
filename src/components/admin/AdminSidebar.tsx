@@ -1,9 +1,9 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "@/lib/router-compat";
 import {
   LayoutDashboard, Users, Grid3X3, Briefcase, CalendarCheck, ScrollText, Heart, LogOut, ChevronLeft, ShieldAlert, Calendar, Mail, Megaphone, Download, ToggleLeft
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
 import BadgeNotifiche from "./BadgeNotifiche";
 import { useRoleCheck } from "@/hooks/useRoleCheck";
@@ -72,7 +72,7 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
             ADMIN PANEL
           </span>
         )}
-        <button onClick={onToggle} className="ml-auto p-1 rounded hover:bg-muted transition-colors">
+        <button onClick={onToggle} className="ml-auto p-1 rounded-sm hover:bg-muted transition-colors">
           <ChevronLeft className={cn("w-4 h-4 text-muted-foreground transition-transform", collapsed && "rotate-180")} />
         </button>
       </div>

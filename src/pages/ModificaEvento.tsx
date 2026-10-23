@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "@/lib/router-compat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
@@ -248,7 +248,7 @@ const ModificaEvento = () => {
                       if (date) {
                         const [hours, minutes] = e.target.value.split(":");
                         const newDate = new Date(date);
-                        newDate.setHours(parseInt(hours), parseInt(minutes));
+                        newDate.setHours(parseInt(hours ?? ""), parseInt(minutes ?? ""));
                         setDate(newDate);
                       }
                     }}
@@ -276,7 +276,7 @@ const ModificaEvento = () => {
                     if (endDate) {
                       const [hours, minutes] = e.target.value.split(":");
                       const newDate = new Date(endDate);
-                      newDate.setHours(parseInt(hours), parseInt(minutes));
+                      newDate.setHours(parseInt(hours ?? ""), parseInt(minutes ?? ""));
                       setEndDate(newDate);
                     }
                   }} />
@@ -312,7 +312,7 @@ const ModificaEvento = () => {
                 id="gratuito"
                 checked={form.gratuito}
                 onChange={(e) => setForm({ ...form, gratuito: e.target.checked })}
-                className="rounded border-gray-300"
+                className="rounded-sm border-gray-300"
               />
               <Label htmlFor="gratuito">Evento gratuito</Label>
             </div>

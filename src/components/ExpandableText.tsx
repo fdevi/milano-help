@@ -20,7 +20,7 @@ const ExpandableText = ({ text, lines = 5 }: ExpandableTextProps) => {
       </p>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="mt-2 text-sm font-medium text-primary hover:underline focus:outline-none"
+        className="mt-2 text-sm font-medium text-primary hover:underline focus:outline-hidden"
       >
         {expanded ? "Riduci ↑" : "Leggi tutto ↓"}
       </button>

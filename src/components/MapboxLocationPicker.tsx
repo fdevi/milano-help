@@ -32,7 +32,7 @@ const MapboxLocationPicker = ({
   const [showResults, setShowResults] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(initialLuogo);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const defaultCenter: [number, number] = [
     initialLon ?? 9.19,
@@ -160,7 +160,7 @@ const MapboxLocationPicker = ({
         <button
           type="button"
           onClick={handleGeolocate}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-muted transition-colors"
           title="Usa la mia posizione"
         >
           {geoLoading ? (

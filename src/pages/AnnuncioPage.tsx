@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "@/lib/router-compat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { icons, LucideIcon, ChevronLeft, ChevronRight, Eye, Calendar, MapPin, Flag, MessageCircle, User, Heart, Mail, Phone, X, ZoomIn, Share2, Copy, Check, Navigation, Building2, Store, MoreVertical, Star, Globe, Clock, Pencil, Trash2 } from "lucide-react";
@@ -21,7 +21,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import CommentiAnnuncio from "@/components/chat/CommentiAnnuncio";
-import AnnouncementHead from "@/components/AnnouncementHead";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
@@ -466,7 +465,6 @@ const AnnuncioPage = () => {
   if (!isLoading && (error || !annuncio)) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementHead id={id} />
         <Navbar />
         <div className="container mx-auto px-4 pt-24 pb-12 text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground mb-4">Annuncio non trovato</h1>
@@ -481,7 +479,6 @@ const AnnuncioPage = () => {
   if (!isLoading && annuncio && annuncio.stato !== "attivo" && annuncio.user_id !== user?.id && !isAdmin) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementHead id={id} />
         <Navbar />
         <div className="container mx-auto px-4 pt-24 pb-12 text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground mb-4">Annuncio non disponibile</h1>
@@ -499,7 +496,6 @@ const AnnuncioPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementHead id={id} announcement={annuncio} loading={isLoading} />
       <Navbar />
 
       <div className="container mx-auto px-4 pt-24 pb-12">
@@ -754,7 +750,7 @@ const AnnuncioPage = () => {
                         <label className="text-sm font-medium text-foreground block mb-2">Voto</label>
                         <div className="flex items-center gap-1">
                           {Array.from({ length: 5 }).map((_, s) => (
-                            <button key={s} onClick={() => setReviewVoto(s + 1)} className="focus:outline-none">
+                            <button key={s} onClick={() => setReviewVoto(s + 1)} className="focus:outline-hidden">
                               <Star className={`w-6 h-6 transition-colors ${s < reviewVoto ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`} />
                             </button>
                           ))}
@@ -835,7 +831,7 @@ const AnnuncioPage = () => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Membro dal {format(new Date(autore.created_at), "MMMM yyyy", { locale: it })}
+                    Membro dal {format(new Date(autore.created_at ?? 0), "MMMM yyyy", { locale: it })}
                   </p>
 
                   {/* Contact info */}
@@ -962,7 +958,7 @@ const AnnuncioPage = () => {
               <label className="text-sm font-medium text-foreground block mb-2">Voto</label>
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, s) => (
-                  <button key={s} onClick={() => setEditReviewVoto(s + 1)} className="focus:outline-none">
+                  <button key={s} onClick={() => setEditReviewVoto(s + 1)} className="focus:outline-hidden">
                     <Star className={`w-6 h-6 transition-colors ${s < editReviewVoto ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground/30'}`} />
                   </button>
                 ))}

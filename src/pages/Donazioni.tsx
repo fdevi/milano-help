@@ -154,7 +154,7 @@ const Donazioni = () => {
                         
                         toast({
                           title: "Grazie per la donazione!",
-                          description: `€${getImportoFinale()} - ${details.payer.name.given_name}`,
+                          description: `€${getImportoFinale()} - ${details.payer?.name?.given_name}`,
                         });
                       } catch (error) {
                         toast({

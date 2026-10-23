@@ -95,7 +95,7 @@ export const fermateMooneyGo: FermataMooneyGo[] = [
 /** Nome fermata breve per match con percorsi (es. "Dergano M3") */
 export function nomeBreveFromCompleto(nomeCompleto: string): string {
   const m = nomeCompleto.match(/,\s*([^,]+),\s*Milano$/);
-  return m ? m[1].trim() : nomeCompleto;
+  return m?.[1]?.trim() ?? nomeCompleto;
 }
 
 /** Percorsi per disegnare polyline: chiave "LINEA-DirezioneBreve", valore coordinate in ordine */
@@ -122,7 +122,7 @@ const COORD: Record<string, { lat: number; lng: number }> = {
 };
 
 function coordPath(nomi: string[]): { lat: number; lng: number }[] {
-  return nomi.map((n) => COORD[n]).filter(Boolean);
+  return nomi.map((n) => COORD[n]).filter((c): c is { lat: number; lng: number } => c !== undefined);
 }
 
 /** Percorsi linea 70 e M3 per disegno su mappa */

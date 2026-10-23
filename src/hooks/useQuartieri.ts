@@ -103,7 +103,7 @@ export const getQuartieriByComune = async (
 
     if (error || !data) return [];
 
-    return data.map((q) => ({
+    return data.map((q: { nome: string; area: string | null; comune_id: string | null }) => ({
       nome: q.nome,
       area: q.area || "",
       comune_id: q.comune_id || undefined,

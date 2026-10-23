@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Loader2, X, Image as ImageIcon, AlertCircle, MapPin } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 
 const MAX_IMAGES = 5;
 
@@ -96,7 +96,7 @@ const NuovoAnnuncio = () => {
   };
 
   const removeImage = (index: number) => {
-    URL.revokeObjectURL(previews[index]);
+    URL.revokeObjectURL(previews[index] ?? "");
     setImages((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
@@ -380,11 +380,11 @@ const NuovoAnnuncio = () => {
           <div className="space-y-2">
             <Label>Contatti visibili nell'annuncio</Label>
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="mostraEmail" checked={mostraEmail} onChange={(e) => setMostraEmail(e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" id="mostraEmail" checked={mostraEmail} onChange={(e) => setMostraEmail(e.target.checked)} className="rounded-sm border-gray-300" />
               <Label htmlFor="mostraEmail" className="text-sm font-normal">Mostra la mia email</Label>
             </div>
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="mostraTelefono" checked={mostraTelefono} onChange={(e) => setMostraTelefono(e.target.checked)} className="rounded border-gray-300" />
+              <input type="checkbox" id="mostraTelefono" checked={mostraTelefono} onChange={(e) => setMostraTelefono(e.target.checked)} className="rounded-sm border-gray-300" />
               <Label htmlFor="mostraTelefono" className="text-sm font-normal">Mostra il mio telefono</Label>
             </div>
           </div>

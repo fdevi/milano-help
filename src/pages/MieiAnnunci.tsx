@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Clock, CheckCircle, XCircle, AlertTriangle, Pencil, Trash2, CalendarClock, RefreshCw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { differenceInDays, format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -138,7 +138,7 @@ const MieiAnnunci = () => {
         ) : (
           <div className="space-y-3">
             {annunci.map((a) => {
-              const config = statoConfig[a.stato] ?? statoConfig.chiuso;
+              const config = statoConfig[a.stato] ?? { label: "Chiuso", variant: "outline" as const, icon: AlertTriangle };
               const Icon = config.icon;
               const firstImg = a.immagini?.filter(Boolean)?.[0];
               const expiry = getExpiryInfo(a);

@@ -21,7 +21,7 @@ import {
   CalendarDays, MapPin, Users, Clock, Heart, MessageCircle, Share2,
   Loader2, Calendar, Ticket, FileText, ImageIcon, Pencil, Trash2,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { format } from "date-fns";
 import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";
@@ -177,7 +177,7 @@ const Home = () => {
         }) || [])
       ];
 
-      return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return items.sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());
     },
     enabled: !!user,
   });
@@ -379,7 +379,7 @@ const Home = () => {
                                 <div className="flex items-center justify-center h-full"><ImageIcon className="w-10 h-10 text-muted-foreground/30" /></div>
                               )}
                               {a.immagini && a.immagini.length > 1 && (
-                                <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded">
+                                <span className="absolute bottom-2 right-2 bg-background/80 text-foreground text-[10px] font-medium px-1.5 py-0.5 rounded-sm">
                                   1/{a.immagini.length}
                                 </span>
                               )}

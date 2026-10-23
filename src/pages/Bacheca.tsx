@@ -374,7 +374,7 @@ const Bacheca = () => {
     if (!sentinelRef.current || !hasMore || loadingMore || loading) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore) {
           setLoadingMore(true);
           fetchFeed(offset).then((more) => {
             setItems((prev) => [...prev, ...more]);

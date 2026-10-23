@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "@/lib/router-compat";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail } from "lucide-react";
@@ -649,7 +649,7 @@ const CategoriaPage = () => {
                 <div>
                   <h4 className="text-sm font-medium text-foreground mb-2">Quartiere</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {(quartieri.length > 0 ? quartieri : ["Brera", "Isola", "Navigli", "Porta Romana"]).map((q) => (
+                    {(quartieri.length > 0 ? quartieri.map(q => q.nome) : ["Brera", "Isola", "Navigli", "Porta Romana"]).map((q) => (
                       <Button key={q} variant={selectedQuartieri.includes(q) ? "default" : "outline"} size="sm"
                         className="h-7 text-xs rounded-full" onClick={() => toggleQuartiere(q)}>
                         {q}

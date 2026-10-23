@@ -10,7 +10,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Separator } from "@/components/ui/separator";
 import PostImageGrid from "@/components/gruppi/PostImageGrid";
 import RicordameloSheet from "@/components/RicordameloSheet";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -197,7 +197,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
         .or(`acquirente_id.eq.${currentUserId},venditore_id.eq.${currentUserId}`)
         .limit(1);
 
-      if (existing && existing.length > 0) {
+      if (existing?.[0]) {
         navigate(`/chat/${existing[0].id}`);
         return;
       }
