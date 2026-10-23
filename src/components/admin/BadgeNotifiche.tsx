@@ -22,7 +22,7 @@ const BadgeNotifiche = ({ tipo }: Props) => {
     fetchCount();
 
     const channel = supabase
-      .channel(`badge-${tipo}`)
+      .channel(`badge-${tipo}` + "-" + crypto.randomUUID())
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table },

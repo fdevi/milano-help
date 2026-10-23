@@ -74,7 +74,7 @@ const BadgeChat = () => {
     fetchUnread();
 
     const channel = supabase
-      .channel("badge-chat-" + user.id)
+      .channel("badge-chat-" + user.id + "-" + crypto.randomUUID())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi" }, () => fetchUnread())
       .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_letti", filter: `user_id=eq.${user.id}` }, () => fetchUnread())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messaggi_privati" }, () => fetchUnread())

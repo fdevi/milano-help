@@ -234,7 +234,7 @@ const GruppoDetail = () => {
   useEffect(() => {
     if (!id || !isMember) return;
     const channel = supabase
-      .channel(`gruppo-${id}`)
+      .channel(`gruppo-${id}` + "-" + crypto.randomUUID())
       .on("postgres_changes", { event: "*", schema: "public", table: "gruppi_messaggi", filter: `gruppo_id=eq.${id}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["gruppo_messaggi", id] });
         queryClient.invalidateQueries({ queryKey: ["msg_profiles"] });

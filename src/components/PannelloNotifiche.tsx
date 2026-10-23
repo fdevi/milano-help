@@ -105,7 +105,7 @@ const PannelloNotifiche = () => {
     };
 
     const channel = supabase
-      .channel("notifiche-pannello-" + user.id)
+      .channel("notifiche-pannello-" + user.id + "-" + crypto.randomUUID())
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",

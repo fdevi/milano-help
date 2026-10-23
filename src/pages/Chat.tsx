@@ -296,7 +296,7 @@ const Chat = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("chat-realtime")
+      .channel("chat-realtime" + "-" + crypto.randomUUID())
       .on("postgres_changes", { event: "*", schema: "public", table: "messaggi" }, () => {
         queryClient.invalidateQueries({ queryKey: ["messaggi", conversationId] });
         queryClient.invalidateQueries({ queryKey: ["unread_per_conv"] });
