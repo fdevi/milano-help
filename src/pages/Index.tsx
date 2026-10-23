@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { SITE_URL } from "@/lib/announcementSeo";
 import milanoTramonto from "@/assets/milano-tramonto.jpg";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
