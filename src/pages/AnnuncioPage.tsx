@@ -270,7 +270,7 @@ const AnnuncioPage = () => {
   useEffect(() => {
     if (!id) return;
     const channel = supabase
-      .channel(`annuncio-likes-${id}`)
+      .channel(`annuncio-likes-${id}` + "-" + crypto.randomUUID())
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "annunci", filter: `id=eq.${id}` },

@@ -167,7 +167,7 @@ const DropdownChat = () => {
     fetchUnread();
 
     const channel = supabase
-      .channel("dropdown-chat-" + user.id)
+      .channel("dropdown-chat-" + user.id + "-" + crypto.randomUUID())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "gruppi_messaggi" }, () => fetchUnread())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messaggi_privati" }, () => fetchUnread())
       .on("postgres_changes", { event: "*", schema: "public", table: "messaggi_letti", filter: `user_id=eq.${user.id}` }, () => fetchUnread())

@@ -135,7 +135,7 @@ const EventoPage = () => {
   useEffect(() => {
     if (!id) return;
     const channel = supabase
-      .channel(`commenti-evento-${id}`)
+      .channel(`commenti-evento-${id}` + "-" + crypto.randomUUID())
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "eventi_commenti", filter: `evento_id=eq.${id}` },

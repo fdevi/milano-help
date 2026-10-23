@@ -49,7 +49,7 @@ const BadgeNotificheChat = () => {
     caricaNonLetti();
 
     const channel = supabase
-      .channel("messaggi-non-letti")
+      .channel("messaggi-non-letti" + "-" + crypto.randomUUID())
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "gruppi_messaggi" },

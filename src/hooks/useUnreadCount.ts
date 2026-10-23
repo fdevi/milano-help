@@ -29,7 +29,7 @@ export const useUnreadCount = () => {
 
     // Subscribe to new messages in real-time
     const channel = supabase
-      .channel("unread-count")
+      .channel("unread-count" + "-" + crypto.randomUUID())
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messaggi" },

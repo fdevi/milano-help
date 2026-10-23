@@ -87,7 +87,7 @@ const CommentiAnnuncio = ({ annuncioId, annuncioAutoreId, annuncioTitolo }: Prop
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel(`commenti-annuncio-${annuncioId}`)
+      .channel(`commenti-annuncio-${annuncioId}` + "-" + crypto.randomUUID())
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "annunci_commenti", filter: `annuncio_id=eq.${annuncioId}` },

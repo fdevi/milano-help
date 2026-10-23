@@ -210,7 +210,7 @@ const Bacheca = () => {
 
     const createChannel = () => {
       channel = supabase
-        .channel("bacheca-realtime")
+        .channel("bacheca-realtime" + "-" + crypto.randomUUID())
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "annunci" },
