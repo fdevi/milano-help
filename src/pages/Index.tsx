@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Helmet } from "react-helmet-async";
 import { SITE_URL } from "@/lib/announcementSeo";
 import milanoTramonto from "@/assets/milano-tramonto.jpg";
 import { motion } from "framer-motion";
@@ -257,11 +256,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <link rel="canonical" href={`${SITE_URL}/`} />
-        <meta name="robots" content="index,follow" />
-        <meta property="og:url" content={`${SITE_URL}/`} />
-      </Helmet>
       <Navbar />
       
       {/* Hero Section */}

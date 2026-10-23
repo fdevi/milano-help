@@ -21,7 +21,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import CommentiAnnuncio from "@/components/chat/CommentiAnnuncio";
-import AnnouncementHead from "@/components/AnnouncementHead";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "pk.eyJ1IjoiYmx1ZXgiLCJhIjoiY21tZGpxM2d4MDNsYjJxczc1enhiODRwZiJ9.Trj9Jg8cpsKLKNZun7Z23Q";
 
@@ -466,7 +465,6 @@ const AnnuncioPage = () => {
   if (!isLoading && (error || !annuncio)) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementHead id={id} />
         <Navbar />
         <div className="container mx-auto px-4 pt-24 pb-12 text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground mb-4">Annuncio non trovato</h1>
@@ -481,7 +479,6 @@ const AnnuncioPage = () => {
   if (!isLoading && annuncio && annuncio.stato !== "attivo" && annuncio.user_id !== user?.id && !isAdmin) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementHead id={id} />
         <Navbar />
         <div className="container mx-auto px-4 pt-24 pb-12 text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground mb-4">Annuncio non disponibile</h1>
@@ -499,7 +496,6 @@ const AnnuncioPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementHead id={id} announcement={annuncio} loading={isLoading} />
       <Navbar />
 
       <div className="container mx-auto px-4 pt-24 pb-12">

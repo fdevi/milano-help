@@ -1,6 +1,5 @@
 import { Link, useSearchParams } from "@/lib/router-compat";
 import { useQuery } from "@tanstack/react-query";
-import { Helmet } from "react-helmet-async";
 import { MapPin, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -8,7 +7,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ANNOUNCEMENTS_PAGE_SIZE, directoryPage, directoryUrl } from "@/lib/announcementSeo";
+import { ANNOUNCEMENTS_PAGE_SIZE, directoryPage } from "@/lib/announcementSeo";
 
 export default function AnnunciPubblici() {
   const [params] = useSearchParams();
@@ -33,14 +32,6 @@ export default function AnnunciPubblici() {
   const totalPages = Math.max(1, Math.ceil((data?.count || 0) / ANNOUNCEMENTS_PAGE_SIZE));
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>{`Annunci a Milano${page > 1 ? ` — Pagina ${page}` : ""} | Milano Help`}</title>
-        <meta name="description" content="Scopri gli annunci pubblicati su Milano Help: oggetti, professionisti e negozi nei quartieri di Milano." />
-        <meta name="robots" content={!isLoading && (isError || page > totalPages) ? "noindex,follow" : "index,follow"} />
-        <link rel="canonical" href={directoryUrl(page)} />
-        <meta property="og:url" content={directoryUrl(page)} />
-        <meta property="og:title" content="Annunci a Milano | Milano Help" />
-      </Helmet>
       <Navbar />
       <main className="container mx-auto max-w-6xl px-4 pt-24 pb-12">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
