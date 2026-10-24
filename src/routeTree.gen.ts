@@ -67,6 +67,7 @@ import { Route as AdminPrenotazioniIndexRouteImport } from './routes/admin/preno
 import { Route as AdminServiziIndexRouteImport } from './routes/admin/servizi/index'
 import { Route as AdminUtentiIndexRouteImport } from './routes/admin/utenti/index'
 import { Route as AdminUtentiUserIdRouteImport } from './routes/admin/utenti/$userId'
+import { Route as ApiPublicSitemapDotxmlRouteImport } from './routes/api/public/sitemap[.]xml'
 import { Route as AuthConfirmIndexRouteImport } from './routes/auth/confirm/index'
 import { Route as AdminModerazioneAnnunciIndexRouteImport } from './routes/admin/moderazione/annunci/index'
 import { Route as AdminModerazioneSegnalazioniIndexRouteImport } from './routes/admin/moderazione/segnalazioni/index'
@@ -365,6 +366,11 @@ const AdminUtentiUserIdRoute = AdminUtentiUserIdRouteImport.update({
   path: '/admin/utenti/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSitemapDotxmlRoute = ApiPublicSitemapDotxmlRouteImport.update({
+  id: '/api/public/sitemap.xml',
+  path: '/api/public/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthConfirmIndexRoute = AuthConfirmIndexRouteImport.update({
   id: '/auth/confirm/',
   path: '/auth/confirm/',
@@ -436,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/sezioni/': typeof SezioniIndexRoute
   '/termini/': typeof TerminiIndexRoute
   '/admin/utenti/$userId': typeof AdminUtentiUserIdRoute
+  '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/admin/annunci-speciali/': typeof AdminAnnunciSpecialiIndexRoute
   '/admin/annunci/': typeof AdminAnnunciIndexRoute
   '/admin/approvazione-categorie/': typeof AdminApprovazioneCategorieIndexRoute
@@ -500,6 +507,7 @@ export interface FileRoutesByTo {
   '/sezioni': typeof SezioniIndexRoute
   '/termini': typeof TerminiIndexRoute
   '/admin/utenti/$userId': typeof AdminUtentiUserIdRoute
+  '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/admin/annunci-speciali': typeof AdminAnnunciSpecialiIndexRoute
   '/admin/annunci': typeof AdminAnnunciIndexRoute
   '/admin/approvazione-categorie': typeof AdminApprovazioneCategorieIndexRoute
@@ -565,6 +573,7 @@ export interface FileRoutesById {
   '/sezioni/': typeof SezioniIndexRoute
   '/termini/': typeof TerminiIndexRoute
   '/admin/utenti/$userId': typeof AdminUtentiUserIdRoute
+  '/api/public/sitemap.xml': typeof ApiPublicSitemapDotxmlRoute
   '/admin/annunci-speciali/': typeof AdminAnnunciSpecialiIndexRoute
   '/admin/annunci/': typeof AdminAnnunciIndexRoute
   '/admin/approvazione-categorie/': typeof AdminApprovazioneCategorieIndexRoute
@@ -631,6 +640,7 @@ export interface FileRouteTypes {
     | '/sezioni/'
     | '/termini/'
     | '/admin/utenti/$userId'
+    | '/api/public/sitemap.xml'
     | '/admin/annunci-speciali/'
     | '/admin/annunci/'
     | '/admin/approvazione-categorie/'
@@ -695,6 +705,7 @@ export interface FileRouteTypes {
     | '/sezioni'
     | '/termini'
     | '/admin/utenti/$userId'
+    | '/api/public/sitemap.xml'
     | '/admin/annunci-speciali'
     | '/admin/annunci'
     | '/admin/approvazione-categorie'
@@ -759,6 +770,7 @@ export interface FileRouteTypes {
     | '/sezioni/'
     | '/termini/'
     | '/admin/utenti/$userId'
+    | '/api/public/sitemap.xml'
     | '/admin/annunci-speciali/'
     | '/admin/annunci/'
     | '/admin/approvazione-categorie/'
@@ -824,6 +836,7 @@ export interface RootRouteChildren {
   SezioniIndexRoute: typeof SezioniIndexRoute
   TerminiIndexRoute: typeof TerminiIndexRoute
   AdminUtentiUserIdRoute: typeof AdminUtentiUserIdRoute
+  ApiPublicSitemapDotxmlRoute: typeof ApiPublicSitemapDotxmlRoute
   AdminAnnunciSpecialiIndexRoute: typeof AdminAnnunciSpecialiIndexRoute
   AdminAnnunciIndexRoute: typeof AdminAnnunciIndexRoute
   AdminApprovazioneCategorieIndexRoute: typeof AdminApprovazioneCategorieIndexRoute
@@ -1250,6 +1263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUtentiUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sitemap.xml': {
+      id: '/api/public/sitemap.xml'
+      path: '/api/public/sitemap.xml'
+      fullPath: '/api/public/sitemap.xml'
+      preLoaderRoute: typeof ApiPublicSitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/confirm/': {
       id: '/auth/confirm/'
       path: '/auth/confirm'
@@ -1328,6 +1348,7 @@ const rootRouteChildren: RootRouteChildren = {
   SezioniIndexRoute: SezioniIndexRoute,
   TerminiIndexRoute: TerminiIndexRoute,
   AdminUtentiUserIdRoute: AdminUtentiUserIdRoute,
+  ApiPublicSitemapDotxmlRoute: ApiPublicSitemapDotxmlRoute,
   AdminAnnunciSpecialiIndexRoute: AdminAnnunciSpecialiIndexRoute,
   AdminAnnunciIndexRoute: AdminAnnunciIndexRoute,
   AdminApprovazioneCategorieIndexRoute: AdminApprovazioneCategorieIndexRoute,

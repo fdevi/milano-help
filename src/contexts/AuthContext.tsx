@@ -115,7 +115,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfileComplete(null);
           setLoading(false);
           // OneSignal logout
-          try { (window as any).OneSignal?.logout(); } catch (e) { /* ignore */ }
+          if (_event === "SIGNED_OUT") {
+            try { Promise.resolve((window as any).OneSignal?.logout()).catch(() => {}); } catch (e) { /* ignore */ }
+          }
         }
       }
     );
@@ -124,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    try { (window as any).OneSignal?.logout(); } catch (e) { /* ignore */ }
+    try { await (window as any).OneSignal?.logout(); } catch (e) { /* ignore */ }
     await supabase.auth.signOut();
   };
 
