@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import EventStatusBadge from "@/components/EventStatusBadge";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { fetchUpcomingEvents } from "@/lib/upcomingEvents";
 
 // Mappa delle icone per ogni categoria
 const iconMap: Record<string, any> = {
@@ -223,16 +224,12 @@ const Index = () => {
     }
   }, [categorie]);
 
-  // Carica eventi attivi dalla tabella eventi
+  // Solo eventi futuri, filtrati prima del limite di sei.
   const { data: eventi = [], isLoading: loadingEventi, error: errorEventi } = useQuery({
-    queryKey: ['index-eventi-attivi'],
+    queryKey: ['index-eventi-prossimi'],
+    refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('eventi')
-        .select('*')
-        .eq('stato', 'attivo')
-        .order('data', { ascending: true })
-        .limit(6);
+      const { data, error } = await fetchUpcomingEvents(supabase);
       
       if (error) throw error;
       if (!data || data.length === 0) return [];
