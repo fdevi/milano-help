@@ -24,6 +24,7 @@ import ExpandableText from "@/components/ExpandableText";
 import { getCategoryStyle, getAutoDescription, getMapsLink, getSearchLink } from "@/lib/eventCategoryUtils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import RicordameloSheet from "@/components/RicordameloSheet";
+import { eventUrl } from "@/lib/eventSeo";
 
 const EventoPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -478,8 +479,8 @@ const EventoPage = () => {
 
   const handleShare = (type: string) => {
     if (!evento) return;
-    const url = window.location.href;
-    const title = evento.titolo;
+    const url = eventUrl(evento.id);
+    const title = `${evento.titolo} | Milano Help`;
 
     switch (type) {
       case "copy":

@@ -17,6 +17,12 @@ for (let from = 0; ; from += 1000) {
   if (!data || data.length < 1000) break;
 }
 const { data: categories, error } = await client.from("categorie_annunci").select("nome").order("id");
+for (let from = 0; ; from += 1000) {
+  const { data, error } = await client.from("eventi").select("id").eq("stato", "attivo").order("id").range(from, from + 999);
+  if (error) throw new Error(`Unable to generate event sitemap: ${error.message}`);
+  for (const event of data || []) paths.push(`/evento/${encodeURIComponent(event.id)}`);
+  if (!data || data.length < 1000) break;
+}
 if (error) throw new Error(`Unable to generate category sitemap: ${error.message}`);
 for (const category of categories || []) paths.push(`/categoria/${encodeURIComponent(category.nome)}`);
 if (paths.length > 50000) throw new Error("Sitemap requires splitting before publishing more than 50,000 URLs");

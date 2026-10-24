@@ -100,7 +100,9 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
   const text = item.text || "";
   const isLong = text.length > 200 || text.split("\n").length > 4;
 
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}${item.link}` : item.link;
+  const shareUrl = item.type === "evento"
+    ? `https://www.milanohelp.it/evento/${encodeURIComponent(item.id)}`
+    : typeof window !== "undefined" ? `${window.location.origin}${item.link}` : item.link;
   const shareTitle = item.title || text.slice(0, 60) || "Guarda su MilanoHelp";
 
   const showContact = !!(author?.user_id && currentUserId && author.user_id !== currentUserId);
