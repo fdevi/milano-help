@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return json({ error: "Missing database configuration" }, 500);
   const db = createClient(url, key);
-  const sitemap = `${url}/functions/v1/sitemap`;
+  const sitemap = "https://www.milanohelp.it/api/public/sitemap.xml";
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { count, error } = await db.from("annunci").select("id", { count: "exact", head: true })
     .eq("stato", "attivo").or(`moderato_il.gte.${since},created_at.gte.${since}`);
@@ -25,6 +25,10 @@ Deno.serve(async (req) => {
     .eq("stato", "attivo").or(`created_at.gte.${since},updated_at.gte.${since}`);
   if (eventError) return json({ error: eventError.message }, 500);
   if (!count && !eventCount) return json({ submitted: false, reason: "no new announcements or events" });
+  const liveSitemap = await fetch(sitemap);
+  if (!liveSitemap.ok || !(await liveSitemap.text()).includes("<urlset")) {
+    return json({ submitted: false, reason: "live sitemap awaits site publication" });
+  }
 
   const headers = { Authorization: `Bearer ${lovable}`, "X-Connection-Api-Key": gsc };
   const list = await fetch(`${GATEWAY}/webmasters/v3/sites`, { headers });
