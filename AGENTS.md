@@ -4,3 +4,4 @@
 - Only active announcements are indexable; database read policies preserve unpublished access solely for owners and authorized staff.
 - Sitemap entries omit lastmod unless a timestamp represents significant page content changes, not counter updates.- Routes live under `src/routes` (one file per page, auth guards wrap the page inside the route file); legacy react-router call sites go through `src/lib/router-compat.tsx` until rewritten natively.
 - Announcement share previews come from the `/annuncio/$id` route loader reading only active announcements; non-active ones expose no details.
+- Homepage upcoming events use a shared query that filters active future start dates before chronological ordering and limiting results, so ended events cannot displace future listings.
