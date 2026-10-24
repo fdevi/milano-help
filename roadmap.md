@@ -22,3 +22,9 @@
 # Condivisione annunci sui social
 - [x] Ogni annuncio condiviso mostra titolo, descrizione e foto propri con "Milano Help" (pagine preparate lato server).
 - [ ] Pubblicare l'aggiornamento: in attesa dell'azione dell'utente.
+
+# Indicizzazione e condivisione eventi
+- [ ] Metadati e anteprime specifiche degli eventi pubblicati, senza dettagli di eventi non pubblicati.
+- [ ] Includere eventi esistenti e nuovi nelle sitemap e nell'invio automatico a Google.
+- [ ] Verificare lettura pubblica, condivisioni e test.
+- [ ] Pubblicare le nuove pagine: in attesa dell'azione dell'utente.
