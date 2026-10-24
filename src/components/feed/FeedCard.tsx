@@ -14,6 +14,7 @@ import { useNavigate } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { eventUrl } from "@/lib/eventSeo";
 
 export type FeedItemType = "annuncio" | "evento" | "negozio" | "professionista" | "post_gruppo" | "nuovo_gruppo";
 
@@ -101,7 +102,7 @@ const FeedCard = ({ item, currentUserId }: { item: FeedItem; currentUserId?: str
   const isLong = text.length > 200 || text.split("\n").length > 4;
 
   const shareUrl = item.type === "evento"
-    ? `https://www.milanohelp.it/evento/${encodeURIComponent(item.id)}`
+    ? eventUrl(item.id)
     : typeof window !== "undefined" ? `${window.location.origin}${item.link}` : item.link;
   const shareTitle = item.title || text.slice(0, 60) || "Guarda su MilanoHelp";
 

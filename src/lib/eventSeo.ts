@@ -4,7 +4,7 @@ export interface EventSeoInput {
   titolo: string;
   descrizione: string | null;
   luogo: string;
-  stato: string;
+  stato: string | null;
   immagine: string | null;
   data: string;
   fine: string | null;
