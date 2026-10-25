@@ -1,3 +1,8 @@
+# Prezzi Ticketmaster
+- [ ] Salvare minimo, massimo e valuta con stato gratuito coerente.
+- [ ] Correggere prezzi e badge in dettaglio ed elenchi.
+- [ ] Preparare ed eseguire correzione una tantum, verificare test e visualizzazione.
+
 # Annunci sui motori di ricerca
 - [x] Limitare la lettura pubblica agli annunci attivi.
 - [x] Aggiungere metadati per i singoli annunci.
