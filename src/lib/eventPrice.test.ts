@@ -19,10 +19,10 @@ describe("Ticketmaster prices", () => {
     expect(ticketmasterPrice([{ min: 25 }])).toMatchObject({ prezzo: 25, prezzo_max: null, gratuito: false });
   });
   it("formats 25–80 in Italian EUR", () => {
-    expect(formatEventPrice({ gratuito: false, prezzo: 25, prezzo_max: 80 })).toBe("25,00 € – 80,00 €");
+    expect(formatEventPrice({ gratuito: false, prezzo: 25, prezzo_max: 80 })).toBe("25,00 € – 80,00 €");
   });
   it("formats a minimum-only price in Italian EUR", () => {
-    expect(formatEventPrice({ gratuito: false, prezzo: 25 })).toBe("a partire da 25,00 €");
+    expect(formatEventPrice({ gratuito: false, prezzo: 25 })).toBe("a partire da 25,00 €");
   });
   it("never infers free from missing paid-event pricing", () => {
     expect(formatEventPrice({ gratuito: false, prezzo: null })).toBe("A pagamento");
