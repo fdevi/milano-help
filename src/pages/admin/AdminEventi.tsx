@@ -19,6 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { formatEventPrice } from "@/lib/eventPrice";
 import {
   MoreHorizontal, Eye, Edit, Trash2, Calendar, MapPin, Users, Search,
   CheckCircle, XCircle, Clock, PauseCircle,
@@ -301,7 +302,7 @@ const AdminEventi = () => {
             {detailModal?.data && <p className="text-sm"><Calendar className="w-4 h-4 inline mr-1" />{format(new Date(detailModal.data), "PPP HH:mm", { locale: it })}</p>}
             {detailModal?.luogo && <p className="text-sm"><MapPin className="w-4 h-4 inline mr-1" />{detailModal.luogo}</p>}
             {detailModal?.max_partecipanti && <p className="text-sm"><Users className="w-4 h-4 inline mr-1" />Max: {detailModal.max_partecipanti}</p>}
-            {detailModal?.prezzo != null && <p className="text-sm font-medium">{detailModal.gratuito ? "Gratuito" : `€${detailModal.prezzo}`}</p>}
+            {detailModal && <Badge variant={detailModal.gratuito ? "default" : "outline"}>{formatEventPrice(detailModal)}</Badge>}
             {detailModal?.motivo_rifiuto && <p className="text-sm text-destructive">Motivo rifiuto: {detailModal.motivo_rifiuto}</p>}
           </div>
         </DialogContent>

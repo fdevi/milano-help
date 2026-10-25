@@ -477,10 +477,12 @@ export type Database = {
           organizzatore_id: string
           partecipanti: number | null
           prezzo: number | null
+          prezzo_max: number | null
           pubblicato_come_admin: boolean | null
           stato: string | null
           titolo: string
           updated_at: string | null
+          valuta: string | null
           visualizzazioni: number
         }
         Insert: {
@@ -503,10 +505,12 @@ export type Database = {
           organizzatore_id: string
           partecipanti?: number | null
           prezzo?: number | null
+          prezzo_max?: number | null
           pubblicato_come_admin?: boolean | null
           stato?: string | null
           titolo: string
           updated_at?: string | null
+          valuta?: string | null
           visualizzazioni?: number
         }
         Update: {
@@ -529,10 +533,12 @@ export type Database = {
           organizzatore_id?: string
           partecipanti?: number | null
           prezzo?: number | null
+          prezzo_max?: number | null
           pubblicato_come_admin?: boolean | null
           stato?: string | null
           titolo?: string
           updated_at?: string | null
+          valuta?: string | null
           visualizzazioni?: number
         }
         Relationships: []

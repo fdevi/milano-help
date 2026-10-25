@@ -1,4 +1,5 @@
 # Architecture rules
+- Ticketmaster imports and the one-time repair share a pure price-range mapper; event price displays use a shared Italian EUR formatter to prevent inconsistent free badges.
 - Page metadata (title, description, og:*, canonical) is set in each route's TanStack `head()` and rendered server-side so social crawlers and search engines see it; the root route holds only sitewide defaults and never a canonical or og:url.
 - Public announcement discovery uses a paginated `/annunci` directory and a predev/prebuild sitemap generator; live directory queries discover new listings between publishes.
 - Only active announcements are indexable; database read policies preserve unpublished access solely for owners and authorized staff.

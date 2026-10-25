@@ -22,6 +22,13 @@
       "when": 1792837134135,
       "tag": "0002_restrict_unpublished_event_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792969904737,
+      "tag": "0003_ticketmaster_event_price_range",
+      "breakpoints": true
     }
   ]
 }

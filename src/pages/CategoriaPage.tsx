@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { icons, LucideIcon, ImageOff, SlidersHorizontal, X, Calendar, MapPin, Clock, Search, Filter, ArrowUpDown, CalendarDays, Star, Building2, Store, Phone, Mail } from "lucide-react";
 import { format } from "date-fns";
 import EventStatusBadge from "@/components/EventStatusBadge";
+import { formatEventPrice } from "@/lib/eventPrice";
 import { it } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -580,9 +581,6 @@ const CategoriaPage = () => {
                               </Badge>
                             </div>
                           )}
-                          {evento.gratuito && (
-                            <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 text-xs">Gratuito</Badge>
-                          )}
                         </div>
                       ) : (
                         <div className="relative h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
@@ -608,9 +606,7 @@ const CategoriaPage = () => {
                           <MapPin className="w-4 h-4 shrink-0" />
                           <span className="truncate">{evento.luogo}</span>
                         </div>
-                        {evento.prezzo != null && !evento.gratuito && (
-                          <p className="text-sm font-bold text-primary mt-2">€{evento.prezzo.toFixed(2)}</p>
-                        )}
+                        <Badge variant={evento.gratuito ? "default" : "outline"} className="mt-2 self-start whitespace-normal">{formatEventPrice(evento)}</Badge>
                         <div className="mt-auto pt-3 flex items-center gap-2 text-xs text-muted-foreground border-t">
                           <span>👤 {evento.organizzatore_nome}</span>
                           <EventStatusBadge dataInizio={evento.data} dataFine={evento.fine} />

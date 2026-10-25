@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { ticketmasterPrice, type TicketmasterPriceRange } from "../../../src/lib/ticketmasterPrice.ts"
 
 const TICKETMASTER_API_KEY = Deno.env.get('TICKETMASTER_API_KEY')!
 const SEATGEEK_CLIENT_ID = Deno.env.get('SEATGEEK_CLIENT_ID')!
@@ -34,7 +35,7 @@ interface TicketmasterEvent {
   dates?: { start?: { dateTime?: string; localDate?: string }; end?: { dateTime?: string } }
   _embedded?: { venues?: Array<{ name?: string; location?: { latitude?: string; longitude?: string }; city?: { name?: string } }> }
   images?: Array<{ url?: string; width?: number }>
-  priceRanges?: Array<{ min?: number; max?: number }>
+  priceRanges?: TicketmasterPriceRange[]
   classifications?: Array<{ segment?: { name?: string }; genre?: { name?: string } }>
   info?: string
   pleaseNote?: string
@@ -58,8 +59,7 @@ function mapTicketmasterEvent(ev: TicketmasterEvent) {
   if (!startDate) return null
 
   const bestImage = ev.images?.sort((a, b) => (b.width || 0) - (a.width || 0))?.[0]?.url || null
-  const priceMin = ev.priceRanges?.[0]?.min
-  const isGratuito = !priceMin || priceMin === 0
+  const price = ticketmasterPrice(ev.priceRanges)
   const classification = ev.classifications?.[0]
   const categoria = classification?.genre?.name || classification?.segment?.name || 'Altro'
 
@@ -80,8 +80,7 @@ function mapTicketmasterEvent(ev: TicketmasterEvent) {
     lat: venue?.location?.latitude ? parseFloat(venue.location.latitude) : null,
     lon: venue?.location?.longitude ? parseFloat(venue.location.longitude) : null,
     immagine: bestImage,
-    prezzo: priceMin || null,
-    gratuito: isGratuito,
+    ...price,
     categoria,
     stato: 'attivo',
     organizzatore_id: ADMIN_USER_ID,

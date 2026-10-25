@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuartieri } from "@/hooks/useQuartieri";
 import { Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
+import { formatEventPrice } from "@/lib/eventPrice";
 import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";
 
 // ── Profile fetching ──
@@ -748,7 +749,7 @@ const Profilo = () => {
                             {ev.fine
                               ? formatDateRangeCompact(new Date(ev.data), new Date(ev.fine))
                               : new Date(ev.data).toLocaleDateString("it-IT")} · {abbreviaIndirizzo(ev.luogo)}
-                            {ev.gratuito ? " · Gratuito" : ev.prezzo != null ? ` · €${ev.prezzo}` : ""}
+                            {` · ${formatEventPrice(ev)}`}
                           </p>
                         </div>
                         {user?.id === ev.organizzatore_id && (
