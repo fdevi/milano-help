@@ -4,7 +4,16 @@ import { getPublicEvent } from "@/lib/publicEvent.functions";
 import { eventHeadData } from "@/lib/eventSeo";
 
 export const Route = createFileRoute("/evento/$id")({
-  loader: async ({ params }) => ({ event: await getPublicEvent({ data: { id: params.id } }) }),
+  loader: async ({ params }) => {
+    try {
+      return { event: await getPublicEvent({ data: { id: params.id } }) };
+    } catch {
+      // Share-preview failures must not block the page's independent event lookup.
+      return { event: null };
+    }
+  },
+  errorComponent: EventoPage,
+  notFoundComponent: EventoPage,
   head: ({ params, loaderData }) => {
     const seo = eventHeadData(params.id, loaderData?.event ?? null);
     const meta: Array<Record<string, string>> = [
