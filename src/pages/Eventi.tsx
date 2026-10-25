@@ -123,10 +123,6 @@ const EventCard = ({ event, isParticipating, onDelete }: {
           <p className="text-xs font-bold text-primary leading-tight">{new Date(event.data).toLocaleDateString("it", { month: "short" }).toUpperCase()}</p>
           <p className="text-lg font-heading font-bold text-foreground leading-tight">{new Date(event.data).getDate()}</p>
         </div>
-        {/* Price badge */}
-        <Badge variant={event.gratuito ? "default" : "secondary"} className="absolute bottom-3 right-3 max-w-[calc(100%-1.5rem)] whitespace-normal text-right">
-          {formatEventPrice(event)}
-        </Badge>
         {/* Status badge */}
         <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
           <EventStatusBadge dataInizio={event.data} dataFine={event.fine} />
@@ -145,6 +141,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
 
       {/* Content */}
       <div className="p-4 space-y-3">
+        <Badge variant={event.gratuito ? "default" : "secondary"} className="max-w-full whitespace-normal">{formatEventPrice(event)}</Badge>
         <div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
             <Clock className="w-3 h-3" />

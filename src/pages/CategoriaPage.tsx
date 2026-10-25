@@ -581,9 +581,6 @@ const CategoriaPage = () => {
                               </Badge>
                             </div>
                           )}
-                          {evento.gratuito && (
-                            <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 text-xs">Gratuito</Badge>
-                          )}
                         </div>
                       ) : (
                         <div className="relative h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
