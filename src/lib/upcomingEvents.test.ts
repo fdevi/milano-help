@@ -7,7 +7,7 @@ function queryAtCurrentTime() {
   const query = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
-    gte: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
   };
@@ -17,10 +17,12 @@ function queryAtCurrentTime() {
 }
 
 describe("homepage upcoming events", () => {
-  it("excludes earlier start dates before selecting the six events", () => {
+  it("includes ongoing events with an end date and today's events without one before limiting", () => {
     const query = queryAtCurrentTime();
-    expect(query.gte).toHaveBeenCalledWith("data", "2026-10-24T10:10:00.000Z");
-    const filterOrder = query.gte.mock.invocationCallOrder[0];
+    const startOfToday = new Date("2026-10-24T10:10:00Z");
+    startOfToday.setHours(0, 0, 0, 0);
+    expect(query.or).toHaveBeenCalledWith(`fine.gte.2026-10-24T10:10:00.000Z,and(fine.is.null,data.gte.${startOfToday.toISOString()})`);
+    const filterOrder = query.or.mock.invocationCallOrder[0];
     const limitOrder = query.limit.mock.invocationCallOrder[0];
     if (filterOrder === undefined || limitOrder === undefined) throw new Error("Missing query filter or limit");
     expect(filterOrder).toBeLessThan(limitOrder);

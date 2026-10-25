@@ -6,6 +6,10 @@
 - [x] Verificare accesso pubblico, esclusioni e navigazione.
 - [x] Includere gli annunci esistenti senza ripubblicarli: verificati tutti i cinque annunci attivi nell'elenco e nella sitemap.
 
+# Segnalazioni monitoraggio eventi
+- [ ] Evitare che errori nell'anteprima social impediscano l'apertura dell'evento e verificare il recupero.
+- [ ] Mantenere eventi in corso in homepage, escludere quelli terminati e verificare ordine e limite di sei.
+
 # Visibilità del sito e nei quartieri
 - [x] Verificare informazioni pubbliche e accesso ai dati Google: account Fabio autorizzato; proprietà www.milanohelp.it verificata e homepage indicizzata.
 - [x] Migliorare le informazioni generali per i motori di ricerca dove necessario: canonical homepage, schema WebSite, riferimenti corretti e sitemap in robots; verifiche browser e test superati.
