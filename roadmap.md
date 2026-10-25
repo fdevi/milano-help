@@ -7,8 +7,8 @@
 - [x] Includere gli annunci esistenti senza ripubblicarli: verificati tutti i cinque annunci attivi nell'elenco e nella sitemap.
 
 # Segnalazioni monitoraggio eventi
-- [ ] Evitare che errori nell'anteprima social impediscano l'apertura dell'evento e verificare il recupero.
-- [ ] Mantenere eventi in corso in homepage, escludere quelli terminati e verificare ordine e limite di sei.
+- [x] Evitare che errori nell'anteprima social impediscano l'apertura dell'evento: verificati evento reale con errore simulato e collegamento non valido.
+- [x] Mantenere eventi in corso in homepage, escludere quelli terminati e verificare ordine e limite di sei: test e controllo della homepage superati.
 
 # Visibilità del sito e nei quartieri
 - [x] Verificare informazioni pubbliche e accesso ai dati Google: account Fabio autorizzato; proprietà www.milanohelp.it verificata e homepage indicizzata.
