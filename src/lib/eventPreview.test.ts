@@ -7,7 +7,7 @@ vi.mock("@/pages/EventoPage", () => ({ default: () => null }));
 vi.mock("@/lib/publicEvent.functions", () => ({ getPublicEvent: vi.fn() }));
 
 import { getPublicEvent } from "@/lib/publicEvent.functions";
-import { Route } from "./$id";
+import { Route } from "@/routes/evento/$id";
 
 const route = Route as unknown as {
   loader: (input: { params: { id: string } }) => Promise<{ event: unknown }>;
