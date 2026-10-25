@@ -2,7 +2,8 @@
 - [x] Salvare minimo, massimo e valuta con stato gratuito coerente.
 - [x] Correggere prezzi e badge in dettaglio ed elenchi: verificati eventi reali e intervallo 25–80 EUR simulato, nessun errore o overflow mobile.
 - [x] Preparare script una tantum e verificarlo senza modifiche: 216 eventi riletti, tutti gratuiti secondo la regola richiesta; 24 test superati.
-- [x] Applicare script una tantum con account amministratore: 216 eventi controllati e aggiornati, tutti gratuiti secondo la regola, nessun errore.
+- [x] Applicare script una tantum con account amministratore: 216 eventi controllati e aggiornati, nessun errore.
+- [x] Correggere "nessun prezzo = gratuito": l'API Ticketmaster non espone i prezzi degli eventi italiani (verificato su Martin Parr) e il sito blocca la lettura automatica; ora prezzo assente = "Prezzo da verificare", mai badge gratuito. 216 eventi riaggiornati come prezzo sconosciuto; 12 test superati; verificato su pagina evento reale.
 - [ ] Pubblicare prezzi e badge aggiornati: in attesa dell'azione dell'utente.
 
 # Annunci sui motori di ricerca
