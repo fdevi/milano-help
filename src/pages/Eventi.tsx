@@ -1,5 +1,6 @@
 import { useToast } from "@/hooks/use-toast";
 import EventStatusBadge from "@/components/EventStatusBadge";
+import { formatEventPrice } from "@/lib/eventPrice";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -123,8 +124,8 @@ const EventCard = ({ event, isParticipating, onDelete }: {
           <p className="text-lg font-heading font-bold text-foreground leading-tight">{new Date(event.data).getDate()}</p>
         </div>
         {/* Price badge */}
-        <Badge className={`absolute top-3 right-3 ${event.gratuito ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-          {event.gratuito ? "Gratuito" : `€${event.prezzo}`}
+        <Badge variant={event.gratuito ? "default" : "secondary"} className="absolute bottom-3 right-3 max-w-[calc(100%-1.5rem)] whitespace-normal text-right">
+          {formatEventPrice(event)}
         </Badge>
         {/* Status badge */}
         <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
