@@ -25,8 +25,8 @@ async function main() {
   const { data: identity, error: authError } = await client.auth.getUser(session.access_token);
   if (authError || !identity.user) throw new Error("Invalid administrator session");
   const { data: admin, error: roleError } = await client.rpc("has_role", { _user_id: identity.user.id, _role: "admin" });
-  if (roleError || !admin) throw new Error("Only administrators can repair prices");
   const apply = process.argv.includes("--apply");
+  if (apply && (roleError || !admin)) throw new Error("Only administrators can repair prices");
   const summary = { checked: 0, updated: 0, paid: 0, free: 0, unavailable: 0, failed: 0 };
   for (let offset = 0; ; offset += 100) {
     const { data: rows, error } = await client.from("eventi").select("id,external_id")
