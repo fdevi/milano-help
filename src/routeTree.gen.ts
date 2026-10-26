@@ -72,6 +72,7 @@ import { Route as AuthConfirmIndexRouteImport } from './routes/auth/confirm/inde
 import { Route as AdminModerazioneAnnunciIndexRouteImport } from './routes/admin/moderazione/annunci/index'
 import { Route as AdminModerazioneSegnalazioniIndexRouteImport } from './routes/admin/moderazione/segnalazioni/index'
 import { Route as AdminModerazioneStoricoIndexRouteImport } from './routes/admin/moderazione/storico/index'
+import { Route as ApiPublicHooksSocialPublishRouteImport } from './routes/api/public/hooks/social-publish'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -394,6 +395,12 @@ const AdminModerazioneStoricoIndexRoute =
     path: '/admin/moderazione/storico/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksSocialPublishRoute =
+  ApiPublicHooksSocialPublishRouteImport.update({
+    id: '/api/public/hooks/social-publish',
+    path: '/api/public/hooks/social-publish',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -456,6 +463,7 @@ export interface FileRoutesByFullPath {
   '/admin/servizi/': typeof AdminServiziIndexRoute
   '/admin/utenti/': typeof AdminUtentiIndexRoute
   '/auth/confirm/': typeof AuthConfirmIndexRoute
+  '/api/public/hooks/social-publish': typeof ApiPublicHooksSocialPublishRoute
   '/admin/moderazione/annunci/': typeof AdminModerazioneAnnunciIndexRoute
   '/admin/moderazione/segnalazioni/': typeof AdminModerazioneSegnalazioniIndexRoute
   '/admin/moderazione/storico/': typeof AdminModerazioneStoricoIndexRoute
@@ -521,6 +529,7 @@ export interface FileRoutesByTo {
   '/admin/servizi': typeof AdminServiziIndexRoute
   '/admin/utenti': typeof AdminUtentiIndexRoute
   '/auth/confirm': typeof AuthConfirmIndexRoute
+  '/api/public/hooks/social-publish': typeof ApiPublicHooksSocialPublishRoute
   '/admin/moderazione/annunci': typeof AdminModerazioneAnnunciIndexRoute
   '/admin/moderazione/segnalazioni': typeof AdminModerazioneSegnalazioniIndexRoute
   '/admin/moderazione/storico': typeof AdminModerazioneStoricoIndexRoute
@@ -587,6 +596,7 @@ export interface FileRoutesById {
   '/admin/servizi/': typeof AdminServiziIndexRoute
   '/admin/utenti/': typeof AdminUtentiIndexRoute
   '/auth/confirm/': typeof AuthConfirmIndexRoute
+  '/api/public/hooks/social-publish': typeof ApiPublicHooksSocialPublishRoute
   '/admin/moderazione/annunci/': typeof AdminModerazioneAnnunciIndexRoute
   '/admin/moderazione/segnalazioni/': typeof AdminModerazioneSegnalazioniIndexRoute
   '/admin/moderazione/storico/': typeof AdminModerazioneStoricoIndexRoute
@@ -654,6 +664,7 @@ export interface FileRouteTypes {
     | '/admin/servizi/'
     | '/admin/utenti/'
     | '/auth/confirm/'
+    | '/api/public/hooks/social-publish'
     | '/admin/moderazione/annunci/'
     | '/admin/moderazione/segnalazioni/'
     | '/admin/moderazione/storico/'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/admin/servizi'
     | '/admin/utenti'
     | '/auth/confirm'
+    | '/api/public/hooks/social-publish'
     | '/admin/moderazione/annunci'
     | '/admin/moderazione/segnalazioni'
     | '/admin/moderazione/storico'
@@ -784,6 +796,7 @@ export interface FileRouteTypes {
     | '/admin/servizi/'
     | '/admin/utenti/'
     | '/auth/confirm/'
+    | '/api/public/hooks/social-publish'
     | '/admin/moderazione/annunci/'
     | '/admin/moderazione/segnalazioni/'
     | '/admin/moderazione/storico/'
@@ -850,6 +863,7 @@ export interface RootRouteChildren {
   AdminServiziIndexRoute: typeof AdminServiziIndexRoute
   AdminUtentiIndexRoute: typeof AdminUtentiIndexRoute
   AuthConfirmIndexRoute: typeof AuthConfirmIndexRoute
+  ApiPublicHooksSocialPublishRoute: typeof ApiPublicHooksSocialPublishRoute
   AdminModerazioneAnnunciIndexRoute: typeof AdminModerazioneAnnunciIndexRoute
   AdminModerazioneSegnalazioniIndexRoute: typeof AdminModerazioneSegnalazioniIndexRoute
   AdminModerazioneStoricoIndexRoute: typeof AdminModerazioneStoricoIndexRoute
@@ -1298,6 +1312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminModerazioneStoricoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/social-publish': {
+      id: '/api/public/hooks/social-publish'
+      path: '/api/public/hooks/social-publish'
+      fullPath: '/api/public/hooks/social-publish'
+      preLoaderRoute: typeof ApiPublicHooksSocialPublishRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1362,6 +1383,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminServiziIndexRoute: AdminServiziIndexRoute,
   AdminUtentiIndexRoute: AdminUtentiIndexRoute,
   AuthConfirmIndexRoute: AuthConfirmIndexRoute,
+  ApiPublicHooksSocialPublishRoute: ApiPublicHooksSocialPublishRoute,
   AdminModerazioneAnnunciIndexRoute: AdminModerazioneAnnunciIndexRoute,
   AdminModerazioneSegnalazioniIndexRoute:
     AdminModerazioneSegnalazioniIndexRoute,
