@@ -82,6 +82,27 @@ const Navbar = () => {
               </Link>
             </>
           )}
+          {/* Social icons: sempre visibili, sia loggato che non */}
+          <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border">
+            <a
+              href="https://www.facebook.com/profile.php?id=61574681570447"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              className="p-1.5 rounded-full hover:bg-muted transition-colors"
+            >
+              <img src="/icons/facebook.svg" alt="" className="h-5 w-5" />
+            </a>
+            <a
+              href="https://www.instagram.com/milanohelp?igsh=MW9hb3c1aWlsNXlvdA==&utm_source=qr"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="p-1.5 rounded-full hover:bg-muted transition-colors"
+            >
+              <img src="/icons/instagram.svg" alt="" className="h-5 w-5" />
+            </a>
+          </div>
         </div>
 
         {/* Mobile: icons + hamburger */}
@@ -101,13 +122,32 @@ const Navbar = () => {
               </Link>
             </>
           )}
+          {/* Social icons: visibili anche su mobile */}
+          <a
+            href="https://www.facebook.com/profile.php?id=61574681570447"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Facebook"
+            className="p-1 rounded-full hover:bg-muted transition-colors"
+          >
+            <img src="/icons/facebook.svg" alt="" className="h-4 w-4" />
+          </a>
+          <a
+            href="https://www.instagram.com/milanohelp?igsh=MW9hb3c1aWlsNXlvdA==&utm_source=qr"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className="p-1 rounded-full hover:bg-muted transition-colors"
+          >
+            <img src="/icons/instagram.svg" alt="" className="h-4 w-4" />
+          </a>
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu (invariato) */}
       {isOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border shadow-lg">
           <div className="flex flex-col p-4 gap-1">
