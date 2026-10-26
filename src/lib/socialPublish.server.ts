@@ -24,7 +24,7 @@ async function log(evento_id: string | null, piattaforma: string, esito: string,
   await supabaseAdmin.from("social_post_logs").insert({ evento_id, piattaforma, esito, dettaglio: dettaglio ?? null });
 }
 
-export async function runSocialPublish() {
+export async function runSocialPublish(onlyEventId?: string) {
   const token = process.env.META_ACCESS_TOKEN;
   const pageId = process.env.META_PAGE_ID;
   const igId = process.env.META_IG_USER_ID;
@@ -34,7 +34,7 @@ export async function runSocialPublish() {
   }
 
   const { start, end } = socialWindow();
-  const { data, error } = await supabaseAdmin
+  let q = supabaseAdmin
     .from("eventi")
     .select("id, titolo, data, luogo, immagine, social_posted_at")
     .eq("stato", "attivo")
@@ -43,6 +43,8 @@ export async function runSocialPublish() {
     .lte("data", end.toISOString())
     .order("data", { ascending: true })
     .limit(20);
+  if (onlyEventId) q = q.eq("id", onlyEventId);
+  const { data, error } = await q;
   if (error) throw error;
 
   const chosen = pickEventsToPost(data ?? []);
