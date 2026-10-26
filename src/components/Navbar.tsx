@@ -40,9 +40,32 @@ const Navbar = () => {
     ? `${profile.nome}${profile.cognome ? ` ${profile.cognome}` : ''}`
     : user?.email?.split('@')[0] || 'Utente';
 
+  const socialLinks = (
+    <>
+      <a
+        href="https://www.facebook.com/profile.php?id=61574681570447"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Facebook"
+        className="p-1.5 rounded-full hover:bg-muted transition-colors"
+      >
+        <img src="/icons/facebook.svg" alt="" className="h-5 w-5" />
+      </a>
+      <a
+        href="https://www.instagram.com/milanohelp?igsh=MW9hb3c1aWlsNXlvdA==&utm_source=qr"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Instagram"
+        className="p-1.5 rounded-full hover:bg-muted transition-colors"
+      >
+        <img src="/icons/instagram.svg" alt="" className="h-5 w-5" />
+      </a>
+    </>
+  );
+
   return (
     <nav className="fixed top-0 left-0 right-0 bg-background border-b border-border px-4 py-3 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
         <Link to="/" className="shrink-0">
           <Logo variant="horizontal" size="md" />
         </Link>
@@ -82,72 +105,27 @@ const Navbar = () => {
               </Link>
             </>
           )}
-          {/* Social icons: sempre visibili, sia loggato che non */}
+          {/* Social: solo desktop, sempre visibili */}
           <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border">
-            <a
-              href="https://www.facebook.com/profile.php?id=61574681570447"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-              className="p-1.5 rounded-full hover:bg-muted transition-colors"
-            >
-              <img src="/icons/facebook.svg" alt="" className="h-5 w-5" />
-            </a>
-            <a
-              href="https://www.instagram.com/milanohelp?igsh=MW9hb3c1aWlsNXlvdA==&utm_source=qr"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              className="p-1.5 rounded-full hover:bg-muted transition-colors"
-            >
-              <img src="/icons/instagram.svg" alt="" className="h-5 w-5" />
-            </a>
+            {socialLinks}
           </div>
         </div>
 
-        {/* Mobile: icons + hamburger */}
+        {/* Mobile: hamburger + eventuali icone chat/notifiche */}
         <div className="flex md:hidden items-center gap-1">
-          {user ? (
+          {user && (
             <>
               <DropdownChat />
               <PannelloNotifiche />
             </>
-          ) : (
-            <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm">Accedi</Button>
-              </Link>
-              <Link to="/registrati">
-                <Button size="sm">Registrati</Button>
-              </Link>
-            </>
           )}
-          {/* Social icons: visibili anche su mobile */}
-          <a
-            href="https://www.facebook.com/profile.php?id=61574681570447"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Facebook"
-            className="p-1 rounded-full hover:bg-muted transition-colors"
-          >
-            <img src="/icons/facebook.svg" alt="" className="h-4 w-4" />
-          </a>
-          <a
-            href="https://www.instagram.com/milanohelp?igsh=MW9hb3c1aWlsNXlvdA==&utm_source=qr"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Instagram"
-            className="p-1 rounded-full hover:bg-muted transition-colors"
-          >
-            <img src="/icons/instagram.svg" alt="" className="h-4 w-4" />
-          </a>
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} aria-label="Menu">
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
-      {/* Mobile menu (invariato) */}
+      {/* Mobile menu */}
       {isOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border shadow-lg">
           <div className="flex flex-col p-4 gap-1">
@@ -179,6 +157,11 @@ const Navbar = () => {
                 <Link to="/registrati" onClick={() => setIsOpen(false)} className="px-3 py-2 rounded-md hover:bg-muted text-sm font-semibold text-primary">Registrati</Link>
               </>
             )}
+            {/* Social: in fondo al menu mobile */}
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border px-3">
+              <span className="text-xs text-muted-foreground">Seguici:</span>
+              {socialLinks}
+            </div>
           </div>
         </div>
       )}
