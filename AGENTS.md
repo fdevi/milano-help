@@ -7,3 +7,4 @@
 - Announcement share previews come from the `/annuncio/$id` route loader reading only active announcements; non-active ones expose no details.
 - Homepage events use a shared query filtering active, not-ended events before chronological ordering and limiting results; missing end dates use the start day's local end to match event status badges.
 - Event share metadata uses a public server function with active-only reads; sitemap generation and the existing scheduled submission include active events and announcements, with live XML proxied under the verified site domain and canonical production event share URLs.
+- Social auto-publish runs in a server route triggered by pg_cron with a private DB-stored token (or an admin session); events are claimed via social_posted_at before calling Meta so partial failures never repost.
