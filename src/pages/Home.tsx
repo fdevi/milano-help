@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
+import { formatEventPrice } from "@/lib/eventPrice";
 import { format } from "date-fns";
 import { abbreviaIndirizzo, formatDateRangeCompact } from "@/lib/formatMobile";
 
@@ -456,7 +457,7 @@ const Home = () => {
                             <MapPin className="w-3 h-3 shrink-0" />
                             <span className="truncate">{abbreviaIndirizzo(evento.luogo)}</span>
                           </p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
                             <Avatar className="w-5 h-5">
                               <AvatarImage src={evento.organizzatore_avatar || undefined} />
                               <AvatarFallback className="text-[8px]">
@@ -465,7 +466,7 @@ const Home = () => {
                             </Avatar>
                             <span className="text-xs text-muted-foreground">{evento.organizzatore_nome || "Utente"}</span>
                             <Badge variant="secondary" className="text-[10px] px-1.5">
-                              {evento.gratuito ? "Gratuito" : `€${evento.prezzo}`}
+                              {formatEventPrice(evento)}
                             </Badge>
                           </div>
                           {/* Modifica/Elimina solo se è l'evento dell'utente loggato */}

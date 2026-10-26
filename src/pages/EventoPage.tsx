@@ -1,5 +1,6 @@
 import { useParams, Link, useNavigate } from "@/lib/router-compat";
 import EventStatusBadge from "@/components/EventStatusBadge";
+import { formatEventPrice } from "@/lib/eventPrice";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Calendar, ChevronLeft, MapPin, Clock, Heart, MessageCircle, User, Send, Eye, Link as LinkIcon, Mail, Share2, Check, HelpCircle, Reply, X, Smile, Bell, Star, Bookmark, ThumbsUp } from "lucide-react";
@@ -578,11 +579,7 @@ const EventoPage = () => {
                       ⭐ Evento ufficiale
                     </Badge>
                   )}
-                  {evento.gratuito ? (
-                    <Badge className="bg-primary text-primary-foreground">Gratuito</Badge>
-                  ) : evento.prezzo != null ? (
-                    <Badge variant="outline">€{Number(evento.prezzo).toFixed(2)}</Badge>
-                  ) : null}
+                  <Badge variant={evento.gratuito ? "default" : "outline"}>{formatEventPrice(evento)}</Badge>
                 </div>
 
                 <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground mb-3">
