@@ -43,4 +43,4 @@
 
 # Pubblicazione eventi sui social
 - [x] Regole, coda giornaliera, log errori e programmazione alle 8:00.
-- [ ] Test finale con evento di prova: in attesa del token Meta.
+- [ ] Test finale con evento di prova: token salvato, in attesa del via per pubblicare un evento di prova reale.
