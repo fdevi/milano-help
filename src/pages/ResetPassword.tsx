@@ -1,3 +1,4 @@
+import { verifyResetToken } from "@/lib/passwordReset.functions";
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,32 +36,17 @@ const ResetPassword = () => {
 
     // Verifica che il token esista e non sia scaduto
     const verifyToken = async () => {
-      const { data, error } = await supabase
-        .from('password_resets')
-        .select('email, expires_at')
-        .eq('token', tokenFromUrl)
-        .single();
-
-      if (error || !data) {
+      const res = await verifyResetToken({ data: { token: tokenFromUrl } }).catch(() => null);
+      if (!res || res.status !== "ok" || !res.email) {
         toast({
-          title: "Link non valido o scaduto",
+          title: res?.status === "expired" ? "Link scaduto" : "Link non valido o scaduto",
           description: "Richiedi un nuovo reset password.",
           variant: "destructive",
         });
         navigate('/forgot-password');
         return;
       }
-
-      const expiresAt = new Date(data.expires_at);
-      if (expiresAt < new Date()) {
-        toast({
-          title: "Link scaduto",
-          description: "Richiedi un nuovo reset password.",
-          variant: "destructive",
-        });
-        navigate('/forgot-password');
-        return;
-      }
+      const data = { email: res.email };
 
       setEmail(data.email);
       setValidToken(true);

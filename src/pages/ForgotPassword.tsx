@@ -1,3 +1,4 @@
+import { requestPasswordReset } from "@/lib/passwordReset.functions";
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,30 +19,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      // 1. Genera un token casuale
-      const token = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 ora
-
-      // 2. Salva il token nel database
-      const { error: dbError } = await supabase
-        .from('password_resets')
-        .insert({ email, token, expires_at: expiresAt.toISOString() });
-
-      if (dbError) throw dbError;
-
-      // 3. Prepara il link di reset
-      const resetLink = `${window.location.origin}/reset-password?token=${token}`;
-
-      // 4. Chiama la Edge Function per inviare l'email
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('send-auth-email', {
-        body: {
-          to: email,
-          type: 'reset',
-          data: { resetLink }
-        },
-      });
-
-      if (fnError) throw new Error(fnError.message || 'Errore nell\'invio dell\'email');
+      await requestPasswordReset({ data: { email, origin: window.location.origin } });
 
 
       toast({
