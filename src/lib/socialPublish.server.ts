@@ -48,6 +48,13 @@ export async function runSocialPublish(onlyEventId?: string) {
   if (error) throw error;
 
   const chosen = pickEventsToPost(data ?? []);
+  // Page posts need a Page token: derive it from the stored user token.
+  let pageToken = token;
+  try {
+    const r = await fetch(`${GRAPH}/${pageId}?fields=access_token`, { headers: { Authorization: `Bearer ${token}` } });
+    const j = (await r.json()) as { access_token?: string };
+    if (j.access_token) pageToken = j.access_token;
+  } catch { /* fall back to the stored token */ }
   let tokenExpired = false;
   const results: Array<{ id: string; facebook: string; instagram: string }> = [];
 
@@ -65,7 +72,7 @@ export async function runSocialPublish(onlyEventId?: string) {
     const r = { id: e.id, facebook: "ok", instagram: "ok" };
 
     try {
-      const fb = await graphPost(`${pageId}/feed`, { message, link: eventUrl(e.id) }, token);
+      const fb = await graphPost(`${pageId}/feed`, { message, link: eventUrl(e.id) }, pageToken);
       await log(e.id, "facebook", "ok", fb.id);
     } catch (err) {
       const x = err as Error & { code?: number };

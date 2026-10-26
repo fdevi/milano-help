@@ -43,4 +43,5 @@
 
 # Pubblicazione eventi sui social
 - [x] Regole, coda giornaliera, log errori e programmazione alle 8:00.
-- [ ] Test finale con evento di prova: token salvato, in attesa del via per pubblicare un evento di prova reale.
+- [x] Test con evento di prova: Instagram ok, Facebook ok dopo correzione token Pagina.
+- [ ] Cancellare post di prova (FB 1030236583507467_122133445670948758, IG 18114405599601411) ed evento 136f05a8-5ff2-4dac-8c91-f1b203213024: in attesa della verifica dell utente.
