@@ -44,4 +44,5 @@
 # Pubblicazione eventi sui social
 - [x] Regole, coda giornaliera, log errori e programmazione alle 8:00.
 - [x] Test con evento di prova: Instagram ok, Facebook ok dopo correzione token Pagina.
-- [ ] Cancellare post di prova (FB 1030236583507467_122133445670948758, IG 18114405599601411) ed evento 136f05a8-5ff2-4dac-8c91-f1b203213024: in attesa della verifica dell utente.
+- [x] Post di prova Facebook ed evento di prova cancellati; Instagram non permette la cancellazione automatica (da fare a mano).
+- [x] Corretti i 5 problemi di sicurezza gravi, avviso scadenza token, guida docs/meta-token.md.
