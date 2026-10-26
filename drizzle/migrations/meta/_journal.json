@@ -29,6 +29,13 @@
       "when": 1792969904737,
       "tag": "0003_ticketmaster_event_price_range",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793045991709,
+      "tag": "0004_social_auto_publish",
+      "breakpoints": true
     }
   ]
 }
