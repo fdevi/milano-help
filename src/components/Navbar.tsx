@@ -43,7 +43,7 @@ const Navbar = () => {
   const socialLinks = (
     <>
       <a
-        href="https://www.facebook.com/profile.php?id=61574681570447"
+        href="https://www.facebook.com/profile.php?id=61578462749657"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Facebook"
