@@ -36,6 +36,13 @@
       "when": 1793045991709,
       "tag": "0004_social_auto_publish",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793046791241,
+      "tag": "0005_fix_critical_rls",
+      "breakpoints": true
     }
   ]
 }

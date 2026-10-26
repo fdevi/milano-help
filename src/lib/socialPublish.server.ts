@@ -33,6 +33,7 @@ export async function runSocialPublish(onlyEventId?: string) {
     return { posted: 0, error: "missing_config" };
   }
 
+  await checkTokenExpiry(token);
   const { start, end } = socialWindow();
   let q = supabaseAdmin
     .from("eventi")
@@ -109,4 +110,31 @@ export async function runSocialPublish(onlyEventId?: string) {
     });
   }
   return { posted: results.length, results };
+}
+
+const EXPIRY_WARNING_DAYS = 7;
+
+/** Warns the admin (once a day, via the daily run) when the Meta token expires within 7 days. */
+async function checkTokenExpiry(token: string) {
+  try {
+    const r = await fetch(`${GRAPH}/debug_token?input_token=${encodeURIComponent(token)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const j = (await r.json()) as { data?: { expires_at?: number; data_access_expires_at?: number } };
+    const dates = [j.data?.expires_at, j.data?.data_access_expires_at].filter((v): v is number => !!v && v > 0);
+    if (!dates.length) return;
+    const expiry = Math.min(...dates) * 1000;
+    const daysLeft = Math.floor((expiry - Date.now()) / 86400000);
+    if (daysLeft > EXPIRY_WARNING_DAYS) return;
+    const quando = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "long" }).format(new Date(expiry));
+    await log(null, "sistema", "avviso", `Token Meta in scadenza il ${quando}`);
+    await supabaseAdmin.from("notifiche").insert({
+      user_id: ADMIN_USER_ID,
+      tipo: "sistema",
+      titolo: "Token Facebook/Instagram in scadenza",
+      messaggio: `Il token Meta scade il ${quando}. Rigeneralo seguendo la guida in docs/meta-token.md.`,
+    });
+  } catch {
+    /* expiry check must never block publishing */
+  }
 }

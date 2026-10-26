@@ -175,13 +175,9 @@ const EventoPage = () => {
   const { data: partecipantiCounts } = useQuery({
     queryKey: ["evento_partecipanti_counts", id],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("eventi_partecipanti")
-        .select("stato")
-        .eq("evento_id", id!);
-      const confermati = (data || []).filter((p: any) => p.stato === "confermato").length;
-      const forse = (data || []).filter((p: any) => p.stato === "forse").length;
-      return { confermati, forse };
+      const { data } = await supabase.rpc("conta_partecipanti_evento", { _evento_id: id! });
+      const row = data?.[0];
+      return { confermati: row?.confermati ?? 0, forse: row?.forse ?? 0 };
     },
     enabled: !!id,
   });

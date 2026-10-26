@@ -1936,6 +1936,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      conta_partecipanti_evento: {
+        Args: { _evento_id: string }
+        Returns: {
+          confermati: number
+          forse: number
+        }[]
+      }
       count_group_members: { Args: { _gruppo_id: string }; Returns: number }
       fermate_con_linee: {
         Args: { stop_ids: string[] }
