@@ -479,6 +479,7 @@ export type Database = {
           prezzo: number | null
           prezzo_max: number | null
           pubblicato_come_admin: boolean | null
+          social_posted_at: string | null
           stato: string | null
           titolo: string
           updated_at: string | null
@@ -507,6 +508,7 @@ export type Database = {
           prezzo?: number | null
           prezzo_max?: number | null
           pubblicato_come_admin?: boolean | null
+          social_posted_at?: string | null
           stato?: string | null
           titolo: string
           updated_at?: string | null
@@ -535,6 +537,7 @@ export type Database = {
           prezzo?: number | null
           prezzo_max?: number | null
           pubblicato_come_admin?: boolean | null
+          social_posted_at?: string | null
           stato?: string | null
           titolo?: string
           updated_at?: string | null
@@ -1796,6 +1799,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      social_cron_token: {
+        Row: {
+          id: number
+          token: string
+        }
+        Insert: {
+          id?: number
+          token?: string
+        }
+        Update: {
+          id?: number
+          token?: string
+        }
+        Relationships: []
+      }
+      social_post_logs: {
+        Row: {
+          created_at: string
+          dettaglio: string | null
+          esito: string
+          evento_id: string | null
+          id: string
+          piattaforma: string
+        }
+        Insert: {
+          created_at?: string
+          dettaglio?: string | null
+          esito: string
+          evento_id?: string | null
+          id?: string
+          piattaforma: string
+        }
+        Update: {
+          created_at?: string
+          dettaglio?: string | null
+          esito?: string
+          evento_id?: string | null
+          id?: string
+          piattaforma?: string
+        }
+        Relationships: []
       }
       stop_times_atm: {
         Row: {
