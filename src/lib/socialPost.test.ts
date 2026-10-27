@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickEventsToPost, socialMessage } from "./socialPost";
+import { instagramCaption, pickEventsToPost, socialMessage } from "./socialPost";
 
 const now = new Date("2026-10-26T07:00:00Z");
 const ev = (id: string, data: string, posted: string | null = null) => ({
@@ -22,5 +22,11 @@ describe("social auto publish", () => {
 
   it("includes the event link in the message", () => {
     expect(socialMessage(ev("x1", "2026-10-27T10:00:00Z"))).toContain("https://www.milanohelp.it/evento/x1");
+  });
+
+  it("instagram caption points to the bio link instead of a raw URL", () => {
+    const caption = instagramCaption(ev("x1", "2026-10-27T10:00:00Z"));
+    expect(caption).toContain("Link agli eventi in bio");
+    expect(caption).not.toContain("https://");
   });
 });
