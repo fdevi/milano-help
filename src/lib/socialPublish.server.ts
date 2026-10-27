@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { eventUrl } from "./eventSeo";
-import { pickEventsToPost, socialMessage, socialWindow } from "./socialPost";
+import { instagramCaption, pickEventsToPost, socialMessage, socialWindow } from "./socialPost";
 import { ADMIN_USER_ID } from "./adminProfile";
 
 const GRAPH = "https://graph.facebook.com/v26.0";
@@ -108,8 +108,8 @@ export async function runSocialPublish(onlyEventId?: string) {
 
     if (e.immagine?.startsWith("https://")) {
       try {
-        const c = await graphPost(`${igId}/media`, { image_url: e.immagine, caption: message }, token);
-        const p = await graphPost(`${igId}/media_publish`, { creation_id: c.id! }, token);
+        const c = await graphPost(`${igId}/media`, { image_url: e.immagine, caption: instagramCaption(e) }, token);
+        const p = await graphPostWithRetry(`${igId}/media_publish`, { creation_id: c.id! }, token);
         await log(e.id, "instagram", "ok", p.id);
       } catch (err) {
         const x = err as Error & { code?: number };
