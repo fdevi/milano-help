@@ -11,13 +11,37 @@ async function graphPost(path: string, body: Record<string, string>, token: stri
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const json = (await res.json().catch(() => ({}))) as { id?: string; error?: { code?: number; message?: string } };
+  const json = (await res.json().catch(() => ({}))) as {
+    id?: string;
+    error?: { code?: number; message?: string; error_subcode?: number; type?: string; fbtrace_id?: string };
+  };
   if (!res.ok || json.error) {
-    const err = new Error(json.error?.message ?? `HTTP ${res.status}`) as Error & { code?: number };
-    err.code = json.error?.code;
+    const e = json.error;
+    const detail = e
+      ? [e.message, e.error_subcode ? `subcode ${e.error_subcode}` : null, e.type, e.fbtrace_id ? `trace ${e.fbtrace_id}` : null]
+          .filter(Boolean)
+          .join(" | ")
+      : `HTTP ${res.status}`;
+    const err = new Error(detail) as Error & { code?: number };
+    err.code = e?.code;
     throw err;
   }
   return json;
+}
+
+/** Instagram containers need a moment before publishing: retry on "Media ID is not available" (9007). */
+async function graphPostWithRetry(path: string, body: Record<string, string>, token: string, attempts = 4) {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await graphPost(path, body, token);
+    } catch (err) {
+      lastErr = err;
+      if ((err as { code?: number }).code !== 9007 || i === attempts - 1) throw err;
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  throw lastErr;
 }
 
 async function log(evento_id: string | null, piattaforma: string, esito: string, dettaglio?: string) {

@@ -43,3 +43,15 @@ export function socialMessage(e: Pick<SocialEvent, "id" | "titolo" | "data" | "l
   }).format(new Date(e.data));
   return `📅 ${e.titolo} - ${data} a ${e.luogo}. Scopri di più: ${eventUrl(e.id)}`;
 }
+
+/** Instagram captions don't support clickable links: point to the bio link instead. */
+export function instagramCaption(e: Pick<SocialEvent, "id" | "titolo" | "data" | "luogo">) {
+  const data = new Intl.DateTimeFormat("it-IT", {
+    timeZone: "Europe/Rome",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(e.data));
+  return `📅 ${e.titolo} - ${data} a ${e.luogo}.\n\n🔗 Link agli eventi in bio`;
+}
