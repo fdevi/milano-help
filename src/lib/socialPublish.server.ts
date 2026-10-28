@@ -109,7 +109,7 @@ async function publishInstagram(jobs: IgJob[], igId: string, token: string) {
   for (let round = 0; round < IG_ROUND_DELAYS_MS.length; round++) {
     const pending = jobs.filter((j) => !j.done && j.creationId);
     if (!pending.length) break;
-    await sleep(IG_ROUND_DELAYS_MS[round]);
+    await sleep(IG_ROUND_DELAYS_MS[round] ?? 30000);
     const tentativo = round + 1;
 
     for (const j of pending) {
