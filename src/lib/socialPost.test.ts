@@ -30,3 +30,34 @@ describe("social auto publish", () => {
     expect(caption).not.toContain("https://");
   });
 });
+
+import { IG_MAX_RUNS, IG_ROUND_DELAYS_MS, containerReusable, pickInstagramRetries } from "./socialPost";
+
+const pend = (id: string, extra: Partial<Parameters<typeof pickInstagramRetries>[0][number]> = {}) => ({
+  id, data: "2026-10-29T09:00:00Z", immagine: "https://img/x.jpg", social_posted_at: "2026-10-28T07:00:00Z",
+  ig_posted_at: null, ig_giri: 1, ...extra,
+});
+
+describe("instagram recovery", () => {
+  const at = new Date("2026-10-28T07:30:00Z");
+  it("retries an instagram post that failed after facebook went out", () => {
+    expect(pickInstagramRetries([pend("a")], at).map((e) => e.id)).toEqual(["a"]);
+  });
+  it("never retries an instagram post already published", () => {
+    expect(pickInstagramRetries([pend("a", { ig_posted_at: "2026-10-28T07:01:00Z" })], at)).toEqual([]);
+  });
+  it("stops retrying once the event has started", () => {
+    expect(pickInstagramRetries([pend("a", { data: "2026-10-28T07:00:00Z" })], at)).toEqual([]);
+  });
+  it(`gives up after ${IG_MAX_RUNS} scheduled runs`, () => {
+    expect(pickInstagramRetries([pend("a", { ig_giri: 3 })], at)).toEqual([]);
+  });
+  it("waits at least 8 rounds with progressive backoff starting at 5 seconds", () => {
+    expect(IG_ROUND_DELAYS_MS.length).toBeGreaterThanOrEqual(8);
+    expect(IG_ROUND_DELAYS_MS[0]).toBe(5000);
+  });
+  it("reuses a Meta container only within 23 hours", () => {
+    expect(containerReusable("2026-10-27T09:00:00Z", at)).toBe(true);
+    expect(containerReusable("2026-10-27T08:00:00Z", at)).toBe(false);
+  });
+});
