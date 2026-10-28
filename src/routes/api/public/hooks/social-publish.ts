@@ -24,9 +24,10 @@ export const Route = createFileRoute("/api/public/hooks/social-publish")({
 
         const { runSocialPublish } = await import("@/lib/socialPublish.server");
         // Admins may target a single event (used for tests).
-        const body = (await request.json().catch(() => ({}))) as { eventoId?: unknown };
+        const body = (await request.json().catch(() => ({}))) as { eventoId?: unknown; soloInstagram?: unknown };
         const onlyId = isAdminCaller && typeof body.eventoId === "string" && /^[0-9a-f-]{36}$/.test(body.eventoId) ? body.eventoId : undefined;
-        const result = await runSocialPublish(onlyId);
+        // soloInstagram: recovery run that only retries pending Instagram posts.
+        const result = await runSocialPublish(onlyId, body.soloInstagram === true);
         return Response.json(result);
       },
     },

@@ -467,6 +467,10 @@ export type Database = {
           fonte_esterna: string | null
           gratuito: boolean | null
           id: string
+          ig_creation_at: string | null
+          ig_creation_id: string | null
+          ig_giri: number
+          ig_posted_at: string | null
           immagine: string | null
           lat: number | null
           lon: number | null
@@ -496,6 +500,10 @@ export type Database = {
           fonte_esterna?: string | null
           gratuito?: boolean | null
           id?: string
+          ig_creation_at?: string | null
+          ig_creation_id?: string | null
+          ig_giri?: number
+          ig_posted_at?: string | null
           immagine?: string | null
           lat?: number | null
           lon?: number | null
@@ -525,6 +533,10 @@ export type Database = {
           fonte_esterna?: string | null
           gratuito?: boolean | null
           id?: string
+          ig_creation_at?: string | null
+          ig_creation_id?: string | null
+          ig_giri?: number
+          ig_posted_at?: string | null
           immagine?: string | null
           lat?: number | null
           lon?: number | null
@@ -1818,27 +1830,36 @@ export type Database = {
       social_post_logs: {
         Row: {
           created_at: string
+          creation_id: string | null
           dettaglio: string | null
           esito: string
           evento_id: string | null
           id: string
           piattaforma: string
+          risposta: Json | null
+          tentativo: number | null
         }
         Insert: {
           created_at?: string
+          creation_id?: string | null
           dettaglio?: string | null
           esito: string
           evento_id?: string | null
           id?: string
           piattaforma: string
+          risposta?: Json | null
+          tentativo?: number | null
         }
         Update: {
           created_at?: string
+          creation_id?: string | null
           dettaglio?: string | null
           esito?: string
           evento_id?: string | null
           id?: string
           piattaforma?: string
+          risposta?: Json | null
+          tentativo?: number | null
         }
         Relationships: []
       }

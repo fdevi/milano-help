@@ -55,3 +55,33 @@ export function instagramCaption(e: Pick<SocialEvent, "id" | "titolo" | "data" |
   }).format(new Date(e.data));
   return `📅 ${e.titolo} - ${data} a ${e.luogo}.\n\n🔗 Link agli eventi in bio`;
 }
+
+/** Waits before each Instagram check/publish round: progressive backoff, ~3 minutes in total. */
+export const IG_ROUND_DELAYS_MS = [5000, 10000, 15000, 30000, 30000, 30000, 30000, 30000];
+/** An Instagram post that keeps failing is retried on at most this many scheduled runs. */
+export const IG_MAX_RUNS = 3;
+/** Meta containers expire after 24h: reuse one only if younger than 23h. */
+export const IG_CONTAINER_MAX_AGE_MS = 23 * 3600 * 1000;
+
+export interface InstagramPending {
+  id: string;
+  data: string;
+  immagine: string | null;
+  social_posted_at: string | null;
+  ig_posted_at: string | null;
+  ig_giri: number;
+}
+
+/** Events already announced on Facebook whose Instagram post is still missing and still worth posting. */
+export function pickInstagramRetries<T extends InstagramPending>(events: T[], now = new Date()): T[] {
+  return events
+    .filter((e) => e.social_posted_at && !e.ig_posted_at)
+    .filter((e) => !!e.immagine?.startsWith("https://"))
+    .filter((e) => e.ig_giri < IG_MAX_RUNS)
+    .filter((e) => new Date(e.data) > now)
+    .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+}
+
+export function containerReusable(createdAt: string | null, now = new Date()) {
+  return !!createdAt && now.getTime() - new Date(createdAt).getTime() < IG_CONTAINER_MAX_AGE_MS;
+}
