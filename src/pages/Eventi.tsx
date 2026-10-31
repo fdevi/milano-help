@@ -184,7 +184,7 @@ const EventCard = ({ event, isParticipating, onDelete }: {
 const Eventi = () => {
   const { user } = useAuth();
   const [showMyEvents, setShowMyEvents] = useState(false);
-  const [dateFilter, setDateFilter] = useState("tutti");
+  const [dateFilter, setDateFilter] = useState("settimana");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [priceFilter, setPriceFilter] = useState("tutti"); // tutti | gratuito | pagamento
