@@ -85,7 +85,7 @@ const CategoriaPage = () => {
 
   // Eventi state
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("tutti");
+  const [dateFilter, setDateFilter] = useState("settimana");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState("tutti");
   const [eventSortBy, setEventSortBy] = useState("data");
