@@ -192,13 +192,15 @@ const Home = () => {
 
   // TUTTI gli eventi (per tab Eventi)
   const { data: allEventi = [], isLoading: loadingEventi } = useQuery({
-    queryKey: ['home-all-eventi'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('eventi')
-        .select('*')
-        .eq('stato', 'attivo')
-        .order('data', { ascending: true });
+  queryKey: ['home-all-eventi'],
+  queryFn: async () => {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('eventi')
+      .select('*')
+      .eq('stato', 'attivo')
+      .gte('data', now)
+      .order('data', { ascending: true });
 
       if (error) throw error;
       if (!data || data.length === 0) return [];
