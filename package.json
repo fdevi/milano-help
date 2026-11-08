@@ -4,9 +4,9 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "predev": "bun scripts/generate-sitemap.ts",
+    "predev": "bun scripts/generate-sitemap.ts --cached",
     "prebuild": "bun scripts/generate-sitemap.ts",
-    "prebuild:dev": "bun scripts/generate-sitemap.ts",
+    "prebuild:dev": "bun scripts/generate-sitemap.ts --cached",
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
