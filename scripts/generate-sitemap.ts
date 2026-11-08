@@ -1,7 +1,18 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { loadEnv } from "vite";
 import { createClient } from "@supabase/supabase-js";
 import { sitemapXml } from "../src/lib/announcementSeo";
+
+// Preview/startup must not depend on a running hosted backend. Production
+// generation remains strict and never replaces the sitemap with partial data.
+if (process.argv.includes("--cached")) {
+  const cached = readFileSync("public/sitemap.xml", "utf8");
+  if (!cached.includes("<urlset") || !cached.includes("</urlset>")) {
+    throw new Error("Cached sitemap is invalid; regenerate it with an active backend");
+  }
+  console.log("Preview uses the existing sitemap; no live content query required");
+  process.exit(0);
+}
 
 const env = { ...loadEnv("production", process.cwd(), "VITE_"), ...process.env };
 const url = env.VITE_SUPABASE_URL;
