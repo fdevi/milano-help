@@ -16,6 +16,7 @@ const formatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 });
 function eligible(date: Date) {
+  if (!minutes || firstHour === undefined || lastHour === undefined) throw new Error('Invalid schedule');
   const [hour, minute] = formatter.format(date).split(':').map(Number);
   if (hour === undefined || minute === undefined) throw new Error('Invalid Rome time');
   return minutes.split(',').map(Number).includes(date.getUTCMinutes()) &&
