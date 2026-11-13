@@ -1,4 +1,5 @@
 # Architecture rules
+- Reaction and comment reads inherit parent content visibility; storage writes bind to object owner_id, preserving historical upload paths while preventing cross-user changes.
 - Approval scheduling preserves the existing HTTP callback and uses a Europe/Rome guard inside the UTC cron command, so daylight-saving changes never shift the notification window.
 - Ticketmaster imports and the one-time repair share a pure price-range mapper; event price displays use a shared Italian EUR formatter to prevent inconsistent free badges.
 - Page metadata (title, description, og:*, canonical) is set in each route's TanStack `head()` and rendered server-side so social crawlers and search engines see it; the root route holds only sitewide defaults and never a canonical or og:url.

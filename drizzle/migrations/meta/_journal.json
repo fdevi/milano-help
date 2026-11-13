@@ -64,6 +64,13 @@
       "when": 1793178413500,
       "tag": "0008_enable_instagram_retry_run",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794582748666,
+      "tag": "0009_secure_selected_access_policies",
+      "breakpoints": true
     }
   ]
 }
