@@ -1,4 +1,5 @@
 # Architecture rules
+- Approval scheduling preserves the existing HTTP callback and uses a Europe/Rome guard inside the UTC cron command, so daylight-saving changes never shift the notification window.
 - Ticketmaster imports and the one-time repair share a pure price-range mapper; event price displays use a shared Italian EUR formatter to prevent inconsistent free badges.
 - Page metadata (title, description, og:*, canonical) is set in each route's TanStack `head()` and rendered server-side so social crawlers and search engines see it; the root route holds only sitewide defaults and never a canonical or og:url.
 - Public announcement discovery uses a paginated `/annunci` directory; production sitemap generation requires complete live reads, while preview/startup validates and preserves the cached sitemap so backend downtime cannot block preview builds.
