@@ -13,7 +13,7 @@ BEGIN
   IF callback NOT LIKE '%approval-rome-hours%' THEN
     callback := format(
       'DO $approval_rome_hours$ BEGIN /* approval-rome-hours */ IF (CURRENT_TIMESTAMP AT TIME ZONE ''Europe/Rome'')::time >= TIME ''06:00'' AND (CURRENT_TIMESTAMP AT TIME ZONE ''Europe/Rome'')::time < TIME ''24:00'' THEN %s END IF; END; $approval_rome_hours$;',
-      regexp_replace(rtrim(callback), ';\s*$', '') || ';'
+      regexp_replace(regexp_replace(rtrim(callback), ';\s*$', ''), '^\s*SELECT\s+', 'PERFORM ', 'i') || ';'
     );
   END IF;
 

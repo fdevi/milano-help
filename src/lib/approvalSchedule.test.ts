@@ -9,12 +9,15 @@ if (!start || !end || !schedule) throw new Error('Missing approval schedule or t
 const startMinute = Number(start[1]) * 60 + Number(start[2]);
 const endMinute = Number(end[1]) * 60 + Number(end[2]);
 const [minutes, hours] = schedule.split(' ');
+if (!minutes || !hours) throw new Error('Invalid cron schedule');
 const [firstHour, lastHour] = hours.split('-').map(Number);
+if (firstHour === undefined || lastHour === undefined) throw new Error('Missing UTC hour bounds');
 const formatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 });
 function eligible(date: Date) {
   const [hour, minute] = formatter.format(date).split(':').map(Number);
+  if (hour === undefined || minute === undefined) throw new Error('Invalid Rome time');
   return minutes.split(',').map(Number).includes(date.getUTCMinutes()) &&
     date.getUTCHours() >= firstHour && date.getUTCHours() <= lastHour &&
     hour * 60 + minute >= startMinute && hour * 60 + minute < endMinute;
